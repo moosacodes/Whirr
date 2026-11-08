@@ -1,0 +1,22 @@
+node_modules/
+dist/
+data/
+.whirr/
+.env
+.env.local
+.tmp-*
+.DS_Store
+Thumbs.db
+*.log
+
+# Generated, reproducible assets (see npm run setup)
+fixtures/generated/
+apps/web/public/fixtures/generated/
+apps/web/public/models/
+models/reference-evaluation.json
+
+# Test and browser artifacts
+test-results/
+playwright-report/
+tests/e2e/.auth/
+coverage/
