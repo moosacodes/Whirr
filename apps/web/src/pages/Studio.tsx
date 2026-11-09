@@ -44,6 +44,12 @@ function readiness(item: OwnerObjectView): { label: string; tone: 'ok' | 'warn' 
   if (!item.activeModel) return { label: 'Needs training', tone: 'warn', detail: 'Record takes, then train a model.' };
   if (item.activeModel.status === 'REJECTED')
     return { label: 'Model rejected', tone: 'danger', detail: 'Improve the takes and retrain.' };
+  if (item.activeModel.metrics.provenance === 'USER_CALIBRATION' && item.fieldTest.status !== 'FIELD_PASS')
+    return {
+      label: 'Field test required',
+      tone: 'warn',
+      detail: 'Complete the Real-World Calibration Lab before publishing or starting a Listening Room session.',
+    };
   if (!item.terms) return { label: 'Needs pricing', tone: 'warn', detail: 'Publish plain terms to go live.' };
   return { label: 'Published', tone: 'ok', detail: 'Service card is live.' };
 }
@@ -316,6 +322,9 @@ export function Studio() {
                 </Link>
                 <Link className="btn btn--secondary btn--sm" to={`/studio/objects/${item.object.id}/model`}>
                   Model
+                </Link>
+                <Link className="btn btn--secondary btn--sm" to={`/studio/objects/${item.object.id}/calibration-lab`}>
+                  Field lab
                 </Link>
                 <Link className="btn btn--secondary btn--sm" to={`/studio/objects/${item.object.id}/pricing`}>
                   Pricing
