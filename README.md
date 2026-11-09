@@ -2,7 +2,7 @@
 
 **Every object has a sound. Give it a passport.**
 
-Whirr 2.0 is an acoustic passport office for ordinary objects: teach an object its sound, meter only confident use, and issue a signed, redacted proof that a stranger can verify offline. The object stays dumb; the proof gets smart.
+Whirr 3.0 is an acoustic passport office for ordinary objects: teach an object its sound, meter only confident use, and issue a signed, redacted **proof bundle** that a stranger can verify offline. The object stays dumb; the proof gets portable.
 
 Whirr is a consent-based, usage-metered commerce layer for ordinary objects. A commodity microphone hears an object working, a locally trained classifier separates confident activity from idle and ambiguous sound, and the renter pays only for confident active time through a PayPal Sandbox authorization with a hard approved cap.
 
@@ -25,6 +25,9 @@ No smart plug. No retrofit sensor. No object firmware. The object stays exactly 
 | Billing | Integer minor units, one half-up rounding at the end, hard consented cap, credits only reduce, zero is never captured |
 | PayPal | Orders v2 `AUTHORIZE`, Payments v2 partial capture, void, refund, reconciliation, idempotency keys, raw-body webhook signature verification |
 | Evidence | Hash-chained audit log, per-interval evidence hashes, session evidence root, stored receipt, independent verification endpoint |
+| Portable proof v3 | Signed `whirr.proof-bundle.v3`: Merkle interval proofs, separate integrity/sensing/payment trust domains, capture provenance, redacted public bundle, QR, `/proof/:id`, CLI pinning and a single-file offline verifier |
+| Live intelligence | Open-set `UNKNOWN_OBJECT` / `LOW_CONFIDENCE` rejection, aggregated interval explanations, sensor diagnostics, bounded retry queue and interval-only replay |
+| Payment recovery | Authorization expiry, guarded reauthorization before usage, four-state payment timeline, webhook-only loopback proxy and no live PayPal calls |
 | Product surfaces | Landing, Judge Mode, Object Studio, Capture Lab, Model Review, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
 | Safety | Operator key authentication, signed cookies, CSRF/origin checks, rate limits, CSP, ownership checks, body limits, no live PayPal host permitted |
 
@@ -47,6 +50,7 @@ Open:
 - App / shelf: <http://localhost:5173> and <http://localhost:5173/shelf>
 - Judge evidence: <http://localhost:5173/judge>
 - Offline verifier and Tamper Lab: <http://localhost:5173/verify>
+- Standalone verifier (no application imports): <http://localhost:5173/verify-offline.html>
 - Seeded service card: <http://localhost:5173/s/obj_reference_fan>
 - Seeded acoustic passport: <http://localhost:5173/passport/obj_reference_fan>
 - Offline replay: <http://localhost:5173/demo/offline>
@@ -108,8 +112,13 @@ Without credentials, everything still runs except payment: sessions are marked `
 | `npm run key` | Print the local operator key |
 | `npm run demo:offline` | Replay the fixture in Node and print a quote |
 | `npm run proof:verify -- file.json` | Verify a signed passport or receipt proof locally |
+| `npm run proof:verify -- bundle.json [key-id]` | Verify a v3 bundle, optionally pinned to an installation fingerprint |
+| `npm run gate:v3` | Honest PASS/OPEN/FAIL report from this database, files and provider configuration |
+| `npm run gate:a:export` | Export a Gate A review pack without closing Gate A |
+| `npm run proxy:webhook` | Loopback proxy exposing only `POST /api/paypal/webhook` (not public HTTPS) |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm test` | Unit + integration tests (requires `npm run setup` first) |
+| `npm run test:e2e` | Playwright public proof, Tamper Lab and standalone verifier checks at 1440×900 and 390×844 |
 | `npm run smoke` | Runtime, auth and CSRF smoke checks via Fastify injection |
 | `npm run verify` | Typecheck + tests |
 
@@ -166,6 +175,7 @@ docs/                      architecture, model card, safety, threat model, PayPa
 - [Demo script](docs/demo-script.md)
 - [Acoustic protocol](docs/acoustic-protocol.md)
 - [Proof verification](docs/proof-verification.md)
+- [Whirr 3.0 demo script](docs/demo-v3.md)
 
 ## License
 
