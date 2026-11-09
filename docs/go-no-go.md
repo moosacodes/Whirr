@@ -14,7 +14,7 @@ This is the canonical gate list. A green indicator in Judge Mode does not overri
 | **B — Truth** | Measured false-billable time and limitations reported | **PASS (synthetic scope)** | `docs/evaluation.md` reports held-out precision 96.30%, recall 97.16%, FBT 1.804%, the passport fit statistics (ENROLLED at 91.48%, 3.97% active blocked, 4.37% non-active passed), method and hashes, explicitly labelled synthetic. Limitations are in the model card, safety, threat model and UI. Field false-billable measurement remains OPEN. |
 | **C — Pricing** | Deterministic quote and cap invariant proven | **PASS** | Integer minor-unit pricing, one rounding, cap, credits-only-reduce, zero-never-captured; unit/property and integration tests pass. |
 | **D — Payment** | One human-approved Sandbox transaction captured and provider-reconciled, or clearly qualified | **PASS** | Human-approved Sandbox order `77T95682L88230118` and capture `7YY23328DP2020327` reached `COMPLETED`; authorization `783967879W676894R` is `CAPTURED`. Captured **USD 0.07**; the receipt now recomputes **8/8** checks, including passport exclusions added after the capture. The interval evidence was submitted through the authenticated API for this payment test, not recorded from a physical microphone. See `docs/paypal-sandbox.md`. |
-| **E — Security** | Safe webhook ingress and verified real signed event; no exposed admin actions | **OPEN** | Raw-body signature verification, dedup, audit, CSRF/origin checks, auth and loopback binding are implemented and unit-tested. No real signed webhook or HTTPS ingress exists. A dedicated webhook-only public proxy is not shipped. |
+| **E — Security** | Safe webhook ingress and verified real signed event; no exposed admin actions | **OPEN** | Raw-body signature verification, dedup, audit, CSRF/origin checks, auth and loopback binding are implemented and unit-tested. A webhook-only loopback proxy is now shipped (`npm run proxy:webhook`) and returns 404 for every non-webhook path, but no public HTTPS ingress exists and no genuine signed PayPal event has been received. The proxy does not close this gate. |
 | **F — Judges** | Clean install, public repo and license, accurate demo video and docs | **OPEN** | Clean local install/setup is reproducible and MIT license is present. Public repository, video and final Devpost submission do not exist yet. |
 | **G — Presentation** | A stranger understands the premise before the architecture | **OPEN** | Landing, Judge Mode, service flow and demo script are built. No five informal comprehension tests or recorded presentation were performed. |
 
@@ -25,7 +25,7 @@ This is the canonical gate list. A green indicator in Judge Mode does not overri
 | Check | Result |
 | --- | --- |
 | `npx tsc --noEmit` | Pass (0 errors at last run) |
-| Unit + integration tests | 51/51 pass at last run (41 original + 6 protocol + 1 migration + 3 protocol-v2 integration) |
+| Unit + integration tests | 62/62 pass at last run, including v3 Merkle/tamper, open-set, v3 bundle, migration, provider timeout and webhook ordering/replay assertions |
 | `npm run setup` | Pass; generates 16 synthetic takes, 55 s fixture, READY model, seeded service |
 | `npm run smoke` | Pass at last run (health, judge, service card, auth, CORS/CSRF) |
 | Dependency audit | `npm audit` reports 0 vulnerabilities (production and full tree) |
@@ -36,7 +36,7 @@ This is the canonical gate list. A green indicator in Judge Mode does not overri
 | Signed protocol v2 | ECDSA P-256 passport and receipt-proof envelopes, canonical JSON, offline verifier, Tamper Lab, v1 legacy labelling and key-rotation tests implemented |
 | Shelf and holds | Public catalogue, 10-minute local holds, poster, operator listing and drift surfaces implemented; hold race tested |
 | Fixture replay | 33.47 s billable, 133 intervals, $0.11 simulated at $0.20/min, $5 cap |
-| Browser E2E suite | Not implemented; manual Chromium passes checked the passport page, service card, receipt and probe permission/cancel states |
+| Browser E2E suite | Committed Playwright suite: **6/6 pass** across 1440×900 and 390×844. It covers the public proof page, 18-check offline bundle verification, interval Tamper Lab rejection, no page-level overflow and no console errors. Manual QA also checked heading/link structure and focusable controls. |
 | Real microphone ON/OFF cycles | Not performed here |
 | Real PayPal order/authorization/capture | **PASS** — order/capture `COMPLETED`, authorization `CAPTURED`, USD 0.07, receipt 8/8; API-submitted interval evidence, not a live microphone |
 | Verified signed webhook | Not delivered; webhook ID configured but no public HTTPS ingress |
@@ -70,3 +70,14 @@ This is the canonical gate list. A green indicator in Judge Mode does not overri
 - **Claim of a real PayPal-settled physical demo:** NO-GO until Gate A produces real-object evidence; the payment rail itself is now provider-verified.
 - **Hackathon submission:** NO-GO until Gate F artifacts (public repo, video, Devpost) and the required real evidence are complete.
 - **Production or unattended rental:** NO-GO by design; out of scope and unsafe with this sensing model.
+
+## 6. Whirr 3.0 local verification
+
+Whirr 3.0 preserves the v1/v2 read and verification paths, the historical Sandbox capture and the receipt verification endpoint. It adds the portable v3 proof bundle, Merkle interval proofs, public redaction, `/proof/:id`, QR, key pinning, standalone browser verification, open-set rejection, capture provenance, sensor diagnostics, exponential retry retention, interval-only replay, authorization expiry/reauthorization, payment timeline and the webhook-only proxy.
+
+`npm run gate:v3` reads the actual SQLite database, model artifact and provider configuration. It does not close Gate A from synthetic replay or Gate E from a loopback proxy. External status remains:
+
+- **Gate A OPEN:** no genuine real-object recordings and three live ON/OFF trials. `npm run gate:a:export` packages evidence but explicitly keeps the gate open.
+- **Gate D PASS (historical):** the 8 November 2026 Sandbox capture is preserved unchanged; no new provider call or capture is claimed.
+- **Gate E OPEN:** no public HTTPS ingress and no genuine signed webhook. Loopback proxy only.
+- **Gate F/G OPEN:** no public repository remote, video, Devpost submission, comprehension tests or recorded presentation.

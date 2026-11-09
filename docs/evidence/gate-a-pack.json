@@ -1,0 +1,1051 @@
+{
+  "schema": "whirr.gate-a-evidence.v1",
+  "createdAt": "2026-11-09T15:37:03.610Z",
+  "gateAStatus": "OPEN",
+  "gateAReason": "This export packages evidence; it does not certify object presence. Gate A closes only when a reviewer confirms three genuine live ON/OFF trials from a real object and microphone.",
+  "session": {
+    "id": "ses_fcd62cbc1de04cefbabc1f76993dd535",
+    "objectId": "obj_reference_fan",
+    "state": "SETTLED",
+    "startedAt": "2026-11-08T23:24:36.197Z",
+    "stoppedAt": "2026-11-08T23:25:26.177Z",
+    "authorizationExpiresAt": null,
+    "captureClaim": null
+  },
+  "calibration": {
+    "sources": [],
+    "model": {
+      "version": "ref-fan-v1",
+      "hash": "20994e075a624750aaa25f1a045b76651e4b0d073b65aae567b56ecc17d353f5",
+      "datasetHash": "4d7f3ce418e829c23b7c61ff0320c65d8d472a4df682f7ca070094a91545a73b",
+      "provenance": "SYNTHETIC_REFERENCE",
+      "modelCard": "docs/model-card.md"
+    }
+  },
+  "passport": {
+    "schema": "whirr.signed.v2",
+    "type": "passport",
+    "algorithm": "ECDSA_P256_SHA256",
+    "keyId": "8bca96b7924bf190aa204cd3678a4b7b",
+    "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExgqu5p9vawLWgMAtdgX7RgVNVQ1KY6c1uFgNr1V9JlSVOnka88MGN36NuAv26cW48f+7BTXItJILViKFSFRIsw==",
+    "payload": {
+      "schema": "whirr.passport.v2",
+      "object": {
+        "id": "obj_reference_fan",
+        "name": "Reference desk fan",
+        "category": "fan",
+        "glyph": "fan",
+        "description": "A synthetic reference object used to exercise the complete Whirr metering and settlement loop. Its classifier is trained on generated audio, not on a physical fan.",
+        "photoDataUrl": null,
+        "ownerLabel": "Whirr operator",
+        "status": "ACTIVE",
+        "createdAt": "2026-11-01T09:00:00.000Z"
+      },
+      "model": {
+        "version": "ref-fan-v1",
+        "hash": "20994e075a624750aaa25f1a045b76651e4b0d073b65aae567b56ecc17d353f5",
+        "status": "READY",
+        "provenance": "SYNTHETIC_REFERENCE",
+        "precision": 0.9629955947136564,
+        "recall": 0.9715555555555555,
+        "falseBillableRatio": 0.018040268456375838,
+        "takeCount": 16,
+        "featureSpecVersion": "whirr-features-v1",
+        "datasetHash": "4d7f3ce418e829c23b7c61ff0320c65d8d472a4df682f7ca070094a91545a73b",
+        "trainedAt": "2026-11-01T09:00:00.000Z",
+        "soundprint": {
+          "schema": "whirr.soundprint.v1",
+          "method": "BAND_PROFILE_COSINE",
+          "status": "ENROLLED",
+          "gateEnabled": true,
+          "matchThreshold": 0.9148,
+          "bands": [
+            {
+              "fromHz": 50,
+              "toHz": 120,
+              "active": 0.22523,
+              "idle": 0.18411
+            },
+            {
+              "fromHz": 120,
+              "toHz": 250,
+              "active": 0.23355,
+              "idle": 0.10979
+            },
+            {
+              "fromHz": 250,
+              "toHz": 500,
+              "active": 0.18697,
+              "idle": 0.10279
+            },
+            {
+              "fromHz": 500,
+              "toHz": 1000,
+              "active": 0.14559,
+              "idle": 0.14842
+            },
+            {
+              "fromHz": 1000,
+              "toHz": 2000,
+              "active": 0.10045,
+              "idle": 0.06952
+            },
+            {
+              "fromHz": 2000,
+              "toHz": 4000,
+              "active": 0.06304,
+              "idle": 0.16663
+            },
+            {
+              "fromHz": 4000,
+              "toHz": 6000,
+              "active": 0.02744,
+              "idle": 0.11847
+            },
+            {
+              "fromHz": 6000,
+              "toHz": 7800,
+              "active": 0.01772,
+              "idle": 0.10027
+            }
+          ],
+          "activeMedianSimilarity": 0.97498,
+          "activeP10Similarity": 0.9348,
+          "nonActiveP95Similarity": 0.91262,
+          "separation": 0.02218,
+          "activeFrames": 1108,
+          "nonActiveFrames": 2290,
+          "activeTakeCount": 5,
+          "activeBlockRatio": 0.0397,
+          "nonActivePassRatio": 0.0437,
+          "notes": [
+            "This is an enrollment-fit consistency guard. It is computed from the calibration takes, not a held-out identity classifier.",
+            "It can make active time uncertain; it can never turn idle or ambiguous time into billable time.",
+            "A similar or identical machine can share this spectral profile, and recorded playback is not detectable by a microphone.",
+            "The calibration separation is narrow. The gate is enabled because it retained active frames and rejected most non-active profiles, but it should be rechecked on real sessions and after any room or microphone change."
+          ]
+        },
+        "validation": null
+      },
+      "terms": {
+        "version": 1,
+        "objectId": "obj_reference_fan",
+        "currency": "USD",
+        "minorPerMinute": 20,
+        "capMinor": 500,
+        "rounding": "ROUND_ONCE_AT_END",
+        "uncertainPolicy": "EXCLUDE",
+        "billingPolicy": "AUTO",
+        "feesPolicy": "NO_ADDITIONAL_FEES",
+        "modelStatus": "READY",
+        "createdAt": "2026-11-01T09:00:00.000Z",
+        "hash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840"
+      },
+      "calibration": {
+        "ageDays": 8,
+        "takeCount": 16,
+        "validation": null
+      },
+      "drift": {
+        "status": "NO_DATA",
+        "reason": "No settled session has produced a diagnostic acoustic summary yet.",
+        "sessions": 0,
+        "mismatchRatio": 0,
+        "uncertainRatio": 0,
+        "calibrationAgeDays": 8
+      },
+      "stamps": [
+        {
+          "id": "calibration-ref-fan-v1",
+          "kind": "calibration",
+          "label": "Calibration ref-fan-v1",
+          "detail": "16 takes · READY · one guided sitting",
+          "at": "2026-11-01T09:00:00.000Z",
+          "hash": "20994e075a624750aaa25f1a045b76651e4b0d073b65aae567b56ecc17d353f5"
+        },
+        {
+          "id": "terms-1",
+          "kind": "terms",
+          "label": "Rate card v1",
+          "detail": "USD 20 / min · cap 500",
+          "at": "2026-11-01T09:00:00.000Z",
+          "hash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840"
+        },
+        {
+          "id": "sessions-aggregate",
+          "kind": "sessions",
+          "label": "1 recorded session",
+          "detail": "Aggregate count only. Public stamps never contain renter identity.",
+          "at": "2026-11-08T22:49:21.360Z",
+          "hash": "7c2158a65d93f253d6380d64fdd79c167ee77826d03fb57e0353ff3d70215277"
+        }
+      ],
+      "limitations": [
+        "This is a synthetic reference model. Its metrics demonstrate the protocol and are not real-object accuracy.",
+        "This passport is installation attestation: it proves this installation signed these bytes, not that a third party verified the object or the time.",
+        "The acoustic signature is a calibration-fit consistency check, not an anti-spoof or identity document.",
+        "A similar machine, playback or a changed room can reproduce or alter the sound. Whirr does not claim physical truth.",
+        "Public stamps aggregate counts and hashes only; they do not publish renter identity or audio.",
+        "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+        "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+        "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+        "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+        "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+        "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+        "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser."
+      ],
+      "attestation": "Signed by this Whirr installation. This is not a trusted timestamp, a third-party identity or proof that the physical object was present.",
+      "passportVersion": 1,
+      "previousPassportHash": null,
+      "createdAt": "2026-11-09T14:12:44.457Z"
+    },
+    "signature": "EDM5s2k2aK1V83Wtwgv0DztEbBMRYYHP/Z+SleBKpMiqxT7Jhc/0QGvZ09mmnctFCBOZlqZRf6ORKXv1yR+03A=="
+  },
+  "intervals": [
+    {
+      "seq": 1,
+      "startMs": 0,
+      "endMs": 5000,
+      "state": "IDLE",
+      "confidence": 0.4,
+      "qualityFlags": [],
+      "modelVersion": "ref-fan-v1",
+      "evidenceHash": "053108b1050cf52101f950e8fcf376755e5a1ed6a29fb257d6c08ee46a8674a4",
+      "uncertaintyReasons": [],
+      "leafHash": "45f3dff2234e2b1fc62ddb0fa86194c58e57e2395cbec582c6d567c1cc9561fd",
+      "merkleProof": [
+        {
+          "side": "right",
+          "hash": "3934dbb9aedb2c31b9ba1c7bb9244ec000f4f52a76af421d59b03b3b2058633d"
+        },
+        {
+          "side": "right",
+          "hash": "afba3924c7113bf8e40c1a915a954b10442658132a70cafbb41aefade446a817"
+        }
+      ]
+    },
+    {
+      "seq": 2,
+      "startMs": 5000,
+      "endMs": 20000,
+      "state": "ACTIVE_CONFIDENT",
+      "confidence": 0.96,
+      "qualityFlags": [],
+      "modelVersion": "ref-fan-v1",
+      "evidenceHash": "688e6f2ba2c5c4cf75d608e0cba605de509ac902a0180960d5bd2898535ae751",
+      "uncertaintyReasons": [],
+      "leafHash": "3934dbb9aedb2c31b9ba1c7bb9244ec000f4f52a76af421d59b03b3b2058633d",
+      "merkleProof": [
+        {
+          "side": "left",
+          "hash": "45f3dff2234e2b1fc62ddb0fa86194c58e57e2395cbec582c6d567c1cc9561fd"
+        },
+        {
+          "side": "right",
+          "hash": "afba3924c7113bf8e40c1a915a954b10442658132a70cafbb41aefade446a817"
+        }
+      ]
+    },
+    {
+      "seq": 3,
+      "startMs": 20000,
+      "endMs": 30000,
+      "state": "IDLE",
+      "confidence": 0.4,
+      "qualityFlags": [],
+      "modelVersion": "ref-fan-v1",
+      "evidenceHash": "408b451fa1dc2451cb6d7f227962ebf483a0c3fed941db7b4c69308c4722d201",
+      "uncertaintyReasons": [],
+      "leafHash": "f39cc2f44b2f56bcb13164672d927bea33471059b69b011fc2690c9b37bed83e",
+      "merkleProof": [
+        {
+          "side": "right",
+          "hash": "f9b8aa98749ef89f304864dc3570fea99880d272659766c8e477560260abae4b"
+        },
+        {
+          "side": "left",
+          "hash": "b2800f25fca75840018ac283074963a005d6ee102aa6a068ddefb92d812ced73"
+        }
+      ]
+    },
+    {
+      "seq": 4,
+      "startMs": 30000,
+      "endMs": 35000,
+      "state": "ACTIVE_CONFIDENT",
+      "confidence": 0.95,
+      "qualityFlags": [],
+      "modelVersion": "ref-fan-v1",
+      "evidenceHash": "539bcb7e9f9bb861c732939c7004b39db277be8780e8e08a8439185c9bbe2244",
+      "uncertaintyReasons": [],
+      "leafHash": "f9b8aa98749ef89f304864dc3570fea99880d272659766c8e477560260abae4b",
+      "merkleProof": [
+        {
+          "side": "left",
+          "hash": "f39cc2f44b2f56bcb13164672d927bea33471059b69b011fc2690c9b37bed83e"
+        },
+        {
+          "side": "left",
+          "hash": "b2800f25fca75840018ac283074963a005d6ee102aa6a068ddefb92d812ced73"
+        }
+      ]
+    }
+  ],
+  "bundle": {
+    "schema": "whirr.signed.v2",
+    "type": "proof-bundle",
+    "algorithm": "ECDSA_P256_SHA256",
+    "keyId": "8bca96b7924bf190aa204cd3678a4b7b",
+    "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExgqu5p9vawLWgMAtdgX7RgVNVQ1KY6c1uFgNr1V9JlSVOnka88MGN36NuAv26cW48f+7BTXItJILViKFSFRIsw==",
+    "payload": {
+      "schema": "whirr.proof-bundle.v3",
+      "bundleVersion": 3,
+      "bundleId": "bnd_d35f1e7bb1e54cb8ae19bbf68d4a7535",
+      "createdAt": "2026-11-09T15:27:41.121Z",
+      "redacted": true,
+      "sessionId": "ses_fcd62cbc1de04cefbabc1f76993dd535",
+      "receipt": {
+        "schema": "whirr.receipt.v1",
+        "receiptId": "rcp_81461bd235",
+        "sessionId": "ses_fcd62cbc1de04cefbabc1f76993dd535",
+        "object": {
+          "id": "obj_reference_fan",
+          "name": "Reference desk fan",
+          "category": "fan",
+          "ownerLabel": "Whirr operator"
+        },
+        "createdAt": "2026-11-08T23:25:47.513Z",
+        "renterRef": "REDACTED",
+        "terms": {
+          "version": 1,
+          "objectId": "obj_reference_fan",
+          "currency": "USD",
+          "minorPerMinute": 20,
+          "capMinor": 500,
+          "rounding": "ROUND_ONCE_AT_END",
+          "uncertainPolicy": "EXCLUDE",
+          "billingPolicy": "AUTO",
+          "feesPolicy": "NO_ADDITIONAL_FEES",
+          "modelStatus": "READY",
+          "createdAt": "2026-11-01T09:00:00.000Z"
+        },
+        "termsHash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840",
+        "model": {
+          "version": "ref-fan-v1",
+          "hash": "cdede83d64d0775a74bbb82ff6f349d9b9917ba29053e764c9b78ecdd782879d",
+          "status": "READY",
+          "provenance": "SYNTHETIC_REFERENCE",
+          "precision": 0.9629955947136564,
+          "recall": 0.9715555555555555,
+          "falseBillableRatio": 0.018040268456375838,
+          "takeCount": 16,
+          "soundprint": {
+            "status": "ENROLLED",
+            "gateEnabled": true,
+            "matchThreshold": 0.9148,
+            "activeMedianSimilarity": 0.97498,
+            "nonActiveP95Similarity": 0.91262,
+            "activeBlockRatio": 0.0397,
+            "nonActivePassRatio": 0.0437
+          }
+        },
+        "consent": {
+          "acceptedAt": "2026-11-08T22:49:21.606Z",
+          "termsHash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840",
+          "modelHash": "cdede83d64d0775a74bbb82ff6f349d9b9917ba29053e764c9b78ecdd782879d"
+        },
+        "passport": {
+          "status": "ENROLLED",
+          "gateEnabled": true,
+          "matchThreshold": 0.9148,
+          "mismatchIntervals": 0,
+          "mismatchMs": 0
+        },
+        "timeline": [
+          {
+            "startMs": 0,
+            "endMs": 5000,
+            "state": "IDLE",
+            "confidence": 0.4,
+            "qualityFlags": []
+          },
+          {
+            "startMs": 5000,
+            "endMs": 20000,
+            "state": "ACTIVE_CONFIDENT",
+            "confidence": 0.96,
+            "qualityFlags": []
+          },
+          {
+            "startMs": 20000,
+            "endMs": 30000,
+            "state": "IDLE",
+            "confidence": 0.4,
+            "qualityFlags": []
+          },
+          {
+            "startMs": 30000,
+            "endMs": 35000,
+            "state": "ACTIVE_CONFIDENT",
+            "confidence": 0.95,
+            "qualityFlags": []
+          }
+        ],
+        "totals": {
+          "observedMs": 35000,
+          "billableMs": 20000,
+          "uncertainMs": 0,
+          "idleMs": 15000,
+          "disconnectedMs": 0
+        },
+        "pricing": {
+          "currency": "USD",
+          "minorPerMinute": 20,
+          "capMinor": 500,
+          "baseQuoteMinor": 7,
+          "creditMinor": 0,
+          "quoteMinor": 7,
+          "rounding": "ROUND_ONCE_AT_END",
+          "formula": "round_half_up(20 × 20000 / 60000) = 7 minor; min(cap 500) = 7; minus credit 0 = 7"
+        },
+        "payment": {
+          "state": "CAPTURE_COMPLETED",
+          "mode": "PAYPAL_SANDBOX",
+          "orderId": "REDACTED-0118",
+          "authorizationId": "REDACTED-894R",
+          "captureId": "REDACTED-0327",
+          "refundId": null,
+          "refundMinor": null,
+          "providerStatus": "COMPLETED",
+          "providerReconciledAt": "2026-11-08T23:25:47.514Z",
+          "capturedMinor": 7
+        },
+        "disputes": [],
+        "review": {
+          "quoteHash": "a941465f452a794f7225b10e01ba24b65fdb7cad9d9a82dec62664d21a3e7226",
+          "acceptedAt": "2026-11-08T23:25:32.767Z",
+          "operatorApprovedAt": null,
+          "reviewMode": "AUTO"
+        },
+        "limitations": [
+          "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+          "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+          "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+          "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+          "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+          "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+          "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser."
+        ],
+        "sessionEvidenceSha256": "e1a0a4dcc8063a795ac2ad20a4c57032a37f85f9a43423dcd942b436c054bff1",
+        "finalized": true,
+        "evidenceSha256": "0deac99e03c127a08be74b1146cf8c1db609c6fdd2f57c6cc816b96ceaa18698",
+        "verification": {
+          "checkedAt": "2026-11-09T15:27:41.119Z",
+          "quoteMatches": true,
+          "capRespected": true,
+          "evidenceMatches": true,
+          "receiptHashMatches": true,
+          "intervalsConsistent": true,
+          "passportConsistent": true,
+          "providerAmountMatches": true,
+          "auditChainValid": true,
+          "recomputedQuoteMinor": 7
+        }
+      },
+      "receiptProof": {
+        "schema": "whirr.signed.v2",
+        "type": "receipt-proof",
+        "algorithm": "ECDSA_P256_SHA256",
+        "keyId": "8bca96b7924bf190aa204cd3678a4b7b",
+        "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExgqu5p9vawLWgMAtdgX7RgVNVQ1KY6c1uFgNr1V9JlSVOnka88MGN36NuAv26cW48f+7BTXItJILViKFSFRIsw==",
+        "payload": {
+          "schema": "whirr.receipt-proof.v2",
+          "proofId": "prf_b6324051dc0c4fe2a3cf69cb34dc8440",
+          "receiptId": "rcp_81461bd235",
+          "sessionId": "ses_fcd62cbc1de04cefbabc1f76993dd535",
+          "createdAt": "2026-11-08T23:25:47.513Z",
+          "object": {
+            "id": "obj_reference_fan",
+            "name": "Reference desk fan",
+            "category": "fan"
+          },
+          "receiptHash": "0deac99e03c127a08be74b1146cf8c1db609c6fdd2f57c6cc816b96ceaa18698",
+          "sessionEvidenceHash": "e1a0a4dcc8063a795ac2ad20a4c57032a37f85f9a43423dcd942b436c054bff1",
+          "model": {
+            "version": "ref-fan-v1",
+            "hash": "cdede83d64d0775a74bbb82ff6f349d9b9917ba29053e764c9b78ecdd782879d",
+            "status": "READY",
+            "provenance": "SYNTHETIC_REFERENCE"
+          },
+          "terms": {
+            "hash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840",
+            "currency": "USD",
+            "minorPerMinute": 20,
+            "capMinor": 500
+          },
+          "pricing": {
+            "currency": "USD",
+            "minorPerMinute": 20,
+            "capMinor": 500,
+            "baseQuoteMinor": 7,
+            "creditMinor": 0,
+            "quoteMinor": 7,
+            "billableMs": 20000,
+            "formula": "round_half_up(20 × 20000 / 60000) = 7 minor; min(cap 500) = 7; minus credit 0 = 7"
+          },
+          "payment": {
+            "mode": "PAYPAL_SANDBOX",
+            "state": "CAPTURE_COMPLETED",
+            "capturedMinor": 7,
+            "refundMinor": null
+          },
+          "passport": {
+            "status": "ENROLLED",
+            "gateEnabled": true,
+            "mismatchMs": 0
+          },
+          "intervals": {
+            "count": 4,
+            "billableMs": 20000,
+            "uncertainMs": 0,
+            "idleMs": 15000,
+            "disconnectedMs": 0
+          },
+          "review": {
+            "quoteHash": "a941465f452a794f7225b10e01ba24b65fdb7cad9d9a82dec62664d21a3e7226",
+            "acceptedAt": "2026-11-08T23:25:32.767Z",
+            "reviewMode": "AUTO"
+          },
+          "limitations": [
+            "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+            "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+            "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+            "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+            "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+            "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+            "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser.",
+            "This proof is a redacted, installation-signed summary. It contains no renter identifier, full payment ID or audio."
+          ],
+          "attestation": "Signed by this Whirr installation. It attests the stored receipt facts, not physical truth or third-party identity."
+        },
+        "signature": "SUzHmJ4Wr9hDvtui10jRat4iiqRjkSjID9qP9dtjfQQWG+OcqkUVGuHCUaTfrr3yojgFNCprKSV9GNn295iO9g=="
+      },
+      "passport": {
+        "schema": "whirr.signed.v2",
+        "type": "passport",
+        "algorithm": "ECDSA_P256_SHA256",
+        "keyId": "8bca96b7924bf190aa204cd3678a4b7b",
+        "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExgqu5p9vawLWgMAtdgX7RgVNVQ1KY6c1uFgNr1V9JlSVOnka88MGN36NuAv26cW48f+7BTXItJILViKFSFRIsw==",
+        "payload": {
+          "schema": "whirr.passport.v2",
+          "object": {
+            "id": "obj_reference_fan",
+            "name": "Reference desk fan",
+            "category": "fan",
+            "glyph": "fan",
+            "description": "A synthetic reference object used to exercise the complete Whirr metering and settlement loop. Its classifier is trained on generated audio, not on a physical fan.",
+            "photoDataUrl": null,
+            "ownerLabel": "Whirr operator",
+            "status": "ACTIVE",
+            "createdAt": "2026-11-01T09:00:00.000Z"
+          },
+          "model": {
+            "version": "ref-fan-v1",
+            "hash": "20994e075a624750aaa25f1a045b76651e4b0d073b65aae567b56ecc17d353f5",
+            "status": "READY",
+            "provenance": "SYNTHETIC_REFERENCE",
+            "precision": 0.9629955947136564,
+            "recall": 0.9715555555555555,
+            "falseBillableRatio": 0.018040268456375838,
+            "takeCount": 16,
+            "featureSpecVersion": "whirr-features-v1",
+            "datasetHash": "4d7f3ce418e829c23b7c61ff0320c65d8d472a4df682f7ca070094a91545a73b",
+            "trainedAt": "2026-11-01T09:00:00.000Z",
+            "soundprint": {
+              "schema": "whirr.soundprint.v1",
+              "method": "BAND_PROFILE_COSINE",
+              "status": "ENROLLED",
+              "gateEnabled": true,
+              "matchThreshold": 0.9148,
+              "bands": [
+                {
+                  "fromHz": 50,
+                  "toHz": 120,
+                  "active": 0.22523,
+                  "idle": 0.18411
+                },
+                {
+                  "fromHz": 120,
+                  "toHz": 250,
+                  "active": 0.23355,
+                  "idle": 0.10979
+                },
+                {
+                  "fromHz": 250,
+                  "toHz": 500,
+                  "active": 0.18697,
+                  "idle": 0.10279
+                },
+                {
+                  "fromHz": 500,
+                  "toHz": 1000,
+                  "active": 0.14559,
+                  "idle": 0.14842
+                },
+                {
+                  "fromHz": 1000,
+                  "toHz": 2000,
+                  "active": 0.10045,
+                  "idle": 0.06952
+                },
+                {
+                  "fromHz": 2000,
+                  "toHz": 4000,
+                  "active": 0.06304,
+                  "idle": 0.16663
+                },
+                {
+                  "fromHz": 4000,
+                  "toHz": 6000,
+                  "active": 0.02744,
+                  "idle": 0.11847
+                },
+                {
+                  "fromHz": 6000,
+                  "toHz": 7800,
+                  "active": 0.01772,
+                  "idle": 0.10027
+                }
+              ],
+              "activeMedianSimilarity": 0.97498,
+              "activeP10Similarity": 0.9348,
+              "nonActiveP95Similarity": 0.91262,
+              "separation": 0.02218,
+              "activeFrames": 1108,
+              "nonActiveFrames": 2290,
+              "activeTakeCount": 5,
+              "activeBlockRatio": 0.0397,
+              "nonActivePassRatio": 0.0437,
+              "notes": [
+                "This is an enrollment-fit consistency guard. It is computed from the calibration takes, not a held-out identity classifier.",
+                "It can make active time uncertain; it can never turn idle or ambiguous time into billable time.",
+                "A similar or identical machine can share this spectral profile, and recorded playback is not detectable by a microphone.",
+                "The calibration separation is narrow. The gate is enabled because it retained active frames and rejected most non-active profiles, but it should be rechecked on real sessions and after any room or microphone change."
+              ]
+            },
+            "validation": null
+          },
+          "terms": {
+            "version": 1,
+            "objectId": "obj_reference_fan",
+            "currency": "USD",
+            "minorPerMinute": 20,
+            "capMinor": 500,
+            "rounding": "ROUND_ONCE_AT_END",
+            "uncertainPolicy": "EXCLUDE",
+            "billingPolicy": "AUTO",
+            "feesPolicy": "NO_ADDITIONAL_FEES",
+            "modelStatus": "READY",
+            "createdAt": "2026-11-01T09:00:00.000Z",
+            "hash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840"
+          },
+          "calibration": {
+            "ageDays": 8,
+            "takeCount": 16,
+            "validation": null
+          },
+          "drift": {
+            "status": "NO_DATA",
+            "reason": "No settled session has produced a diagnostic acoustic summary yet.",
+            "sessions": 0,
+            "mismatchRatio": 0,
+            "uncertainRatio": 0,
+            "calibrationAgeDays": 8
+          },
+          "stamps": [
+            {
+              "id": "calibration-ref-fan-v1",
+              "kind": "calibration",
+              "label": "Calibration ref-fan-v1",
+              "detail": "16 takes · READY · one guided sitting",
+              "at": "2026-11-01T09:00:00.000Z",
+              "hash": "20994e075a624750aaa25f1a045b76651e4b0d073b65aae567b56ecc17d353f5"
+            },
+            {
+              "id": "terms-1",
+              "kind": "terms",
+              "label": "Rate card v1",
+              "detail": "USD 20 / min · cap 500",
+              "at": "2026-11-01T09:00:00.000Z",
+              "hash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840"
+            },
+            {
+              "id": "sessions-aggregate",
+              "kind": "sessions",
+              "label": "1 recorded session",
+              "detail": "Aggregate count only. Public stamps never contain renter identity.",
+              "at": "2026-11-08T22:49:21.360Z",
+              "hash": "7c2158a65d93f253d6380d64fdd79c167ee77826d03fb57e0353ff3d70215277"
+            }
+          ],
+          "limitations": [
+            "This is a synthetic reference model. Its metrics demonstrate the protocol and are not real-object accuracy.",
+            "This passport is installation attestation: it proves this installation signed these bytes, not that a third party verified the object or the time.",
+            "The acoustic signature is a calibration-fit consistency check, not an anti-spoof or identity document.",
+            "A similar machine, playback or a changed room can reproduce or alter the sound. Whirr does not claim physical truth.",
+            "Public stamps aggregate counts and hashes only; they do not publish renter identity or audio.",
+            "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+            "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+            "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+            "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+            "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+            "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+            "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser."
+          ],
+          "attestation": "Signed by this Whirr installation. This is not a trusted timestamp, a third-party identity or proof that the physical object was present.",
+          "passportVersion": 1,
+          "previousPassportHash": null,
+          "createdAt": "2026-11-09T14:12:44.457Z"
+        },
+        "signature": "EDM5s2k2aK1V83Wtwgv0DztEbBMRYYHP/Z+SleBKpMiqxT7Jhc/0QGvZ09mmnctFCBOZlqZRf6ORKXv1yR+03A=="
+      },
+      "capture": null,
+      "intervals": [
+        {
+          "seq": 1,
+          "startMs": 0,
+          "endMs": 5000,
+          "state": "IDLE",
+          "confidence": 0.4,
+          "qualityFlags": [],
+          "modelVersion": "ref-fan-v1",
+          "evidenceHash": "053108b1050cf52101f950e8fcf376755e5a1ed6a29fb257d6c08ee46a8674a4",
+          "uncertaintyReasons": [],
+          "leafHash": "45f3dff2234e2b1fc62ddb0fa86194c58e57e2395cbec582c6d567c1cc9561fd",
+          "merkleProof": [
+            {
+              "side": "right",
+              "hash": "3934dbb9aedb2c31b9ba1c7bb9244ec000f4f52a76af421d59b03b3b2058633d"
+            },
+            {
+              "side": "right",
+              "hash": "afba3924c7113bf8e40c1a915a954b10442658132a70cafbb41aefade446a817"
+            }
+          ]
+        },
+        {
+          "seq": 2,
+          "startMs": 5000,
+          "endMs": 20000,
+          "state": "ACTIVE_CONFIDENT",
+          "confidence": 0.96,
+          "qualityFlags": [],
+          "modelVersion": "ref-fan-v1",
+          "evidenceHash": "688e6f2ba2c5c4cf75d608e0cba605de509ac902a0180960d5bd2898535ae751",
+          "uncertaintyReasons": [],
+          "leafHash": "3934dbb9aedb2c31b9ba1c7bb9244ec000f4f52a76af421d59b03b3b2058633d",
+          "merkleProof": [
+            {
+              "side": "left",
+              "hash": "45f3dff2234e2b1fc62ddb0fa86194c58e57e2395cbec582c6d567c1cc9561fd"
+            },
+            {
+              "side": "right",
+              "hash": "afba3924c7113bf8e40c1a915a954b10442658132a70cafbb41aefade446a817"
+            }
+          ]
+        },
+        {
+          "seq": 3,
+          "startMs": 20000,
+          "endMs": 30000,
+          "state": "IDLE",
+          "confidence": 0.4,
+          "qualityFlags": [],
+          "modelVersion": "ref-fan-v1",
+          "evidenceHash": "408b451fa1dc2451cb6d7f227962ebf483a0c3fed941db7b4c69308c4722d201",
+          "uncertaintyReasons": [],
+          "leafHash": "f39cc2f44b2f56bcb13164672d927bea33471059b69b011fc2690c9b37bed83e",
+          "merkleProof": [
+            {
+              "side": "right",
+              "hash": "f9b8aa98749ef89f304864dc3570fea99880d272659766c8e477560260abae4b"
+            },
+            {
+              "side": "left",
+              "hash": "b2800f25fca75840018ac283074963a005d6ee102aa6a068ddefb92d812ced73"
+            }
+          ]
+        },
+        {
+          "seq": 4,
+          "startMs": 30000,
+          "endMs": 35000,
+          "state": "ACTIVE_CONFIDENT",
+          "confidence": 0.95,
+          "qualityFlags": [],
+          "modelVersion": "ref-fan-v1",
+          "evidenceHash": "539bcb7e9f9bb861c732939c7004b39db277be8780e8e08a8439185c9bbe2244",
+          "uncertaintyReasons": [],
+          "leafHash": "f9b8aa98749ef89f304864dc3570fea99880d272659766c8e477560260abae4b",
+          "merkleProof": [
+            {
+              "side": "left",
+              "hash": "f39cc2f44b2f56bcb13164672d927bea33471059b69b011fc2690c9b37bed83e"
+            },
+            {
+              "side": "left",
+              "hash": "b2800f25fca75840018ac283074963a005d6ee102aa6a068ddefb92d812ced73"
+            }
+          ]
+        }
+      ],
+      "merkle": {
+        "schema": "whirr.merkle.v1",
+        "algorithm": "SHA-256",
+        "leafSchema": "whirr.evidence-leaf.v1",
+        "leafCount": 4,
+        "root": "90edd62c9b45a8b19fb5e0d3daa5c920ac4565eecc8f50bf7172018072665a9f"
+      },
+      "model": {
+        "version": "ref-fan-v1",
+        "hash": "cdede83d64d0775a74bbb82ff6f349d9b9917ba29053e764c9b78ecdd782879d",
+        "status": "READY",
+        "provenance": "SYNTHETIC_REFERENCE",
+        "precision": 0.9629955947136564,
+        "recall": 0.9715555555555555,
+        "falseBillableRatio": 0.018040268456375838,
+        "takeCount": 16,
+        "featureSpecVersion": "whirr-features-v1",
+        "datasetHash": "4d7f3ce418e829c23b7c61ff0320c65d8d472a4df682f7ca070094a91545a73b"
+      },
+      "terms": {
+        "id": "trm_reference_fan",
+        "hash": "1ddafe53cdb612edc25de62e4660328c1aca83618bffeaa55dc1da3247c06840",
+        "currency": "USD",
+        "minorPerMinute": 20,
+        "capMinor": 500,
+        "version": 1
+      },
+      "pricing": {
+        "currency": "USD",
+        "minorPerMinute": 20,
+        "capMinor": 500,
+        "baseQuoteMinor": 7,
+        "creditMinor": 0,
+        "quoteMinor": 7,
+        "rounding": "ROUND_ONCE_AT_END",
+        "formula": "round_half_up(20 × 20000 / 60000) = 7 minor; min(cap 500) = 7; minus credit 0 = 7"
+      },
+      "payment": {
+        "state": "CAPTURE_COMPLETED",
+        "mode": "PAYPAL_SANDBOX",
+        "orderId": "REDACTED-0118",
+        "authorizationId": "REDACTED-894R",
+        "captureId": "REDACTED-0327",
+        "refundId": null,
+        "refundMinor": null,
+        "providerStatus": "COMPLETED",
+        "providerReconciledAt": "2026-11-08T23:25:47.514Z",
+        "capturedMinor": 7
+      },
+      "trust": [
+        {
+          "domain": "INTEGRITY",
+          "status": "VERIFIED_OFFLINE",
+          "detail": "ECDSA P-256 envelope, canonical JSON and a Merkle root over 4 interval leaves (90edd62c9b45a8b1…)."
+        },
+        {
+          "domain": "SENSING",
+          "status": "DECLARED",
+          "detail": "No capture claim is stored for this session. Sensing is declared by the installation but cannot be attributed to a microphone path."
+        },
+        {
+          "domain": "PAYMENT",
+          "status": "NOT_VERIFIABLE_OFFLINE",
+          "detail": "Offline verification cannot query PayPal. Provider status is installation-recorded; only live reconciliation can claim provider confirmation."
+        }
+      ],
+      "verification": {
+        "verifier": "whirr-offline-v3",
+        "independentOfApplication": true,
+        "offline": true,
+        "instructions": [
+          "Open /verify-offline.html in a modern browser, or run npm run proof:verify -- <bundle.json>.",
+          "The verifier checks the ECDSA envelope, receipt arithmetic, nested proof and every Merkle inclusion proof.",
+          "Pin the installation key fingerprint out of band when the signer is known. Without a pin the key is self-attested.",
+          "Payment must be reconciled online with PayPal; an offline bundle cannot prove provider settlement."
+        ],
+        "keyPinning": "Optional: supply a trusted key ID. A bundle signed by a different key fails pinning even if its embedded signature is internally consistent."
+      },
+      "limitations": [
+        "This bundle is signed installation attestation. It proves which local key signed these bytes, not third-party identity or physical truth.",
+        "Offline verification cannot query PayPal. A payment reference is installation-recorded unless separately reconciled with the provider.",
+        "No capture provenance claim is stored; treat sensing attribution as unverified.",
+        "Audio is not included and was never uploaded. The record contains acoustic features, state intervals and quality flags only.",
+        "The acoustic passport is a calibration-fit similarity gate, not anti-spoofing. Playback or a similar machine can be mistaken for the enrolled object.",
+        "This is the redacted public bundle: renter reference and full provider identifiers are removed.",
+        "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+        "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+        "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+        "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+        "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+        "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+        "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser."
+      ],
+      "attestation": "Signed by this Whirr installation. The integrity domain is independently checkable from these bytes; sensing is a signed client claim; payment is installation-recorded and not verified offline."
+    },
+    "signature": "FVGgpY60YmFzoIPLCuuxdJvt88tLMqEZaJ7GGZDLD9TSRgGtIezvrjotVOQV8t7OGDahR2v3dO1KLQsEkUsFuQ=="
+  },
+  "bundleVerification": {
+    "valid": true,
+    "checks": [
+      {
+        "id": "schema",
+        "label": "Signed document envelope",
+        "pass": true,
+        "detail": "Signature and key identifier verify."
+      },
+      {
+        "id": "bundle_schema",
+        "label": "Proof bundle v3 schema",
+        "pass": true,
+        "detail": "Recognised whirr.proof-bundle.v3 payload."
+      },
+      {
+        "id": "key_pin",
+        "label": "Key pinning (optional)",
+        "pass": true,
+        "detail": "No out-of-band key fingerprint was supplied. This is a self-attested installation key; pinning is required to detect key substitution."
+      },
+      {
+        "id": "trust_domains",
+        "label": "Separate integrity, sensing and payment trust domains",
+        "pass": true,
+        "detail": "INTEGRITY, SENSING, PAYMENT"
+      },
+      {
+        "id": "payment_offline",
+        "label": "Payment is not claimed as verified offline",
+        "pass": true,
+        "detail": "Offline verification cannot query PayPal. Provider status is installation-recorded; only live reconciliation can claim provider confirmation."
+      },
+      {
+        "id": "bundle_receipt",
+        "label": "Receipt present",
+        "pass": true,
+        "detail": "Receipt rcp_81461bd235."
+      },
+      {
+        "id": "nested_receipt_proof",
+        "label": "Nested receipt proof signature",
+        "pass": true,
+        "detail": "The embedded receipt proof has its own valid installation signature."
+      },
+      {
+        "id": "receipt_proof_binding",
+        "label": "Receipt proof binds the full receipt",
+        "pass": true,
+        "detail": "proof receiptHash 0deac99e03c127a0… / receipt 0deac99e03c127a0…"
+      },
+      {
+        "id": "nested_passport",
+        "label": "Nested passport signature",
+        "pass": true,
+        "detail": "The embedded acoustic passport has a valid installation signature."
+      },
+      {
+        "id": "redaction",
+        "label": "Public redaction applied",
+        "pass": true,
+        "detail": "The public bundle removes the renter reference and full provider identifiers. Redaction is covered by the outer signature."
+      },
+      {
+        "id": "bundle_quote",
+        "label": "Bundle quote arithmetic and cap",
+        "pass": true,
+        "detail": "rate 20 × 20000 ms, credit 0, reference base 7 → 7 minor (document says 7, cap 500)."
+      },
+      {
+        "id": "payment_binding",
+        "label": "Payment block matches the receipt",
+        "pass": true,
+        "detail": "receipt PAYPAL_SANDBOX / CAPTURE_COMPLETED; bundle PAYPAL_SANDBOX / CAPTURE_COMPLETED."
+      },
+      {
+        "id": "capture_claim",
+        "label": "Capture provenance",
+        "pass": true,
+        "detail": "No capture claim is present. The bundle does not attribute the intervals to a particular microphone path."
+      },
+      {
+        "id": "interval_count",
+        "label": "Interval ledger matches the receipt",
+        "pass": true,
+        "detail": "4 bundle interval(s), 4 receipt interval(s), leaf count 4."
+      },
+      {
+        "id": "merkle",
+        "label": "Every interval Merkle proof reaches the signed root",
+        "pass": true,
+        "detail": "All 4 inclusion proof(s) verify; root 90edd62c9b45a8b1…"
+      },
+      {
+        "id": "ledger",
+        "label": "Interval ledger matches the receipt timeline",
+        "pass": true,
+        "detail": "Sequence, timestamps, states, confidence, flags and explanations match the receipt exactly."
+      },
+      {
+        "id": "limitations",
+        "label": "Limitations and verification instructions present",
+        "pass": true,
+        "detail": "Offline verification instructions are present."
+      },
+      {
+        "id": "no_audio",
+        "label": "No raw audio embedded",
+        "pass": true,
+        "detail": "The bundle contains interval metadata, hashes and feature explanations only."
+      }
+    ],
+    "trust": [
+      {
+        "domain": "INTEGRITY",
+        "status": "VERIFIED_OFFLINE",
+        "detail": "ECDSA P-256 envelope, canonical JSON and a Merkle root over 4 interval leaves (90edd62c9b45a8b1…)."
+      },
+      {
+        "domain": "SENSING",
+        "status": "DECLARED",
+        "detail": "No capture claim is stored for this session. Sensing is declared by the installation but cannot be attributed to a microphone path."
+      },
+      {
+        "domain": "PAYMENT",
+        "status": "NOT_VERIFIABLE_OFFLINE",
+        "detail": "Offline verification cannot query PayPal. Provider status is installation-recorded; only live reconciliation can claim provider confirmation."
+      }
+    ],
+    "limitations": [
+      "This bundle is signed installation attestation. It proves which local key signed these bytes, not third-party identity or physical truth.",
+      "Offline verification cannot query PayPal. A payment reference is installation-recorded unless separately reconciled with the provider.",
+      "No capture provenance claim is stored; treat sensing attribution as unverified.",
+      "Audio is not included and was never uploaded. The record contains acoustic features, state intervals and quality flags only.",
+      "The acoustic passport is a calibration-fit similarity gate, not anti-spoofing. Playback or a similar machine can be mistaken for the enrolled object.",
+      "This is the redacted public bundle: renter reference and full provider identifiers are removed.",
+      "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+      "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+      "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+      "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+      "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+      "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+      "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser."
+    ]
+  },
+  "requiredForClosure": [
+    "Three separate genuine live ON/OFF trials on a physical object.",
+    "Capture provenance CLIENT_CLAIMED_LIVE_MICROPHONE for each trial.",
+    "Observed classification and any passport mismatches recorded without editing.",
+    "A named reviewer and date, in docs/evidence/gate-a.json."
+  ]
+}
