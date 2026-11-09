@@ -305,6 +305,26 @@ export async function ensureProofBundle(
   const capture = captureClaim(session);
   const existing = ctx.store.get<BundleRow>('SELECT * FROM proof_bundles WHERE session_id = ?', session.id);
   const bundleId = existing?.id ?? newId('bnd');
+  if (existing) {
+    try {
+      const storedAuthenticated = JSON.parse(existing.document_json) as SignedProofBundle;
+      const storedPublic = JSON.parse(existing.public_document_json) as SignedProofBundle;
+      const stable =
+        storedAuthenticated.payload.receipt.evidenceSha256 === receipt.evidenceSha256 &&
+        storedPublic.payload.receipt.evidenceSha256 === receipt.evidenceSha256 &&
+        storedAuthenticated.payload.merkle.root === root &&
+        storedPublic.payload.merkle.root === root &&
+        hashCanonical(storedAuthenticated.payload.passport ?? null) === hashCanonical(passport ?? null) &&
+        hashCanonical(storedPublic.payload.passport ?? null) === hashCanonical(passport ?? null) &&
+        hashCanonical(storedAuthenticated.payload.capture ?? null) === hashCanonical(capture ?? null) &&
+        hashCanonical(storedPublic.payload.capture ?? null) === hashCanonical(capture ?? null);
+      // Same evidence must produce the same signed bytes. Re-signing an
+      // unchanged bundle on every GET made its identifier non-reproducible.
+      if (stable) return { authenticated: storedAuthenticated, public: storedPublic };
+    } catch {
+      // A malformed stored bundle is replaced below from authoritative rows.
+    }
+  }
   const createdAt = ctx.now().toISOString();
   const authenticatedPayload = buildPayload({
     ctx,

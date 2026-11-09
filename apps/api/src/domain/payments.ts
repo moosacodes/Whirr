@@ -47,10 +47,25 @@ function ensureOperation(
   ctx: AppContext,
   sessionId: string,
   type: PaymentOperationRow['operation_type'],
-  input: { requestId: string; amountMinor: number | null; currency: Currency; state?: string },
+  input: {
+    requestId: string;
+    amountMinor: number | null;
+    currency: Currency;
+    state?: string;
+    allowRequestIdChange?: boolean;
+  },
 ): PaymentOperationRow {
   const existing = getOperation(ctx, sessionId, type);
   const now = ctx.now().toISOString();
+  if (existing && existing.request_id !== input.requestId && !input.allowRequestIdChange) {
+    // A retry must reuse the provider idempotency key. Allowing a new key for
+    // the same capture/refund/void would turn one business operation into two
+    // unrelated provider requests.
+    throw errors.conflict(
+      'PAYMENT_OPERATION_CONFLICT',
+      `A ${type.toLowerCase().replaceAll('_', ' ')} already exists with a different provider request id. Reconcile it instead of starting a second operation.`,
+    );
+  }
   if (existing) {
     ctx.store.run(
       `UPDATE payment_operations SET request_id = ?, state = ?, amount_minor = ?, currency = ?,
@@ -256,6 +271,9 @@ export async function createAuthorizationOrder(
     amountMinor: session.cap_minor,
     currency: session.currency,
     state: 'PENDING',
+    // A renewed order intentionally uses a new idempotency key while retaining
+    // one operation row for the session's order history.
+    allowRequestIdChange: true,
   });
   try {
     const { order, approveUrl } = await paypal.createOrder({
@@ -456,8 +474,13 @@ export async function capturePayment(
       'The PayPal authorization expired before capture. Reauthorize before metering or open a new session; no charge was made.',
     );
   }
-  if (session.state !== 'REVIEWED') {
+  const retryingLostCapture =
+    session.state === 'SETTLEMENT_PENDING' && session.payment_state === 'CAPTURE_REQUESTED';
+  if (session.state !== 'REVIEWED' && !retryingLostCapture) {
     throw errors.conflict('REVIEW_REQUIRED', 'The renter must review and accept the bill before capture.');
+  }
+  if (retryingLostCapture && (!session.reviewed_quote_hash || session.reviewed_quote_hash !== session.quote_hash)) {
+    throw errors.conflict('QUOTE_CHANGED', 'The reviewed quote no longer matches this capture attempt. Reconcile before retrying.');
   }
   if (session.quote_minor <= 0) {
     throw errors.conflict('ZERO_CHARGE', 'A zero bill must be resolved by voiding the authorization, never captured.');
@@ -657,7 +680,8 @@ export async function reauthorizePayment(
   setPayment(ctx, session.id, {
     paymentState: 'NONE',
     state: 'CONSENTED',
-    orderId: null,
+    // Retain the old order id so the replacement order gets a new idempotency
+    // key. Clearing it would replay the original order request id.
     approveUrl: null,
     authorizationId: null,
     providerStatus: oldAuthorization ? `REAUTHORIZED_AFTER_EXPIRY:${oldAuthorization}` : 'REAUTHORIZED_AFTER_EXPIRY',
@@ -769,19 +793,43 @@ export async function refundPayment(
       currency: session.currency,
       requestId,
     });
-    const status = providerStatusOf(refund);
-    recordResource(ctx, session.id, 'REFUND', refund.id, status, refundAmount, session.currency, refund);
+    // The POST representation can be minimal. Read the authoritative refund
+    // before claiming a completed or partial refund.
+    const authoritative = await paypal.getRefund(refund.id);
+    const status = providerStatusOf(authoritative);
+    recordResource(ctx, session.id, 'REFUND', authoritative.id, status, refundAmount, session.currency, authoritative);
+    if (status === 'COMPLETED' && !amountMatches(authoritative.amount, refundAmount, session.currency)) {
+      finishOperation(ctx, operation, { state: 'UNRESOLVED', providerRef: authoritative.id, response: authoritative });
+      setPayment(ctx, session.id, {
+        paymentState: 'UNRESOLVED',
+        refundId: authoritative.id,
+        providerStatus: 'REFUND_AMOUNT_MISMATCH',
+        failureReason: 'PayPal refunded a different amount or currency than requested.',
+      });
+      throw errors.provider(
+        'PayPal completed a refund whose amount or currency did not match the request. Operator reconciliation is required.',
+        { refundId: authoritative.id },
+      );
+    }
     const full = refundAmount === session.captured_minor;
     finishOperation(ctx, operation, {
       state: status === 'COMPLETED' ? 'COMPLETED' : status === 'PENDING' ? 'PENDING' : 'FAILED',
-      providerRef: refund.id,
-      response: refund,
+      providerRef: authoritative.id,
+      response: authoritative,
     });
+    if (status !== 'COMPLETED' && status !== 'PENDING') {
+      setPayment(ctx, session.id, {
+        paymentState: 'CAPTURE_COMPLETED',
+        providerStatus: `REFUND_${status}`,
+        failureReason: `PayPal refund status ${status}; the original capture remains recorded.`,
+      });
+      throw errors.provider(`PayPal did not complete the refund (status ${status}). The capture remains unchanged.`);
+    }
     setPayment(ctx, session.id, {
       paymentState: status === 'COMPLETED' ? 'REFUNDED' : 'REFUND_REQUESTED',
-      refundId: refund.id,
+      refundId: authoritative.id,
       providerStatus: `REFUND_${status}`,
-      failureReason: status === 'FAILED' ? 'PayPal rejected the refund' : null,
+      failureReason: null,
     });
     ctx.store.run('UPDATE sessions SET provider_reconciled_at = ? WHERE id = ?', ctx.now().toISOString(), session.id);
     const updated = requireSession(ctx, session.id);
@@ -792,7 +840,7 @@ export async function refundPayment(
       action: 'payment.refund_requested',
       subjectType: 'session',
       subjectId: session.id,
-      metadata: { refundId: refund.id, refundAmount, full, providerStatus: status },
+      metadata: { refundId: authoritative.id, refundAmount, full, providerStatus: status },
     }, ctx.now());
     return buildSessionView(ctx, updated, { type: 'operator', id: operatorId });
   } catch (error) {
