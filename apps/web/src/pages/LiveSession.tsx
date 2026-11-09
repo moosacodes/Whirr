@@ -483,7 +483,7 @@ export function LiveSession() {
     setBusy('status');
     setError(null);
     try {
-      await api(`/api/sessions/${id}/paypal/status?reconcile=1`);
+      await api(`/api/sessions/${id}/paypal/reconcile`, { method: 'POST' });
       await load();
     } catch (err) {
       setError(errorMessage(err));
