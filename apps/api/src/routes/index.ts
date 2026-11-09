@@ -67,11 +67,13 @@ import {
   demoComplete,
   getPaymentStatus,
   refundPayment,
+  reauthorizePayment,
   voidPayment,
 } from '../domain/payments.ts';
 import { receiptForSession, redactReceipt, receiptJsonDownload } from '../domain/receipts.ts';
 import { passportView } from '../domain/passport.ts';
 import { ensureReceiptProof, proofById } from '../domain/proofs.ts';
+import { ensureProofBundle, proofBundleForSession, publicProofBundleById } from '../domain/bundles.ts';
 import { createHold, releaseHold } from '../domain/holds.ts';
 import { listShelf, requireShelfObject } from '../domain/shelf.ts';
 import { drainOutbox, ingestWebhook } from '../domain/webhooks.ts';
@@ -561,6 +563,13 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
     return authorizeReturnPayment(ctx, renter.id, id);
   });
 
+  app.post('/api/sessions/:id/paypal/reauthorize', async (req) => {
+    limitRequest(ctx, req, 'paypal-reauthorize', 10, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    return reauthorizePayment(ctx, { type: 'renter', id: renter.id }, id, requestOrigin(ctx, req));
+  });
+
   app.get('/api/sessions/:id/paypal/status', async (req) => {
     limitRequest(ctx, req, 'paypal-status', 60, 60_000);
     const { id } = req.params as { id: string };
@@ -649,12 +658,19 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
 
   app.get('/api/sessions/:id/proof', async (req) => {
     const { id } = req.params as { id: string };
-    const { actor, session } = sessionActor(ctx, req, id);
+    const { session } = sessionActor(ctx, req, id);
     if (!receiptReady(session)) throw errors.conflict('RECEIPT_NOT_READY', 'Stop the session before requesting a proof.');
     const result = receiptForSession(ctx, session);
-    const proof = await ensureReceiptProof(ctx, session, result.receipt);
-    void actor;
-    return proof;
+    return ensureReceiptProof(ctx, session, result.receipt);
+  });
+
+  app.get('/api/sessions/:id/bundle', async (req) => {
+    limitRequest(ctx, req, 'bundle', 30, 60_000);
+    const { id } = req.params as { id: string };
+    const { session } = sessionActor(ctx, req, id);
+    if (!receiptReady(session)) throw errors.conflict('RECEIPT_NOT_READY', 'Stop the session before requesting a proof bundle.');
+    const { receipt } = receiptForSession(ctx, session);
+    return (await ensureProofBundle(ctx, session, receipt)).authenticated;
   });
 
   app.get('/api/proofs/:id', async (req) => {
@@ -662,6 +678,14 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
     const proof = proofById(ctx, id);
     if (!proof) throw errors.notFound('Proof not found');
     return proof;
+  });
+
+  app.get('/api/proof-bundles/:id', async (req) => {
+    limitRequest(ctx, req, 'public-bundle', 60, 60_000);
+    const { id } = req.params as { id: string };
+    const bundle = publicProofBundleById(ctx, id);
+    if (!bundle) throw errors.notFound('Proof bundle not found');
+    return bundle;
   });
 
   app.get('/api/sessions/:id/report', async (req) => {
