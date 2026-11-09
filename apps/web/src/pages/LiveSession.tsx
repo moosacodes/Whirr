@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage } from '../lib/api.ts';
 import { useAuth } from '../lib/auth.tsx';
-import { MeterController } from '../lib/meter-controller.ts';
+import { MeterController, type SensorDiagnostics, type UploadState } from '../lib/meter-controller.ts';
 import { MicrophoneEngine } from '../lib/audio.ts';
 import type { IntervalExplanation, PreflightView, SessionView } from '../../../../packages/contracts/src/types.ts';
 import type { ModelArtifact } from '../../../../packages/audio/src/classifier.ts';
@@ -65,6 +65,9 @@ export function LiveSession() {
   const [bands, setBands] = useState<number[]>(Array.from({ length: 8 }, () => 0));
   const [explanation, setExplanation] = useState<IntervalExplanation | null>(null);
   const [preflightBusy, setPreflightBusy] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<SensorDiagnostics | null>(null);
+  const [uploadState, setUploadState] = useState<UploadState>('ONLINE');
+  const [lastFlags, setLastFlags] = useState<string[]>([]);
 
   const viewRef = useRef<SessionView | null>(null);
   const modelRef = useRef<ModelArtifact | null>(null);
@@ -156,8 +159,13 @@ export function LiveSession() {
         currency: current.terms.currency,
         onState: setMeterState,
         onBillable: setLocalBillable,
-        onInterval: (interval) => setLocalIntervals((previous) => [...previous.slice(-600), interval]),
+        onInterval: (interval) => {
+          setLocalIntervals((previous) => [...previous.slice(-600), interval]);
+          setLastFlags(interval.qualityFlags);
+        },
         onLevel: setLevel,
+        onDiagnostics: setDiagnostics,
+        onUploadState: setUploadState,
         onBands: setBands,
         onExplanation: setExplanation,
         onSoundprint: (score, mismatch) => {
@@ -214,6 +222,9 @@ export function LiveSession() {
       setSoundprintMismatch(false);
       setBands(Array.from({ length: 8 }, () => 0));
       setExplanation(null);
+      setLastFlags([]);
+      setDiagnostics(null);
+      setUploadState('ONLINE');
       setMeterState('DISCONNECTED');
       const controller = makeController(current.meterClockMs);
       controllerRef.current = controller;
@@ -239,12 +250,16 @@ export function LiveSession() {
     setError(null);
     const frames: Array<{ features: number[]; flags: string[] }> = [];
     let engine: MicrophoneEngine | null = null;
+    let deviceLabel: string | null = null;
+    let sampleRate: number | null = null;
     try {
       engine = new MicrophoneEngine({
         onFrame: (frame) => frames.push({ features: frame.features, flags: frame.flags }),
         onError: (message) => setError(message),
       });
       await engine.start();
+      deviceLabel = engine.deviceLabel;
+      sampleRate = engine.sampleRate;
       await new Promise((resolve) => setTimeout(resolve, 4_000));
       await engine.stop();
       engine = null;
@@ -280,6 +295,16 @@ export function LiveSession() {
           silentRatio,
           flags: [...new Set(frames.flatMap((frame) => frame.flags))].slice(0, 12),
           detail: 'Local room check before sensing.',
+          capture: {
+            schema: 'whirr.capture-claim.v1',
+            provenance: 'CLIENT_CLAIMED_LIVE_MICROPHONE',
+            claimedAt: new Date().toISOString(),
+            deviceLabel,
+            sampleRate,
+            permission: 'GRANTED',
+            frameCount: frames.length,
+            note: 'Browser-reported capture metadata. This is client testimony, not physical proof that the object was present or running.',
+          },
         },
       });
       const current = viewRef.current;
@@ -313,6 +338,8 @@ export function LiveSession() {
       setSoundprintMismatch(false);
       setBands(Array.from({ length: 8 }, () => 0));
       setExplanation(null);
+      setLastFlags([]);
+      setDiagnostics(null);
       setMeterState('DISCONNECTED');
       try {
         const next = await api<SessionView>(`/api/sessions/${id}/pause`, {
@@ -355,6 +382,8 @@ export function LiveSession() {
       setSoundprintMismatch(false);
       setBands(Array.from({ length: 8 }, () => 0));
       setExplanation(null);
+      setLastFlags([]);
+      setDiagnostics(null);
       setMeterState('DISCONNECTED');
       const next = await api<SessionView>(`/api/sessions/${id}/stop`, { method: 'POST' });
       applyView(next);
@@ -463,6 +492,30 @@ export function LiveSession() {
     }
   };
 
+  const reauthorize = async () => {
+    setBusy('reauthorize');
+    setError(null);
+    try {
+      const result = await api<{ orderId: string; approveUrl: string | null }>(
+        `/api/sessions/${id}/paypal/reauthorize`,
+        { method: 'POST' },
+      );
+      await load();
+      if (!result.approveUrl) throw new Error('PayPal Sandbox did not return a replacement approval URL.');
+      const approval = new URL(result.approveUrl);
+      if (
+        approval.protocol !== 'https:' ||
+        (approval.hostname !== 'sandbox.paypal.com' && !approval.hostname.endsWith('.sandbox.paypal.com'))
+      ) {
+        throw new Error('PayPal Sandbox returned an unrecognised approval host.');
+      }
+      window.location.assign(approval.toString());
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(null);
+    }
+  };
+
   const useDemo = async () => {
     setBusy('demo');
     setError(null);
@@ -545,6 +598,24 @@ export function LiveSession() {
         <SandboxBanner configured={view.sandbox.configured} />
         {error ? <Notice tone="danger">{error}</Notice> : null}
         {notice ? <Notice tone="warn">{notice}</Notice> : null}
+        {view.captureClaim ? (
+          <section className="capture-claim" aria-label="Capture provenance">
+            <div className="row row--between">
+              <span className="eyebrow">Capture provenance · client-reported</span>
+              <span className={`chip ${view.captureClaim.provenance === 'CLIENT_CLAIMED_LIVE_MICROPHONE' ? 'chip--ok' : 'chip--warn'}`}>
+                {view.captureClaim.provenance.replaceAll('_', ' ').toLowerCase()}
+              </span>
+            </div>
+            <p className="small" style={{ margin: '0.35rem 0 0' }}>
+              {view.captureClaim.note}
+            </p>
+            <p className="tiny mono muted" style={{ margin: '0.35rem 0 0' }}>
+              {view.captureClaim.deviceLabel ?? 'device label withheld'} ·{' '}
+              {view.captureClaim.sampleRate ? `${view.captureClaim.sampleRate} Hz` : 'sample rate unknown'} ·{' '}
+              permission {view.captureClaim.permission.toLowerCase()}
+            </p>
+          </section>
+        ) : null}
       </div>
 
       {terminal ? (
@@ -567,6 +638,11 @@ export function LiveSession() {
               <LinkButton to={`/receipt/${id}`} variant="secondary">
                 Evidence receipt
               </LinkButton>
+              {view.intervals.length > 0 ? (
+                <LinkButton to={`/session/${id}/replay`} variant="secondary">
+                  Interval replay
+                </LinkButton>
+              ) : null}
             </div>
           </div>
           {view.intervals.length > 0 ? (
@@ -647,6 +723,27 @@ export function LiveSession() {
                 <span />
                 <span />
               </div>
+              <div className="listening-stage">
+                <div className={`listening-stage__object ${sensing ? 'is-listening' : ''}`}>
+                  <ObjectGlyph glyph={view.objectGlyph} size={94} tone="accent" />
+                </div>
+                <div className="listening-stage__copy">
+                  <span className="eyebrow">Listening room · {sensing ? 'live' : 'closed'}</span>
+                  <strong>{view.objectName}</strong>
+                  <span className="tiny muted">
+                    {sensing
+                      ? soundprintScore === null
+                        ? 'analysing the room on this device'
+                        : `${Math.round(soundprintScore * 100)}% passport similarity`
+                      : 'the microphone is released and no intervals are uploading'}
+                  </span>
+                </div>
+                <div className="listening-stage__signal" aria-hidden="true">
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <span key={index} style={{ opacity: sensing ? 1 : 0.2 }} />
+                  ))}
+                </div>
+              </div>
               <div className="row row--between">
                 <MeterStateBadge state={sensing ? meterState : 'DISCONNECTED'} />
                 <span className="tiny mono muted">
@@ -713,8 +810,58 @@ export function LiveSession() {
                   <span className="tiny mono muted">{sensing ? 'on-device' : 'microphone closed'}</span>
                 </div>
                 <SpectralWaterfall bands={bands} state={sensing ? meterState : 'DISCONNECTED'} height={126} />
-                {explanation ? <ExplanationCard explanation={explanation} compact /> : null}
+                {explanation ? (
+                  <div className="stack" style={{ gap: '0.3rem' }}>
+                    <span className="eyebrow">Interval explanation · aggregated</span>
+                    <ExplanationCard explanation={explanation} compact />
+                  </div>
+                ) : null}
+                {lastFlags.some((flag) => ['UNKNOWN_OBJECT', 'LOW_CONFIDENCE', 'SOUNDPRINT_MISMATCH', 'COMPETING_SOUND'].includes(flag)) ? (
+                  <div className="row" style={{ gap: '0.35rem', flexWrap: 'wrap' }}>
+                    <span className="eyebrow">Uncertainty</span>
+                    {[...new Set(lastFlags)]
+                      .filter((flag) => ['UNKNOWN_OBJECT', 'LOW_CONFIDENCE', 'SOUNDPRINT_MISMATCH', 'COMPETING_SOUND'].includes(flag))
+                      .map((flag) => (
+                        <span key={flag} className="chip chip--warn">
+                          {flag.replaceAll('_', ' ').toLowerCase()}
+                        </span>
+                      ))}
+                  </div>
+                ) : null}
               </div>
+
+              <details className="details diagnostics-drawer">
+                <summary>
+                  Sensor diagnostics
+                  <span className={`chip ${uploadState === 'ONLINE' ? 'chip--ok' : uploadState === 'RETRYING' ? 'chip--warn' : 'chip--danger'}`}>
+                    {uploadState.toLowerCase()}
+                  </span>
+                </summary>
+                <dl className="kv" style={{ marginTop: '0.7rem' }}>
+                  <dt>Device</dt>
+                  <dd>{diagnostics?.deviceLabel ?? 'not reported'}</dd>
+                  <dt>Sample rate</dt>
+                  <dd>{diagnostics?.sampleRate ? `${diagnostics.sampleRate} Hz` : '—'}</dd>
+                  <dt>Permission</dt>
+                  <dd>{diagnostics?.permission.toLowerCase() ?? 'not requested'}</dd>
+                  <dt>Frames</dt>
+                  <dd className="mono">{diagnostics?.frames ?? 0}</dd>
+                  <dt>Level</dt>
+                  <dd className="mono">{diagnostics ? diagnostics.level.toFixed(4) : '—'}</dd>
+                  <dt>Queue depth</dt>
+                  <dd className="mono">{diagnostics?.queueDepth ?? 0}</dd>
+                  <dt>Upload failures</dt>
+                  <dd className="mono">{diagnostics?.uploadFailures ?? 0}</dd>
+                  <dt>Last frame</dt>
+                  <dd className="mono">{diagnostics?.lastFrameAgeMs === null || diagnostics?.lastFrameAgeMs === undefined ? '—' : `${diagnostics.lastFrameAgeMs} ms ago`}</dd>
+                  <dt>Passport</dt>
+                  <dd className="mono">{diagnostics?.passportScore === null || diagnostics?.passportScore === undefined ? '—' : `${(diagnostics.passportScore * 100).toFixed(0)}%`}</dd>
+                </dl>
+                <p className="tiny muted" style={{ marginBottom: 0 }}>
+                  Failed uploads are retained in memory and retried in order. They are never counted as billed until the
+                  server accepts them.
+                </p>
+              </details>
 
               {model?.soundprint ? (
                 <div className="passport-live">
@@ -873,12 +1020,25 @@ export function LiveSession() {
                   <dl className="kv">
                     <dt>Authorization</dt>
                     <dd className="mono tiny break">{view.paypal.authorizationId ?? view.paymentState}</dd>
+                    <dt>Expires</dt>
+                    <dd>{view.authorizationExpiresAt ? new Date(view.authorizationExpiresAt).toLocaleString() : 'not reported'}</dd>
                     <dt>Cap</dt>
                     <dd>{money(view.terms.capMinor, view.terms.currency)}</dd>
                     <dt>Billing path</dt>
                     <dd>{view.reviewMode === 'AUTO' ? 'automatic review' : 'operator approval required'}</dd>
                   </dl>
                 </div>
+                {view.authorizationExpired ? (
+                  <Notice tone="warn" title="Authorization expired.">
+                    No new intervals can be billed or captured. Reauthorize before metering; this replacement is only
+                    allowed because no usage or reviewed bill exists.
+                  </Notice>
+                ) : null}
+                {view.flags.canReauthorize ? (
+                  <Button onClick={() => void reauthorize()} loading={busy === 'reauthorize'} variant="money">
+                    Reauthorize in Sandbox <Icon name="external" size={15} />
+                  </Button>
+                ) : null}
                 <Button onClick={() => void startSensing()} loading={busy === 'start'} variant="money" size="lg">
                   <Icon name="mic" size={17} /> Start sensing
                 </Button>
@@ -988,6 +1148,36 @@ export function LiveSession() {
                 <li>Network loss → intervals queue in memory; uncaptured evidence is never billed.</li>
                 <li>Cap reached → session stops; capture cannot exceed the cap.</li>
               </ul>
+            </section>
+
+            <section className="card stack">
+              <div className="row row--between">
+                <h2 className="h3">Payment timeline</h2>
+                <span className="chip">{view.paymentState.replaceAll('_', ' ').toLowerCase()}</span>
+              </div>
+              {view.paymentTimeline.length === 0 ? (
+                <p className="small muted" style={{ margin: 0 }}>No provider operations recorded yet.</p>
+              ) : (
+                <ol className="payment-timeline">
+                  {view.paymentTimeline.map((event) => (
+                    <li key={event.id}>
+                      <span className={`payment-timeline__dot is-${event.state.toLowerCase()}`} aria-hidden="true" />
+                      <div>
+                        <strong className="tiny">
+                          {event.type.replaceAll('_', ' ').toLowerCase()} · {event.state.toLowerCase()}
+                        </strong>
+                        <p className="tiny muted" style={{ margin: 0 }}>{event.detail}</p>
+                        <span className="tiny mono muted">{new Date(event.at).toLocaleString()}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {view.authorizationExpiresAt ? (
+                <p className="tiny muted" style={{ margin: 0 }}>
+                  Authorization expiry is displayed as provided by PayPal. Metering and capture stop when it has passed.
+                </p>
+              ) : null}
             </section>
 
             {auth?.operator ? (

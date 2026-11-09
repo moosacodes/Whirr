@@ -224,6 +224,45 @@ export function Passport() {
           </div>
         </section>
 
+        <section className="card stack">
+          <div className="row row--between">
+            <div className="stack" style={{ gap: '0.25rem' }}>
+              <span className="eyebrow">Trust boundaries</span>
+              <h2 className="h3">Three claims, three different kinds of evidence.</h2>
+            </div>
+            <span className="chip">read this before relying on a proof</span>
+          </div>
+          <div className="passport-grid">
+            <div className="stack" style={{ gap: '0.4rem' }}>
+              <span className="chip chip--ok">Integrity</span>
+              <strong>Signature and history can be checked offline.</strong>
+              <p className="small muted" style={{ margin: 0 }}>
+                The passport and bundle signatures cover their payloads, and the bundle’s Merkle root covers its
+                interval ledger. Without a pinned key fingerprint, the installation key is self-attested; pinning
+                detects key substitution, not who owns the key.
+              </p>
+            </div>
+            <div className="stack" style={{ gap: '0.4rem' }}>
+              <span className="chip chip--warn">Sensing</span>
+              <strong>Capture provenance is signed client testimony.</strong>
+              <p className="small muted" style={{ margin: 0 }}>
+                Model pins, calibration hashes, interval evidence and the declared capture source travel with the
+                proof. A live-microphone claim is reported by the client; it is not physical proof, anti-spoofing or
+                a guarantee that the room contained only this object.
+              </p>
+            </div>
+            <div className="stack" style={{ gap: '0.4rem' }}>
+              <span className="chip chip--warn">Payment</span>
+              <strong>Offline verification cannot query PayPal.</strong>
+              <p className="small muted" style={{ margin: 0 }}>
+                A session bundle records payment references and the last observed provider state, but only an
+                online reconciliation can claim current provider confirmation. The passport itself makes no payment
+                claim.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <PassportProbe soundprint={soundprint} objectName={object.name} />
 
         <section className="card stack">
