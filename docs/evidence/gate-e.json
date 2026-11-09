@@ -1,0 +1,17 @@
+{
+  "schema": "whirr.gate-e.v1",
+  "status": "OPEN",
+  "publicHttps": false,
+  "verifiedSignedEvent": false,
+  "provider": null,
+  "verifiedAt": null,
+  "reason": "No public HTTPS ingress has received a genuine PayPal-signed webhook in this checkout. A loopback proxy or simulator is not evidence.",
+  "requiredForClosure": [
+    "Expose only POST /api/paypal/webhook through a public HTTPS endpoint.",
+    "Set PAYPAL_WEBHOOK_ID from the same PayPal Sandbox app and subscribe to capture/refund events.",
+    "Trigger a real Sandbox authorization/capture or refund and wait for PayPal delivery.",
+    "Preserve the accepted event ID, provider verification response, timestamp and redacted delivery evidence.",
+    "Set provider to PAYPAL, publicHttps and verifiedSignedEvent to true, and record verifiedAt."
+  ],
+  "closureRule": "Gate E requires a genuine signed delivery over public HTTPS. Mocks, manually posted events and the loopback proxy do not count."
+}
