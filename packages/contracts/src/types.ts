@@ -1,8 +1,23 @@
 import type { Currency, MeterState } from '../../meter/src/index.ts';
 import type { Soundprint } from '../../audio/src/soundprint.ts';
 import type { MerkleProofStep, SignedEnvelope } from '../../protocol/src/index.ts';
+import type { FieldTestStateView, FieldValidationSummary } from './field-types.ts';
 
 export type { Currency, MeterState };
+export type {
+  FieldGateView,
+  FieldRecordingQuality,
+  FieldTestReport,
+  FieldTestStateView,
+  FieldTestStatus,
+  FieldTimelineSegment,
+  FieldTrainingSummary,
+  FieldTrialKind,
+  FieldTrialMetrics,
+  FieldTrialStatus,
+  FieldTrialView,
+  FieldValidationSummary,
+} from './field-types.ts';
 
 export const TAKE_LABELS = ['idle', 'active', 'negative', 'transition'] as const;
 export type TakeLabel = (typeof TAKE_LABELS)[number];
@@ -351,6 +366,7 @@ export interface ServiceView {
     thirtyFiveSecondsMinor: number;
     fiveMinutesMinor: number;
   };
+  fieldValidation: FieldValidationSummary;
   limitations: string[];
   privacy: string[];
 }
@@ -713,6 +729,7 @@ export interface OwnerObjectView {
   calibrationPreview: CalibrationPreview;
   drift: DriftView;
   shelfListed: boolean;
+  fieldTest: FieldTestStateView;
 }
 
 export interface ObjectsResponse {
