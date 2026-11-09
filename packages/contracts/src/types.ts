@@ -480,6 +480,7 @@ export interface SessionView {
     canStop: boolean;
     canAcceptReview: boolean;
     canCapture: boolean;
+    canRetryCapture: boolean;
     canVoid: boolean;
     canApproveReview: boolean;
     awaitingOperator: boolean;
