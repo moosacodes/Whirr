@@ -116,6 +116,8 @@ export interface SessionRow {
   paypal_refund_id: string | null;
   provider_status: string | null;
   provider_reconciled_at: string | null;
+  authorization_expires_at: string | null;
+  capture_claim_json: string | null;
   captured_minor: number | null;
   evidence_hash: string | null;
   failure_reason: string | null;

@@ -31,6 +31,7 @@ import type {
   SessionView,
 } from '../../../../packages/contracts/src/types.ts';
 import { assertHoldAvailable, consumeHold } from './holds.ts';
+import { bundlePaymentTimeline } from './bundles.ts';
 import type { z } from 'zod';
 import type {
   consentSchema,
@@ -42,6 +43,10 @@ import type {
 const SESSION_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 const CLOCK_SKEW_GRACE_MS = 5_000;
 const MAX_ACTIVE_CLOCK_GRACE_MS = 1_500;
+
+function authorizationExpired(session: SessionRow, now: Date): boolean {
+  return Boolean(session.authorization_expires_at && Date.parse(session.authorization_expires_at) <= now.getTime());
+}
 
 type ConsentInput = z.infer<typeof consentSchema>;
 type IntervalBatch = z.infer<typeof intervalBatchSchema>;
@@ -256,15 +261,29 @@ export function recordPreflight(
   }
   const createdAt = ctx.now().toISOString();
   const summary = classifyPreflight(input);
+  const capture = input.capture
+    ? {
+        ...input.capture,
+        claimedAt: input.capture.claimedAt || createdAt,
+        note:
+          input.capture.provenance === 'CLIENT_CLAIMED_LIVE_MICROPHONE'
+            ? 'Client claims this capture came from a live microphone. This is signed testimony, not physical proof.'
+            : input.capture.note,
+      }
+    : undefined;
+  const storedSummary = { ...summary, ...(capture ? { capture } : {}) };
   ctx.store.run(
     `INSERT INTO session_preflights (session_id, status, summary_json, created_at)
      VALUES (?, ?, ?, ?)
      ON CONFLICT(session_id) DO UPDATE SET status = excluded.status, summary_json = excluded.summary_json, created_at = excluded.created_at`,
     session.id,
     summary.status,
-    JSON.stringify(summary),
+    JSON.stringify(storedSummary),
     createdAt,
   );
+  if (capture) {
+    ctx.store.run('UPDATE sessions SET capture_claim_json = ? WHERE id = ?', JSON.stringify(capture), session.id);
+  }
   appendAudit(ctx.store, {
     actorType: 'renter',
     actorId: renter.id,
@@ -273,7 +292,7 @@ export function recordPreflight(
     subjectId: session.id,
     metadata: { status: summary.status, frameCount: summary.frameCount, clippedRatio: summary.clippedRatio, silentRatio: summary.silentRatio },
   }, ctx.now());
-  return { ...summary, sessionId: session.id, createdAt };
+  return { ...storedSummary, sessionId: session.id, createdAt };
 }
 
 /**
@@ -351,7 +370,11 @@ export function buildSessionView(ctx: AppContext, session: SessionRow, actor: Ac
     ctx.config.cookieSecret,
   );
   const isOperator = actor.type === 'operator';
-  const paymentReady = session.payment_state === 'AUTHORIZED' || session.payment_state === 'DEMO_MODE';
+  const authorizationExpired = Boolean(
+    session.authorization_expires_at && Date.parse(session.authorization_expires_at) <= ctx.now().getTime()
+  );
+  const paymentReady =
+    (session.payment_state === 'AUTHORIZED' && !authorizationExpired) || session.payment_state === 'DEMO_MODE';
   const approved =
     session.review_mode === 'AUTO' || Boolean(session.operator_approved_at);
   const canCapture =
@@ -432,6 +455,16 @@ export function buildSessionView(ctx: AppContext, session: SessionRow, actor: Ac
     disputes,
     evidenceHash: session.evidence_hash,
     sensorMode: session.sensor_mode,
+    authorizationExpiresAt: session.authorization_expires_at,
+    authorizationExpired: Boolean(
+      session.authorization_expires_at && Date.parse(session.authorization_expires_at) <= ctx.now().getTime()
+    ),
+    captureClaim: session.capture_claim_json
+      ? (JSON.parse(session.capture_claim_json) as import('../../../../packages/contracts/src/types.ts').CaptureClaim)
+      : null,
+    proofBundleId:
+      ctx.store.get<{ id: string }>('SELECT id FROM proof_bundles WHERE session_id = ?', session.id)?.id ?? null,
+    paymentTimeline: bundlePaymentTimeline(ctx, session.id),
     flags: {
       canConsent: session.state === 'CREATED' && !session.consented_at,
       canCreateOrder:
@@ -449,6 +482,11 @@ export function buildSessionView(ctx: AppContext, session: SessionRow, actor: Ac
         paymentReady &&
         object.status === 'ACTIVE' &&
         Boolean(session.consented_at),
+      canReauthorize:
+        session.state === 'READY' &&
+        session.payment_state === 'AUTHORIZED' &&
+        authorizationExpired &&
+        ctx.config.paypal.configured,
       canPause: session.state === 'ACTIVE',
       canResume: session.state === 'PAUSED',
       canStop: session.state === 'ACTIVE' || session.state === 'PAUSED',
@@ -636,6 +674,9 @@ export function startSession(ctx: AppContext, renter: UserRow, sessionId: string
   }
   if (session.payment_state !== 'AUTHORIZED' && session.payment_state !== 'DEMO_MODE') {
     throw errors.conflict('PAYMENT_NOT_READY', 'Buyer approval is required before sensing starts.');
+  }
+  if (session.payment_state === 'AUTHORIZED' && authorizationExpired(session, ctx.now())) {
+    throw errors.conflict('AUTHORIZATION_EXPIRED', 'The PayPal authorization expired before sensing. Reauthorize safely; nothing was charged.');
   }
   if (!session.consented_at) throw errors.conflict('NO_CONSENT', 'Consent is required before starting.');
   const preflight = ctx.store.get<{ status: string }>(
@@ -858,6 +899,9 @@ export function appendIntervals(
   }
   if (session.state === 'PAUSED') throw errors.conflict('SESSION_PAUSED', 'Sensing is paused; no interval is accepted.');
   if (session.state !== 'ACTIVE') throw errors.conflict('INVALID_STATE', 'Intervals are only accepted while active.');
+  if (session.payment_state === 'AUTHORIZED' && authorizationExpired(session, ctx.now())) {
+    throw errors.conflict('AUTHORIZATION_EXPIRED', 'The authorization expired; stop the session and reauthorize before further metering.');
+  }
   if (input.clientSeq <= session.last_client_seq) {
     // Idempotent retry: a batch may have committed while its response was lost.
     // Accept it only when the exact same evidence is already stored; never
