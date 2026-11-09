@@ -10,6 +10,9 @@
 export const SIGNED_SCHEMA = 'whirr.signed.v2';
 export const PASSPORT_SCHEMA = 'whirr.passport.v2';
 export const RECEIPT_PROOF_SCHEMA = 'whirr.receipt-proof.v2';
+export const PROOF_BUNDLE_SCHEMA = 'whirr.proof-bundle.v3';
+export const EVIDENCE_LEAF_SCHEMA = 'whirr.evidence-leaf.v1';
+export const MERKLE_SCHEMA = 'whirr.merkle.v1';
 export const SIGNING_ALGORITHM = 'ECDSA_P256_SHA256';
 
 export interface QuoteRecomputeInput {
@@ -49,7 +52,141 @@ export function recomputeQuoteMinor(input: QuoteRecomputeInput): QuoteRecomputeR
   };
 }
 
-export type SignedDocumentType = 'passport' | 'receipt-proof';
+export type SignedDocumentType = 'passport' | 'receipt-proof' | 'proof-bundle';
+
+/** One sibling on the path from an interval leaf to the Merkle root. */
+export interface MerkleProofStep {
+  side: 'left' | 'right';
+  hash: string;
+}
+
+/**
+ * The leaf commits to the complete stored interval shape, including the
+ * explanation and confidence bucket. Reordering, insertion, deletion or any
+ * edited field changes the leaf and therefore the signed root.
+ */
+export interface EvidenceLeafInput {
+  sessionId: string;
+  seq: number;
+  startMs: number;
+  endMs: number;
+  state: string;
+  modelVersion: string;
+  confidence: number;
+  qualityFlags: string[];
+  explanation?: unknown;
+}
+
+export async function evidenceLeafHash(input: EvidenceLeafInput): Promise<string> {
+  return sha256Hex(
+    canonicalJson({
+      schema: EVIDENCE_LEAF_SCHEMA,
+      sessionId: input.sessionId,
+      seq: input.seq,
+      startMs: input.startMs,
+      endMs: input.endMs,
+      state: input.state,
+      modelVersion: input.modelVersion,
+      confidenceBucket: Math.round(input.confidence * 1000) / 1000,
+      qualityFlags: [...input.qualityFlags].sort(),
+      ...(input.explanation === undefined ? {} : { explanation: input.explanation }),
+    }),
+  );
+}
+
+async function merkleParent(left: string, right: string): Promise<string> {
+  return sha256Hex(`${MERKLE_SCHEMA}:${left}:${right}`);
+}
+
+/** A deterministic binary Merkle tree; odd nodes are promoted unchanged. */
+export async function merkleRoot(leafHashes: string[]): Promise<string> {
+  if (leafHashes.length === 0) return sha256Hex(`${MERKLE_SCHEMA}:empty`);
+  if (leafHashes.some((hash) => !/^[a-f0-9]{64}$/.test(hash))) throw new Error('Invalid Merkle leaf hash');
+  let level = [...leafHashes];
+  while (level.length > 1) {
+    const next: string[] = [];
+    for (let index = 0; index < level.length; index += 2) {
+      const left = level[index]!;
+      const right = level[index + 1];
+      next.push(right === undefined ? left : await merkleParent(left, right));
+    }
+    level = next;
+  }
+  return level[0]!;
+}
+
+export async function merkleProof(leafHashes: string[], leafIndex: number): Promise<MerkleProofStep[]> {
+  if (!Number.isInteger(leafIndex) || leafIndex < 0 || leafIndex >= leafHashes.length) {
+    throw new RangeError('Merkle leaf index is out of range');
+  }
+  let level = [...leafHashes];
+  let index = leafIndex;
+  const path: MerkleProofStep[] = [];
+  while (level.length > 1) {
+    const siblingIndex = index % 2 === 0 ? index + 1 : index - 1;
+    if (siblingIndex < level.length) {
+      path.push({ side: index % 2 === 0 ? 'right' : 'left', hash: level[siblingIndex]! });
+    }
+    const next: string[] = [];
+    for (let cursor = 0; cursor < level.length; cursor += 2) {
+      const left = level[cursor]!;
+      const right = level[cursor + 1];
+      next.push(right === undefined ? left : await merkleParent(left, right));
+    }
+    level = next;
+    index = Math.floor(index / 2);
+  }
+  return path;
+}
+
+export async function merkleBatchProofs(
+  leafHashes: string[],
+): Promise<{ root: string; proofs: MerkleProofStep[][] }> {
+  if (leafHashes.length === 0) {
+    return { root: await merkleRoot([]), proofs: [] };
+  }
+  if (leafHashes.some((hash) => !/^[a-f0-9]{64}$/.test(hash))) throw new Error('Invalid Merkle leaf hash');
+  const levels: string[][] = [[...leafHashes]];
+  while (levels[levels.length - 1]!.length > 1) {
+    const previous = levels[levels.length - 1]!;
+    const next: string[] = [];
+    for (let index = 0; index < previous.length; index += 2) {
+      const left = previous[index]!;
+      const right = previous[index + 1];
+      next.push(right === undefined ? left : await merkleParent(left, right));
+    }
+    levels.push(next);
+  }
+  const proofs = leafHashes.map((_leaf, leafIndex) => {
+    const path: MerkleProofStep[] = [];
+    let index = leafIndex;
+    for (let levelIndex = 0; levelIndex < levels.length - 1; levelIndex += 1) {
+      const level = levels[levelIndex]!;
+      const siblingIndex = index % 2 === 0 ? index + 1 : index - 1;
+      if (siblingIndex < level.length) {
+        path.push({ side: index % 2 === 0 ? 'right' : 'left', hash: level[siblingIndex]! });
+      }
+      index = Math.floor(index / 2);
+    }
+    return path;
+  });
+  return { root: levels[levels.length - 1]![0]!, proofs };
+}
+
+export async function verifyMerkleProof(
+  leafHash: string,
+  proof: MerkleProofStep[],
+  root: string,
+): Promise<boolean> {
+  if (!/^[a-f0-9]{64}$/.test(leafHash) || !/^[a-f0-9]{64}$/.test(root)) return false;
+  let current = leafHash;
+  for (const step of proof) {
+    if (!/^[a-f0-9]{64}$/.test(step.hash)) return false;
+    if (step.side !== 'left' && step.side !== 'right') return false;
+    current = step.side === 'left' ? await merkleParent(step.hash, current) : await merkleParent(current, step.hash);
+  }
+  return current === root;
+}
 
 export interface SignedEnvelope<T> {
   schema: typeof SIGNED_SCHEMA;
@@ -189,7 +326,7 @@ export async function verifyEnvelope<T>(value: unknown): Promise<EnvelopeVerific
   const envelope = value as Partial<SignedEnvelope<T>>;
   if (envelope.schema !== SIGNED_SCHEMA) result.errors.push('Unsupported signed-document schema.');
   if (envelope.algorithm !== SIGNING_ALGORITHM) result.errors.push('Unsupported signing algorithm.');
-  if (envelope.type !== 'passport' && envelope.type !== 'receipt-proof') {
+  if (envelope.type !== 'passport' && envelope.type !== 'receipt-proof' && envelope.type !== 'proof-bundle') {
     result.errors.push('Unsupported document type.');
   }
   if (typeof envelope.keyId !== 'string' || typeof envelope.publicKey !== 'string') {
