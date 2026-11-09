@@ -1,14 +1,12 @@
-# Whirr
+# Whirr Bench
 
-**Every object has a sound. Give it a passport.**
+**Borrow the tool. Pay for the work.**
 
-Whirr 3.0.1 is an acoustic passport office for ordinary objects: teach an object its sound, meter only confident use, and issue a signed, redacted **proof bundle** that a stranger can verify offline. The object stays dumb; the proof gets portable.
+Whirr 4.0 turns an ordinary shared-workshop tool into a pay-per-use service **by listening to it**. No lock, dongle or firmware. A member opens the tool’s bench card, authorizes a hard cap in PayPal Sandbox, and uses the machine normally. The browser hears it run, bills only confident running minutes, and gives both sides a signed receipt that can be verified offline.
 
-Whirr is a consent-based, usage-metered commerce layer for ordinary objects. A commodity microphone hears an object working, a locally trained classifier separates confident activity from idle and ambiguous sound, and the renter pays only for confident active time through a PayPal Sandbox authorization with a hard approved cap.
+The product bet is a category, not a dashboard: **acoustic pay-per-use for physical equipment that already exists**. The object stays ordinary; the payment boundary and the evidence become programmable.
 
-No smart plug. No retrofit sensor. No object firmware. The object stays exactly as dumb as it was.
-
-> **Release candidate 3.0.1 (9 November 2026):** the application, local ML pipeline, acoustic-passport identity gate, billing engine, evidence receipts, PayPal Sandbox integration and tests are implemented and runnable. A genuine **Sandbox** authorization and capture has been completed and provider-reconciled; the evidence and IDs are in [`docs/paypal-sandbox.md`](docs/paypal-sandbox.md). There are still **no real-object recordings**, so the bundled reference model and its passport remain synthetic pipeline evidence. Verified signed-webhook delivery, public deployment, video and Devpost submission are open items. See [`docs/go-no-go.md`](docs/go-no-go.md) and the [3.0.1 release notes](docs/release-notes-3.0.1.md).
+> **Release candidate 4.0.0-rc.1 (9 November 2026):** the Whirr Bench product surface, workshop-first discovery, sound-tag identity, Listening Room, responsive renter flow, browser evidence and demo assets are implemented. The 3.0.1 hardening, proof protocol and historical Sandbox capture are preserved. No physical-object Gate A evidence, genuine public webhook, public submission or five-person usability study exists in this checkout. See [`docs/go-no-go.md`](docs/go-no-go.md) and the [4.0 release notes](docs/release-notes-4.0.0-rc.1.md).
 
 ---
 
@@ -28,7 +26,8 @@ No smart plug. No retrofit sensor. No object firmware. The object stays exactly 
 | Portable proof v3 | Signed `whirr.proof-bundle.v3`: Merkle interval proofs, separate integrity/sensing/payment trust domains, capture provenance, redacted public bundle, QR, `/proof/:id`, CLI pinning and a single-file offline verifier |
 | Live intelligence | Open-set `UNKNOWN_OBJECT` / `LOW_CONFIDENCE` rejection, aggregated interval explanations, sensor diagnostics, bounded retry queue and interval-only replay |
 | Payment recovery | Authorization expiry, guarded reauthorization before usage, four-state payment timeline, webhook-only loopback proxy and no live PayPal calls |
-| Product surfaces | Landing, Judge Mode, Object Studio, Capture Lab, Model Review, guided Gate A trials, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
+| 4.0 bench experience | Workshop-first landing, sound-tag bench cards, rate/cap/calibration discovery, consent ticket and a dark Listening Room driven by the real eight-band signal |
+| Product surfaces | Landing, Bench, Judge Mode, Object Studio, Capture Lab, Model Review, guided Gate A trials, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
 | Safety | Operator key authentication, signed cookies, CSRF/origin checks, rate limits, CSP, ownership checks, body limits, no live PayPal host permitted |
 
 The bundled reference model is trained on procedurally synthesised fan audio. Its measured metrics demonstrate the pipeline; they are **not** evidence of accuracy on a physical fan.
@@ -47,7 +46,7 @@ npm run dev         # API on 127.0.0.1:8787, web on localhost:5173
 
 Open:
 
-- App / shelf: <http://localhost:5173> and <http://localhost:5173/shelf>
+- Whirr Bench: <http://localhost:5173> and <http://localhost:5173/shelf>
 - Judge evidence: <http://localhost:5173/judge>
 - Offline verifier and Tamper Lab: <http://localhost:5173/verify>
 - Standalone verifier (no application imports): <http://localhost:5173/verify-offline.html>
@@ -131,7 +130,8 @@ Without credentials, everything still runs except payment: sessions are marked `
 | `npm run proxy:webhook` | Loopback proxy exposing only `POST /api/paypal/webhook` (not public HTTPS) |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm test` | Unit + integration tests (requires `npm run setup` first) |
-| `npm run test:e2e` | Playwright proof, Tamper Lab, standalone verifier and full page sweep at 1440×900, 834×1112 and 390×844 |
+| `npm run test:e2e` | Playwright proof, Tamper Lab, standalone verifier, 4.0 bench and full page sweep at 1440×900, 834×1112 and 390×844 |
+| `npm run screenshots` | Capture the 4.0 bench, ticket and microphone-closed Listening Room into `docs/v4/` |
 | `npm run smoke` | Runtime, auth and CSRF smoke checks via Fastify injection |
 | `npm run verify` | Typecheck + tests |
 
@@ -190,6 +190,12 @@ docs/                      architecture, model card, safety, threat model, PayPa
 - [Proof verification](docs/proof-verification.md)
 - [Whirr 3.0 demo script](docs/demo-v3.md)
 - [3.0.1 release notes](docs/release-notes-3.0.1.md)
+- [Whirr 4.0 product brief](docs/product-4.0.md)
+- [Whirr 4.0 design language](docs/design-system-4.0.md)
+- [Whirr 4.0 demo script](docs/demo-4.0.md)
+- [Whirr 4.0 submission explanation](docs/submission-4.0.md)
+- [Five-person comprehension protocol — not run](docs/usability-4.0.md)
+- [4.0.0-rc.1 release notes](docs/release-notes-4.0.0-rc.1.md)
 - [Performance measurements](docs/performance.md)
 
 ## License
