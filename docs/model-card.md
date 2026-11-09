@@ -183,3 +183,7 @@ Original implementation for this project. MIT licensed. No third-party model wei
 New models carry an optional `rejection` policy with two thresholds. `minTopProbability` (default 0.55) marks a frame `LOW_CONFIDENCE` when the maximum class probability is weak. `unknownOtherProbability` (default 0.45) marks `UNKNOWN_OBJECT` when the `other` class dominates both idle and active. Both flags are disqualifying, so those frames become free `UNCERTAIN` time through the same hysteresis path as a passport mismatch.
 
 Older models without the `rejection` field remain readable and use the default policy. The bundled synthetic reference model is retrained with the field. No threshold was tuned on physical objects, and the synthetic competing-sound tests demonstrate only that the code path rejects a dominant unknown class; they are not field accuracy evidence.
+
+## 14. Real-object validation status
+
+The model card's metrics remain **synthetic held-out evidence**. Whirr 3.0.1 ships a guided Gate A page that runs three live 6-second ON/OFF trials against the active model and records the actual active ratio, idle/uncertain time, mean confidence, passport score, clipping and failure codes. The log is client-reported evidence; it is not signed proof that an object was present. Gate A stays OPEN until `docs/evidence/gate-a.json` contains genuine `realObject: true` evidence and three reviewer-confirmed trials. Imported WAVs, fixture replay and synthetic takes are not accepted as Gate A.

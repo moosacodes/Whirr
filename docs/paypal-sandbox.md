@@ -88,7 +88,7 @@ Use two browser profiles or one profile plus a private window. One can be the op
 3. Open `/s/obj_reference_fan` as the renter. Confirm the page shows **Sandbox — no real money**, the exact rate, cap, rounding, uncertainty policy and limitations.
 4. Create the session, accept the exact terms hash, and choose **Approve in PayPal Sandbox**.
 5. In the official PayPal window, sign in with the **Sandbox personal** account and approve the cap.
-6. Return to Whirr. The authorize endpoint must fetch an authorization with status `CREATED` and amount equal to the cap. Confirm `/api/sessions/:id/paypal/status` returns `paymentState: AUTHORIZED` and the authorization ID.
+6. Return to Whirr. The authorize endpoint must fetch an authorization with status `CREATED` and amount equal to the cap. Confirm the read-only `GET /api/sessions/:id/paypal/status` returns `paymentState: AUTHORIZED` and the authorization ID. If reconciliation was interrupted, call `POST /api/sessions/:id/paypal/reconcile`; a GET never triggers provider reads.
 7. Start sensing with the object and microphone. Run at least one ON/OFF/ON cycle. Verify uncertain/idle time is excluded, not billed.
 8. Stop. Review the ledger and accept the quote. If the model is LIMITED, an operator must approve the reviewed amount first.
 9. Capture. Confirm the UI and provider status show `COMPLETED`, the captured amount equals the reviewed quote, and the receipt says `PAYPAL_SANDBOX` with the capture ID and provider status.
@@ -114,7 +114,7 @@ Requirements:
 - Event IDs are unique. A duplicate with the same body returns a duplicate acknowledgement; a duplicate ID with a different body is rejected as a conflict. Rejected payloads are truncated and audited, and a valid retry may replace an unverified event-id reservation.
 - Events are triggers to reconcile authoritative state, never commands to charge. The outbox retries failed reconciliations with backoff.
 
-For local development, the simplest honest path is **polling** via `/api/sessions/:id/paypal/status`. A temporary tunnel is useful only while it is online; it is not durable judge hosting. Do not present simulator events as genuine webhook delivery.
+For local development, the simplest honest path is an explicit **`POST /api/sessions/:id/paypal/reconcile`** after the buyer returns or a payment action times out. `GET /api/sessions/:id/paypal/status` is read-only. A temporary tunnel is useful only while it is online; it is not durable judge hosting. Do not present simulator events as genuine webhook delivery.
 
 ### Webhook-only loopback proxy
 
@@ -147,8 +147,8 @@ Rules:
 | Capture `INSTRUMENT_DECLINED` / denied | Sandbox buyer funding or account issue | Use another Sandbox buyer; do not fake success |
 | Webhook 503 | `PAYPAL_WEBHOOK_ID` missing | Register the webhook in the same app and set the ID |
 | Webhook signature invalid | Wrong ID, modified body, stale tunnel | Verify ID, raw-body preservation, tunnel URL |
-| Capture stays pending | Provider review / account behavior | Observe, reconcile, do not mark settled manually |
-| No verified webhook appears | Tunnel offline or subscription missing | Check deliveries in the dashboard; polling still reconciles |
+| Capture stays pending | Provider review / account behavior | Observe, POST reconcile, do not mark settled manually |
+| No verified webhook appears | Tunnel offline or subscription missing | Check deliveries in the dashboard; POST reconcile still reads authoritative state |
 
 ## 9. Security rules
 
