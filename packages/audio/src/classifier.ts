@@ -68,6 +68,18 @@ export interface BaselineMetrics {
   billedActiveMs: number;
 }
 
+export interface OpenSetPolicy {
+  /** Below this maximum class probability the frame is not a strong identity. */
+  minTopProbability: number;
+  /** A dominant 'other' class above this probability is a competing/unknown sound. */
+  unknownOtherProbability: number;
+}
+
+export const DEFAULT_OPEN_SET_POLICY: OpenSetPolicy = {
+  minTopProbability: 0.55,
+  unknownOtherProbability: 0.45,
+};
+
 export interface ModelArtifact {
   schema: 'whirr.model.v1';
   version: string;
@@ -81,6 +93,8 @@ export interface ModelArtifact {
   weights: number[][];
   bias: number[];
   policy: DecisionPolicy;
+  /** Optional for models trained before open-set rejection existed. */
+  rejection?: OpenSetPolicy;
   training: {
     takeCount: number;
     frameCount: number;
@@ -170,10 +184,20 @@ export function predictFrame(
     model.soundprint?.gateEnabled ? soundprintScore(model.soundprint, features) : undefined;
   const mismatch =
     score !== undefined && model.soundprint !== undefined && score < model.soundprint.matchThreshold;
-  const effectiveFlags =
-    mismatch && !flags.includes('SOUNDPRINT_MISMATCH')
-      ? [...flags, 'SOUNDPRINT_MISMATCH' as const]
-      : flags;
+  const policy = model.rejection ?? DEFAULT_OPEN_SET_POLICY;
+  const top = Math.max(probs.idle, probs.active, probs.other);
+  const openSetFlags: QualityFlag[] = [];
+  if (top < policy.minTopProbability) openSetFlags.push('LOW_CONFIDENCE');
+  if (
+    probs.other >= policy.unknownOtherProbability &&
+    probs.other > probs.active &&
+    probs.other > probs.idle
+  ) {
+    openSetFlags.push('UNKNOWN_OBJECT');
+  }
+  const effectiveFlags = [...flags];
+  if (mismatch && !effectiveFlags.includes('SOUNDPRINT_MISMATCH')) effectiveFlags.push('SOUNDPRINT_MISMATCH');
+  for (const flag of openSetFlags) if (!effectiveFlags.includes(flag)) effectiveFlags.push(flag);
   return {
     startMs,
     endMs,
@@ -256,5 +280,17 @@ export function assertModelArtifact(value: unknown): asserts value is ModelArtif
     }
     if (typeof model.soundprint.gateEnabled !== 'boolean') throw new Error('Invalid soundprint gate');
     if (!Number.isFinite(model.soundprint.matchThreshold)) throw new Error('Invalid soundprint threshold');
+  }
+  if (model.rejection !== undefined) {
+    if (
+      typeof model.rejection.minTopProbability !== 'number' ||
+      model.rejection.minTopProbability < 0 ||
+      model.rejection.minTopProbability > 1 ||
+      typeof model.rejection.unknownOtherProbability !== 'number' ||
+      model.rejection.unknownOtherProbability < 0 ||
+      model.rejection.unknownOtherProbability > 1
+    ) {
+      throw new Error('Invalid open-set rejection policy');
+    }
   }
 }
