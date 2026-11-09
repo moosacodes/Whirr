@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -340,6 +340,35 @@ CREATE TABLE IF NOT EXISTS fairness_credits (
   amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
   applied_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS field_test_recordings (
+  id TEXT PRIMARY KEY,
+  object_id TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  model_id TEXT NOT NULL REFERENCES model_versions(id) ON DELETE CASCADE,
+  trial_kind TEXT NOT NULL CHECK (trial_kind IN ('THREE_CYCLE', 'NOISE', 'DISTANCE', 'REPLAY')),
+  frames_json TEXT NOT NULL,
+  frame_flags_json TEXT NOT NULL,
+  timeline_json TEXT NOT NULL,
+  capture_json TEXT NOT NULL,
+  quality_json TEXT NOT NULL,
+  attempt INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  UNIQUE (model_id, trial_kind)
+);
+
+CREATE INDEX IF NOT EXISTS idx_field_trials_object ON field_test_recordings(object_id, created_at);
+
+CREATE TABLE IF NOT EXISTS field_test_reports (
+  id TEXT PRIMARY KEY,
+  object_id TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  model_id TEXT NOT NULL UNIQUE REFERENCES model_versions(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('FIELD_PASS', 'FIELD_FAIL')),
+  report_json TEXT NOT NULL,
+  evidence_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_field_reports_object ON field_test_reports(object_id, created_at);
 
 CREATE TABLE IF NOT EXISTS shelf_listings (
   object_id TEXT PRIMARY KEY REFERENCES objects(id) ON DELETE CASCADE,
