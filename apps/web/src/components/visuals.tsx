@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { METER_COPY } from '../lib/format.ts';
 import type { MeterState } from '../../../../packages/meter/src/intervals.ts';
 import type { Soundprint } from '../../../../packages/audio/src/soundprint.ts';
@@ -446,6 +446,114 @@ export interface TimelineInterval {
   startMs: number;
   endMs: number;
   state: MeterState;
+}
+
+/**
+ * A compact, human-readable version of the enrolled spectral profile.
+ * It is a calibration fingerprint, not a cryptographic identity mark.
+ */
+export function SoundTag({
+  soundprint,
+  dark = false,
+}: {
+  soundprint: Soundprint | null | undefined;
+  dark?: boolean;
+}) {
+  if (!soundprint) {
+    return (
+      <div className={`sound-tag sound-tag--empty${dark ? ' sound-tag--dark' : ''}`}>
+        <span className="sound-tag__label">Sound tag</span>
+        <span className="sound-tag__empty">Not enrolled</span>
+      </div>
+    );
+  }
+
+  const ceiling = Math.max(0.0001, ...soundprint.bands.map((band) => band.active));
+  return (
+    <div
+      className={`sound-tag${dark ? ' sound-tag--dark' : ''}`}
+      aria-label={`Acoustic sound tag: ${soundprint.gateEnabled ? 'identity gate active' : 'activity profile only'}`}
+    >
+      <div className="sound-tag__head">
+        <span className="sound-tag__label">Sound tag</span>
+        <span className="sound-tag__status">
+          <span className="sound-tag__dot" aria-hidden="true" />
+          {soundprint.gateEnabled ? 'identity gate' : 'activity only'}
+        </span>
+      </div>
+      <div className="sound-tag__bars" aria-hidden="true">
+        {soundprint.bands.map((band, index) => (
+          <span
+            key={`${band.fromHz}-${band.toHz}`}
+            style={{ height: `${Math.max(10, (band.active / ceiling) * 100)}%` }}
+            title={`${index + 1}`}
+          />
+        ))}
+      </div>
+      <div className="sound-tag__foot">
+        <span>50 Hz</span>
+        <span>{soundprint.bands.length} bands / {Math.round(soundprint.matchThreshold * 100)}% gate</span>
+        <span>7.8 kHz</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Listening Room's object stage. The radial bars are driven by the same
+ * eight bands used for classification; the rings animate only while the
+ * microphone is genuinely open. No activity is fabricated when sensing is off.
+ */
+export function ListeningField({
+  glyph,
+  level,
+  bands,
+  state,
+  live,
+  label,
+}: {
+  glyph: string;
+  level: number;
+  bands: number[];
+  state: MeterState;
+  live: boolean;
+  label: string;
+}) {
+  const energy = Math.min(1, Math.sqrt(Math.max(0, level) * 14));
+  const normalized = Array.from({ length: 8 }, (_, index) => {
+    const value = bands[index] ?? 0;
+    return Math.max(0, Math.min(1, value));
+  });
+  return (
+    <div
+      className={`listening-field${live ? ' is-live' : ''}`}
+      data-state={state.toLowerCase()}
+      style={{ '--level': energy } as CSSProperties}
+      role="img"
+      aria-label={`${label}. ${live ? `Microphone open. ${state === 'ACTIVE_CONFIDENT' ? 'Running and billable.' : 'Not billable.'}` : 'Microphone closed. No sound is being measured.'}`}
+    >
+      <div className="listening-field__rings" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="listening-field__bars" aria-hidden="true">
+        {normalized.map((value, index) => (
+          <span
+            key={index}
+            style={{ '--band': index, height: `${14 + value * 58}px` } as CSSProperties}
+          />
+        ))}
+      </div>
+      <div className="listening-field__core">
+        <ObjectGlyph glyph={glyph} size={96} tone="dark" label={label} />
+      </div>
+      <span className="listening-field__stamp">
+        <span className={`live-dot${live ? ' is-live' : ''}`} aria-hidden="true" />
+        {live ? 'LIVE / ON-DEVICE' : 'MIC CLOSED'}
+      </span>
+    </div>
+  );
 }
 
 export function Timeline({

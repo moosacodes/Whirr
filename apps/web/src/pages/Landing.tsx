@@ -1,104 +1,158 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../lib/api.ts';
+import type { ShelfItem, ShelfView } from '../../../../packages/contracts/src/types.ts';
 import { useAuth } from '../lib/auth.tsx';
-import { usePageTitle, LinkButton } from '../components/ui.tsx';
-import { Icon, ObjectGlyph } from '../components/visuals.tsx';
+import { LinkButton, usePageTitle } from '../components/ui.tsx';
+import { Icon, ObjectGlyph, SoundTag } from '../components/visuals.tsx';
+import { money } from '../lib/format.ts';
 
 export function Landing() {
-  usePageTitle('Every object has a sound');
+  usePageTitle('Whirr Bench — pay for the work');
   const { session } = useAuth();
+  const [featured, setFeatured] = useState<ShelfItem | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api<ShelfView>('/api/shelf')
+      .then((view) => {
+        if (!cancelled) setFeatured(view.items[0] ?? null);
+      })
+      .catch(() => {
+        // The landing page remains useful if the bench is offline.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const objectName = featured?.object.name ?? 'Reference desk fan';
+  const category = featured?.object.category.replaceAll('_', ' ') ?? 'shared workshop';
+  const rate = featured?.terms ? money(featured.terms.minorPerMinute, featured.terms.currency) : '—';
+  const cap = featured?.terms ? money(featured.terms.capMinor, featured.terms.currency) : '—';
 
   return (
     <>
-      <section className="hero">
+      <section className="hero hero--bench">
         <div className="hero__inner">
-          <div>
-            <span className="eyebrow hero__eyebrow">Whirr 2.0 · the acoustic passport office</span>
+          <div className="hero__copy">
+            <span className="eyebrow hero__eyebrow">Whirr Bench · shared workshop / Bay 01</span>
             <h1 className="hero__title">
-              Every object
+              Borrow the tool.
               <br />
-              <em>has a sound.</em>
+              <em>Pay for the work.</em>
             </h1>
             <p className="hero__lede">
-              Give it a passport. Whirr teaches an ordinary fan, drill or hair dryer to prove its own use, meter only
-              confident activity, and issue a signed receipt anyone can check offline. No new hardware.
+              A tool library where the tool proves it was used. Whirr listens to an ordinary machine, bills only the
+              minutes it can defend, and gives the owner and renter the same evidence. No lock, no dongle, no new
+              hardware.
             </p>
             <div className="hero__actions">
               <LinkButton to="/shelf" variant="primary">
-                Open the shelf <Icon name="arrow" size={16} />
+                Open the bench <Icon name="arrow" size={16} />
               </LinkButton>
               <LinkButton to="/verify" variant="secondary">
-                Verify a passport
+                Inspect a proof
               </LinkButton>
             </div>
-            <div className="row" style={{ marginTop: '1.4rem', gap: '0.45rem' }}>
+            <div className="row hero__truths">
               <span className="chip chip--dark">
-                <Icon name="shield" size={13} />
-                {session?.paypal.configured ? 'PayPal Sandbox configured' : 'Demo metering · no PayPal'}
+                <Icon name="wave" size={13} />
+                Running time, not clock time
               </span>
               <span className="chip chip--dark">
                 <Icon name="mic" size={13} />
-                Audio never uploaded
-              </span>
-              <span className="chip chip--dark">
-                <Icon name="clock" size={13} />
-                Uncertain time is free
+                Audio stays on-device
               </span>
               <span className="chip chip--dark">
                 <Icon name="shield" size={13} />
-                Signed proofs, offline
+                {session?.paypal.configured ? 'PayPal Sandbox ready' : 'Demo metering'}
               </span>
             </div>
           </div>
-          <div className="hero__stage" aria-hidden="true">
-            <div className="hero-rings">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="hero-object">
-              <ObjectGlyph glyph="fan" size={112} tone="dark" />
-            </div>
-            <span className="hero__micro">
-              <Icon name="mic" size={13} /> one microphone · zero new hardware
-            </span>
-          </div>
-        </div>
-      </section>
 
-      <section className="section">
-        <div className="container">
-          <div className="section-head">
-            <div className="stack">
-              <span className="eyebrow">Three acts · one protocol</span>
-              <h2 className="h2">Teach. Listen. Prove.</h2>
+          <div className="hero__stage hero__stage--bench">
+            <div className="bench-ticket">
+              <div className="bench-ticket__head">
+                <span className="bench-ticket__no">BENCH 01 / SHARED WORKSHOP</span>
+                <span className={`bench-ticket__status${featured?.activeSession ? ' is-busy' : ''}`}>
+                  <span className="live-dot is-live" aria-hidden="true" />
+                  {featured?.activeSession ? 'In use now' : 'Ready to listen'}
+                </span>
+              </div>
+
+              <div className="bench-ticket__object">
+                <div className="bench-ticket__object-image">
+                  <span className="bench-ticket__tag">FAN / 01</span>
+                  <ObjectGlyph glyph={featured?.object.glyph ?? 'fan'} size={104} tone="accent" label={objectName} />
+                </div>
+                <div className="bench-ticket__object-copy">
+                  <span className="eyebrow">On the bench</span>
+                  <strong>{objectName}</strong>
+                  <span className="tiny muted">{category} · calibrated by ear</span>
+                </div>
+              </div>
+
+              <SoundTag soundprint={featured?.model?.soundprint} />
+
+              <div className="bench-ticket__price">
+                <div>
+                  <strong>{rate}</strong>
+                  <span>per running minute</span>
+                </div>
+                <div className="bench-ticket__cap">
+                  <span>You authorize</span>
+                  <strong>{cap}</strong>
+                </div>
+              </div>
+
+              <div className="bench-ticket__foot">
+                <span className="mono">LISTEN → CLASSIFY → BILL</span>
+                <span className="bench-ticket__arrow" aria-hidden="true">
+                  <Icon name="arrow" size={18} />
+                </span>
+              </div>
             </div>
-            <p className="muted">
-              The object stays dumb. The proof gets smart. Every number below is computed by code in this repository,
-              not a slide.
+            <p className="hero__micro">
+              <Icon name="mic" size={13} /> one microphone · zero new hardware
             </p>
           </div>
-          <div className="step-grid">
-            <article className="step">
-              <h3 className="h3">01 · Teach</h3>
-              <p className="muted small">
-                A guided sitting records idle, running, different-sound and held-out examples. The browser extracts
-                features; the acoustic passport enrolls the object's spectral profile. Raw audio never leaves the device.
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <div className="section-head">
+            <div className="stack">
+              <span className="eyebrow">The useful difference</span>
+              <h2 className="h2">
+                A timer bills the clock. <em className="serif">Whirr bills the work.</em>
+              </h2>
+            </div>
+            <p className="muted">
+              Shared workshops already have tools, trust and a payment problem. Whirr does not add another rental
+              marketplace. It adds a meter that can tell <strong>use</strong> from <strong>presence</strong>.
+            </p>
+          </div>
+
+          <div className="compare-grid">
+            <article className="compare-card compare-card--old">
+              <span className="eyebrow">The old bench</span>
+              <h3 className="h3">“Book it for an hour.”</h3>
+              <p className="small muted">
+                The clock starts before the setup. It keeps running through the pause, the search for a bit, the
+                conversation. The owner has a calendar, not evidence of use.
               </p>
+              <div className="compare-card__stamp">TIME-BASED · ESTIMATED</div>
             </article>
-            <article className="step">
-              <h3 className="h3">02 · Listen</h3>
-              <p className="muted small">
-                A four-second room check, a live eight-band waterfall and a “why this second” explanation make the
-                meter legible. Ambiguous, idle, mismatched and disconnected time is marked free, not guessed into a charge.
+            <article className="compare-card compare-card--new">
+              <span className="eyebrow">The Whirr bench</span>
+              <h3 className="h3">“Pay for the minutes it runs.”</h3>
+              <p className="small muted">
+                The meter starts when the motor does. Ambiguous sound is free. The renter sees the exact quote before
+                settlement; the owner keeps the interval evidence behind it.
               </p>
-            </article>
-            <article className="step">
-              <h3 className="h3">03 · Prove</h3>
-              <p className="muted small">
-                Each passport edition is signed with this installation's ECDSA P-256 key. Receipts get a redacted
-                proof card and QR. Drag the JSON into <strong>/verify</strong> and the whole check runs locally — with
-                the honest boundary printed beside it.
-              </p>
+              <div className="compare-card__stamp">USE-BASED · EVIDENCED</div>
             </article>
           </div>
         </div>
@@ -106,37 +160,93 @@ export function Landing() {
 
       <section className="section section--tight">
         <div className="container">
-          <div className="card card--dark" style={{ borderRadius: 24 }}>
-            <div className="sidebar-layout" style={{ alignItems: 'center' }}>
-              <div className="stack">
-                <span className="eyebrow" style={{ color: 'rgba(245,238,228,.55)' }}>
-                  What a signature can say
-                </span>
-                <h2 className="h2">
-                  A seal is not a <span className="serif" style={{ fontStyle: 'italic' }}>lock</span>.
-                </h2>
-                <p className="small" style={{ color: 'rgba(245,238,228,.72)', maxWidth: '60ch' }}>
-                  Signed means this installation attested these bytes. It does not mean a trusted timestamp, a
-                  third-party identity or physical truth. Playback can fool any microphone; a similar machine can share
-                  a soundprint. Whirr reduces ambiguity to free time and shows the boundary instead of hiding it.
-                </p>
+          <div className="section-head">
+            <div className="stack">
+              <span className="eyebrow">The three-beat interaction</span>
+              <h2 className="h2">Find. Run. Keep the proof.</h2>
+            </div>
+            <p className="muted">The object never becomes smart. The interaction around it does.</p>
+          </div>
+
+          <div className="bench-steps">
+            <article className="bench-step">
+              <span className="bench-step__number">01</span>
+              <div className="bench-step__icon">
+                <Icon name="qr" size={22} />
               </div>
-              <div className="stack" style={{ gap: '0.6rem' }}>
-                <div className="stat stat--dark">
-                  <span className="stat__label">Sensing states</span>
-                  <span className="small" style={{ lineHeight: 1.7 }}>
-                    <strong style={{ color: '#e9b085' }}>ACTIVE</strong> · billable
-                    <br />
-                    <strong>IDLE</strong> · free
-                    <br />
-                    <strong>UNCERTAIN</strong> · free, never guessed
-                    <br />
-                    <strong>DISCONNECTED</strong> · free
-                  </span>
-                </div>
-                <Link to="/judge" className="link" style={{ color: '#e9b085' }}>
-                  Inspect the judge gauntlet →
-                </Link>
+              <h3 className="h3">Find a tool with a past.</h3>
+              <p className="small muted">
+                Scan the bench card or open its link. See the rate, the hard cap, the last calibration and the
+                object’s signed history before you commit.
+              </p>
+              <span className="bench-step__note">The card is the front door.</span>
+            </article>
+            <article className="bench-step">
+              <span className="bench-step__number">02</span>
+              <div className="bench-step__icon">
+                <Icon name="mic" size={22} />
+              </div>
+              <h3 className="h3">Use it like a tool.</h3>
+              <p className="small muted">
+                Press start and work normally. The browser listens locally, compares the sound with the object’s
+                sound tag and marks anything uncertain as free.
+              </p>
+              <span className="bench-step__note">No app to install on the tool.</span>
+            </article>
+            <article className="bench-step">
+              <span className="bench-step__number">03</span>
+              <div className="bench-step__icon">
+                <Icon name="shield" size={22} />
+              </div>
+              <h3 className="h3">Keep the receipt.</h3>
+              <p className="small muted">
+                Stop, inspect the interval ledger, then let PayPal capture the reviewed amount. The signed receipt
+                verifies without the Whirr server.
+              </p>
+              <span className="bench-step__note">The evidence leaves with you.</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--tight">
+        <div className="container">
+          <div className="handshake">
+            <div className="handshake__copy">
+              <span className="eyebrow">PayPal is the handshake</span>
+              <h2 className="h2">Permission first. Payment for what happened.</h2>
+              <p className="small">
+                The renter authorizes a ceiling before the microphone opens. Whirr captures only the reviewed quote
+                after the session stops — never an open-ended tap. PayPal is not a badge on the footer; it is the
+                boundary that makes a shared tool safe to try.
+              </p>
+              <div className="row" style={{ marginTop: '1rem' }}>
+                <span className="chip chip--dark">
+                  <span className="chip__dot" /> Authorize the cap
+                </span>
+                <span className="chip chip--dark">
+                  <span className="chip__dot" /> Review the evidence
+                </span>
+                <span className="chip chip--dark">
+                  <span className="chip__dot" /> Capture once
+                </span>
+              </div>
+            </div>
+            <div className="handshake__steps">
+              <div>
+                <span className="mono">01 / BEFORE</span>
+                <strong>Authorize a ceiling in Sandbox.</strong>
+                <p className="tiny">No sensing starts until the authorization is verified.</p>
+              </div>
+              <div>
+                <span className="mono">02 / DURING</span>
+                <strong>Meter the motor, not the minute.</strong>
+                <p className="tiny">Idle, uncertain and disconnected time stay free.</p>
+              </div>
+              <div>
+                <span className="mono">03 / AFTER</span>
+                <strong>Capture the reviewed amount.</strong>
+                <p className="tiny">The receipt binds the physical claim to the payment state.</p>
               </div>
             </div>
           </div>
@@ -147,77 +257,81 @@ export function Landing() {
         <div className="container">
           <div className="section-head">
             <div className="stack">
-              <span className="eyebrow">Built for a skeptical judge</span>
-              <h2 className="h2">Real provider calls, or nothing at all.</h2>
+              <span className="eyebrow">A receipt built for a skeptic</span>
+              <h2 className="h2">Trust is a page you can read.</h2>
             </div>
+            <p className="muted">
+              Whirr makes the boundary visible instead of hiding it behind a green check. A judge can inspect the
+              same evidence the renter and owner receive.
+            </p>
           </div>
-          <div className="honesty">
-            <div className="card">
-              <h3 className="h3" style={{ marginBottom: '1rem' }}>
-                What is genuinely implemented
-              </h3>
+          <div className="proof-pair">
+            <article className="card proof-pair__card">
+              <span className="eyebrow">What the proof establishes</span>
+              <h3 className="h3">The bytes have not changed.</h3>
               <ul className="checklist">
                 <li>
-                  <Icon name="check" size={16} /> On-device feature extraction and logistic-regression
-                  inference from a real WAV pipeline
+                  <Icon name="check" size={16} /> The quote recomputes from the recorded intervals.
                 </li>
                 <li>
-                  <Icon name="check" size={16} /> Precision-first hysteresis, uncertainty exclusion, hard
-                  consented cap, integer minor-unit rounding
+                  <Icon name="check" size={16} /> The cap, rate and terms are pinned to this session.
                 </li>
                 <li>
-                  <Icon name="check" size={16} /> PayPal Orders &amp; Payments v2 authorization and partial
-                  capture, with idempotency and webhook signature verification
+                  <Icon name="check" size={16} /> The receipt, interval leaves and passport are signed.
                 </li>
                 <li>
-                  <Icon name="check" size={16} /> Hash-chained audit log, evidence receipts and a
-                  tamper-evident verification panel
+                  <Icon name="check" size={16} /> The same result verifies offline, without a Whirr login.
                 </li>
               </ul>
-            </div>
-            <div className="card card--soft">
-              <h3 className="h3" style={{ marginBottom: '1rem' }}>
-                What this installation may not have
-              </h3>
+            </article>
+            <article className="card card--soft proof-pair__card">
+              <span className="eyebrow">What it refuses to claim</span>
+              <h3 className="h3">A microphone is not a witness.</h3>
               <ul className="checklist checklist--x">
                 <li>
-                  <Icon name="alert" size={16} /> Live PayPal credentials: without them, every session is
-                  labelled demo metering and no payment is attempted
+                  <Icon name="alert" size={16} /> That the object was physically present or not shared.
                 </li>
                 <li>
-                  <Icon name="alert" size={16} /> A real-object recording: the bundled reference fan is
-                  procedurally synthesised and never presented as field accuracy
+                  <Icon name="alert" size={16} /> That a recording or a similar machine could not fool it.
                 </li>
                 <li>
-                  <Icon name="alert" size={16} /> A public deployment, video or Devpost submission: those
-                  remain open gates in the repository
+                  <Icon name="alert" size={16} /> That PayPal settlement can be verified without the network.
+                </li>
+                <li>
+                  <Icon name="alert" size={16} /> That a calibration-fit score is a biometric identity.
                 </li>
               </ul>
-            </div>
+            </article>
+          </div>
+          <div className="row" style={{ marginTop: '1rem' }}>
+            <Link to="/judge" className="link">
+              Read the judge gauntlet and open gates →
+            </Link>
+            <Link to="/passport/obj_reference_fan" className="link">
+              Open the reference passport →
+            </Link>
           </div>
         </div>
       </section>
 
       <section className="section section--tight">
         <div className="container">
-          <div className="card panel--accent" style={{ padding: 'clamp(1.5rem,4vw,3rem)' }}>
-            <div className="row row--between" style={{ alignItems: 'center' }}>
-              <div className="stack" style={{ maxWidth: '60ch' }}>
-              <span className="eyebrow">Try the full loop</span>
-              <h2 className="h2">Calibrate, listen, dispute, verify — in one sitting.</h2>
-                <p className="small muted">
-                  The seeded reference fan is ready to use. Calibrate it, watch the listening room explain every
-                  second, hold it on the shelf, then verify a signed receipt offline.
-                </p>
-              </div>
-              <div className="row">
-                <LinkButton to="/shelf" variant="primary">
-                  Enter the shelf
-                </LinkButton>
-                <LinkButton to="/verify" variant="secondary">
-                  Open the verifier
-                </LinkButton>
-              </div>
+          <div className="bench-closing">
+            <div>
+              <span className="eyebrow">The demo bench is ready</span>
+              <h2 className="h2">Hear an ordinary object become a service.</h2>
+              <p className="small muted">
+                The reference fan is synthetic and clearly labelled. Use it to walk the full loop: sound tag, live
+                session, reviewed payment and a proof that survives without the server.
+              </p>
+            </div>
+            <div className="row">
+              <LinkButton to="/shelf" variant="primary">
+                Open the bench <Icon name="arrow" size={16} />
+              </LinkButton>
+              <LinkButton to="/verify" variant="secondary">
+                Verify a receipt
+              </LinkButton>
             </div>
           </div>
         </div>
