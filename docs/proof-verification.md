@@ -87,6 +87,8 @@ v3 adds a portable `whirr.proof-bundle.v3` document inside the same signed v2 en
 
 The v3 verifier checks the outer envelope, nested receipt-proof and passport signatures, receipt-proof binding, full receipt hash (not for redacted bundles), quote/cap arithmetic, payment binding, capture-provenance schema, interval ordering, every leaf and Merkle proof, the recomputed root, receipt/ledger agreement, trust-domain coverage, payment offline disclaimer, limitations and absence of raw audio.
 
+It also independently recomputes interval totals from the per-interval states and checks that the signed model identity, status and terms hash match the receipt's model and pricing bindings. A re-signed bundle with a changed billable total, interval boundary, rate, credit, model metadata or terms binding therefore fails even though its outer signature is internally valid. This is semantic verification, not a claim that the original classifier was correct.
+
 Changing an amount, timestamp, state, model version, quality flag, explanation, evidence hash, inserted/removed interval, inclusion proof or root fails. Changing the embedded key also fails key-ID consistency; supplying an out-of-band `trustedKeyId` additionally detects key substitution. Without a pin, the key is self-attested.
 
 The three trust domains are deliberately separate:
