@@ -843,6 +843,8 @@ main {
 /* ------------------------------------------------------------------ tables */
 .table-wrap {
   overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -2610,7 +2612,8 @@ main {
 .receipt-perforation::after { right: -9px; }
 
 .receipt-explorer { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); gap: 1rem; }
-@media (max-width: 820px) { .receipt-explorer { grid-template-columns: 1fr; } }
+.receipt-explorer > * { min-width: 0; }
+@media (max-width: 820px) { .receipt-explorer { grid-template-columns: minmax(0, 1fr); } }
 
 .explorer-list { display: flex; flex-direction: column; gap: 0.35rem; max-height: 320px; overflow-y: auto; padding-right: 0.25rem; }
 .explorer-item { width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 0.5rem 0.6rem; cursor: pointer; display: grid; grid-template-columns: 74px 1fr auto; gap: 0.6rem; align-items: center; }
