@@ -235,6 +235,36 @@ async function verifyBundle(
     `receipt ${String(payment.mode)} / ${String(payment.state)}; bundle ${String(bundlePayment.mode)} / ${String(bundlePayment.state)}.`,
   );
 
+  const receiptModel = isRecord(receipt.model) ? receipt.model : {};
+  const bundleModel = isRecord(payload.model) ? payload.model : {};
+  add(
+    checks,
+    'model_binding',
+    'Model metadata matches the receipt',
+    bundleModel.version === receiptModel.version &&
+      bundleModel.hash === receiptModel.hash &&
+      bundleModel.status === receiptModel.status &&
+      bundleModel.provenance === receiptModel.provenance &&
+      bundleModel.precision === receiptModel.precision &&
+      bundleModel.recall === receiptModel.recall &&
+      bundleModel.falseBillableRatio === receiptModel.falseBillableRatio &&
+      bundleModel.takeCount === receiptModel.takeCount,
+    `bundle ${String(bundleModel.version)} / ${String(bundleModel.hash).slice(0, 12)}…; receipt ${String(receiptModel.version)} / ${String(receiptModel.hash).slice(0, 12)}…`,
+  );
+
+  const receiptTerms = isRecord(receipt.terms) ? receipt.terms : {};
+  const bundleTerms = isRecord(payload.terms) ? payload.terms : {};
+  add(
+    checks,
+    'terms_binding',
+    'Terms match the receipt',
+    bundleTerms.hash === receipt.termsHash &&
+      bundleTerms.currency === receiptTerms.currency &&
+      bundleTerms.minorPerMinute === receiptTerms.minorPerMinute &&
+      bundleTerms.capMinor === receiptTerms.capMinor,
+    `bundle ${String(bundleTerms.hash).slice(0, 12)}…; receipt ${String(receipt.termsHash).slice(0, 12)}…`,
+  );
+
   const capture = isRecord(payload.capture) ? payload.capture : null;
   if (capture) {
     const validProvenance = [
@@ -278,6 +308,12 @@ async function verifyBundle(
   let merklePass = intervals.length > 0;
   let ledgerPass = true;
   let previousEnd = 0;
+  const stateMs: Record<string, number> = {
+    ACTIVE_CONFIDENT: 0,
+    IDLE: 0,
+    UNCERTAIN: 0,
+    DISCONNECTED: 0,
+  };
   for (let index = 0; index < intervals.length; index += 1) {
     const interval = intervals[index];
     if (!isRecord(interval)) {
@@ -316,8 +352,25 @@ async function verifyBundle(
     if (Number(interval.seq) !== index + 1 || Number(interval.startMs) < previousEnd || Number(interval.endMs) <= Number(interval.startMs)) {
       ledgerPass = false;
     }
+    const state = String(interval.state);
+    if (!(state in stateMs)) ledgerPass = false;
+    else stateMs[state] += Number(interval.endMs) - Number(interval.startMs);
+    if (Number(interval.confidence) < 0 || Number(interval.confidence) > 1) ledgerPass = false;
+    if (!Array.isArray(interval.qualityFlags)) ledgerPass = false;
     previousEnd = Math.max(previousEnd, Number(interval.endMs));
   }
+  const observedMs = Object.values(stateMs).reduce((total, value) => total + value, 0);
+  const totalsPass =
+    typeof totals.observedMs === 'number' &&
+    typeof totals.billableMs === 'number' &&
+    typeof totals.uncertainMs === 'number' &&
+    typeof totals.idleMs === 'number' &&
+    typeof totals.disconnectedMs === 'number' &&
+    totals.observedMs === observedMs &&
+    totals.billableMs === stateMs.ACTIVE_CONFIDENT &&
+    totals.idleMs === stateMs.IDLE &&
+    totals.uncertainMs === stateMs.UNCERTAIN &&
+    totals.disconnectedMs === stateMs.DISCONNECTED;
   const recomputedRoot = await merkleRoot(leafHashes);
   add(
     checks,
@@ -336,6 +389,15 @@ async function verifyBundle(
     ledgerPass
       ? 'Sequence, timestamps, states, confidence, flags and explanations match the receipt exactly.'
       : 'The receipt timeline and the signed interval ledger disagree.',
+  );
+  add(
+    checks,
+    'ledger_totals',
+    'Receipt totals recompute from interval states',
+    totalsPass,
+    totalsPass
+      ? `Observed ${observedMs} ms = billable ${stateMs.ACTIVE_CONFIDENT} + idle ${stateMs.IDLE} + uncertain ${stateMs.UNCERTAIN} + disconnected ${stateMs.DISCONNECTED}.`
+      : 'Receipt totals, state durations or observed duration do not match the signed interval ledger.',
   );
 
   add(
