@@ -1,0 +1,464 @@
+{
+  "schema": "whirr.model.v1",
+  "version": "ref-fan-v1",
+  "createdAt": "2026-11-01T09:00:00.000Z",
+  "algo": "multinomial-logistic-regression",
+  "featureSpecVersion": "whirr-features-v1",
+  "featureNames": [
+    "log_rms",
+    "zero_cross_rate",
+    "spectral_centroid",
+    "spectral_spread",
+    "spectral_rolloff",
+    "spectral_flatness",
+    "spectral_flux",
+    "crest_factor",
+    "dominant_frequency",
+    "harmonic_ratio",
+    "band_50_120",
+    "band_120_250",
+    "band_250_500",
+    "band_500_1000",
+    "band_1000_2000",
+    "band_2000_4000",
+    "band_4000_6000",
+    "band_6000_7800",
+    "spectral_slope",
+    "peak_amplitude",
+    "low_high_ratio"
+  ],
+  "classes": [
+    "idle",
+    "active",
+    "other"
+  ],
+  "mean": [
+    -1.6136163303287954,
+    0.24446020637139493,
+    0.18839600122111103,
+    0.19245131662007833,
+    0.35281582226677455,
+    0.17480144639383505,
+    0.0000015657914008384246,
+    3.243688353507413,
+    0.0912996845570924,
+    0.30911843778042725,
+    -4.38743737873683,
+    -4.3423913829064364,
+    -4.268962375818958,
+    -3.9671485501355206,
+    -4.022367636719577,
+    -4.15305962346574,
+    -4.3475514193779015,
+    -4.495834901751726,
+    -0.1110634153460377,
+    0.1542550632229931,
+    0.1270624969001082
+  ],
+  "std": [
+    0.5274119965857582,
+    0.14075613649734514,
+    0.16689882804980244,
+    0.06963385560776678,
+    0.2591342963904931,
+    0.12695602270075287,
+    0.0000023063680503136224,
+    1.326624054634295,
+    0.1752246324450985,
+    0.18496778185849924,
+    2.221893705858623,
+    2.099760400087253,
+    1.9029003756148082,
+    1.2966460379525466,
+    1.1994466840201856,
+    1.6858829294378928,
+    1.6021916407521246,
+    1.5677188060704772,
+    0.12226248680548908,
+    0.15776230568997365,
+    0.9391631077935325
+  ],
+  "weights": [
+    [
+      -0.7824749287199974,
+      0.6139770247481969,
+      -1.583711517163179,
+      2.9401006113700077,
+      0.3353636324880052,
+      -0.9748182797976417,
+      -0.3538228370997868,
+      -0.4595243112056905,
+      -1.6076018133021608,
+      0.03412200702335651,
+      1.2413493849845423,
+      0.13475230020313744,
+      -0.8367833071890242,
+      -0.8274644315843689,
+      -0.4413368918572043,
+      0.15438429160714612,
+      0.4205997243215209,
+      0.4896105952157996,
+      1.015751611438553,
+      -0.9684373674095752,
+      -0.1674978274765599
+    ],
+    [
+      1.0595103217807145,
+      -0.05615779413767966,
+      -0.041584656209739945,
+      -0.23473055419504868,
+      0.0926648493020477,
+      -0.19347855860915994,
+      1.799913137015696,
+      -0.2837199135017046,
+      -0.07819150424888438,
+      0.8354062688129424,
+      0.4534221191609146,
+      0.4388694262580554,
+      0.22239134247488557,
+      0.7855094905509858,
+      0.9738239368057059,
+      0.616606821601145,
+      0.5590699812676699,
+      0.5099955174385896,
+      -0.1962103342042244,
+      1.7021014721652648,
+      -0.19261025178167213
+    ],
+    [
+      -0.27703539306071806,
+      -0.557819230610515,
+      1.6252961733729172,
+      -2.7053700571749597,
+      -0.42802848179005887,
+      1.1682968384068024,
+      -1.4460902999159129,
+      0.7432442247073944,
+      1.6857933175510438,
+      -0.8695282758363004,
+      -1.694771504145458,
+      -0.573621726461193,
+      0.6143919647141377,
+      0.04195494103338532,
+      -0.532487044948504,
+      -0.770991113208292,
+      -0.9796697055891923,
+      -0.999606112654387,
+      -0.8195412772343279,
+      -0.7336641047556891,
+      0.36010807925823113
+    ]
+  ],
+  "bias": [
+    -0.6468913517270721,
+    -1.4237762734323207,
+    2.0706676251594276
+  ],
+  "policy": {
+    "activeThreshold": 0.82,
+    "idleThreshold": 0.5,
+    "activeMargin": 0.1,
+    "smoothing": 0.45,
+    "onFrames": 4,
+    "offFrames": 5
+  },
+  "training": {
+    "takeCount": 16,
+    "frameCount": 3398,
+    "durationMs": 110500,
+    "datasetHash": "4d7f3ce418e829c23b7c61ff0320c65d8d472a4df682f7ca070094a91545a73b",
+    "seed": 1592598566,
+    "iterations": 520,
+    "learningRate": 0.16,
+    "l2": 0.0001,
+    "classFrames": {
+      "idle": 1030,
+      "active": 1108,
+      "other": 1260
+    }
+  },
+  "metrics": {
+    "precision": 0.9629955947136564,
+    "recall": 0.9715555555555555,
+    "falseBillableRatio": 0.018040268456375838,
+    "billedActiveMs": 36320,
+    "trueActiveMs": 36000,
+    "falseBilledMs": 1344,
+    "nonActiveMs": 74500,
+    "frameAccuracy": 0.892583872866392,
+    "confusion": [
+      [
+        1029,
+        0,
+        1
+      ],
+      [
+        0,
+        1108,
+        0
+      ],
+      [
+        141,
+        223,
+        896
+      ]
+    ],
+    "confusionLabels": [
+      "idle",
+      "active",
+      "other"
+    ],
+    "takeCounts": {
+      "idle": 5,
+      "active": 5,
+      "negative": 6,
+      "transition": 0
+    },
+    "totalTakeFrames": 3398,
+    "totalDurationMs": 110500,
+    "perTake": [
+      {
+        "takeId": "syn-idle-01",
+        "label": "idle",
+        "billedActiveMs": 0,
+        "durationMs": 6500
+      },
+      {
+        "takeId": "syn-idle-02",
+        "label": "idle",
+        "billedActiveMs": 0,
+        "durationMs": 7000
+      },
+      {
+        "takeId": "syn-idle-03",
+        "label": "idle",
+        "billedActiveMs": 0,
+        "durationMs": 6000
+      },
+      {
+        "takeId": "syn-idle-04",
+        "label": "idle",
+        "billedActiveMs": 0,
+        "durationMs": 7500
+      },
+      {
+        "takeId": "syn-idle-05",
+        "label": "idle",
+        "billedActiveMs": 0,
+        "durationMs": 6500
+      },
+      {
+        "takeId": "syn-active-01",
+        "label": "active",
+        "billedActiveMs": 6784,
+        "durationMs": 7000
+      },
+      {
+        "takeId": "syn-active-02",
+        "label": "active",
+        "billedActiveMs": 7296,
+        "durationMs": 7500
+      },
+      {
+        "takeId": "syn-active-03",
+        "label": "active",
+        "billedActiveMs": 6304,
+        "durationMs": 6500
+      },
+      {
+        "takeId": "syn-active-04",
+        "label": "active",
+        "billedActiveMs": 7808,
+        "durationMs": 8000
+      },
+      {
+        "takeId": "syn-active-05",
+        "label": "active",
+        "billedActiveMs": 6784,
+        "durationMs": 7000
+      },
+      {
+        "takeId": "syn-negative-01",
+        "label": "negative",
+        "billedActiveMs": 0,
+        "durationMs": 7000
+      },
+      {
+        "takeId": "syn-negative-02",
+        "label": "negative",
+        "billedActiveMs": 0,
+        "durationMs": 6500
+      },
+      {
+        "takeId": "syn-negative-03",
+        "label": "negative",
+        "billedActiveMs": 0,
+        "durationMs": 7000
+      },
+      {
+        "takeId": "syn-negative-04",
+        "label": "negative",
+        "billedActiveMs": 0,
+        "durationMs": 6500
+      },
+      {
+        "takeId": "syn-negative-05",
+        "label": "negative",
+        "billedActiveMs": 0,
+        "durationMs": 7000
+      },
+      {
+        "takeId": "syn-negative-06",
+        "label": "negative",
+        "billedActiveMs": 1344,
+        "durationMs": 7000
+      }
+    ],
+    "method": "LEAVE_ONE_TAKE_OUT"
+  },
+  "baseline": {
+    "method": "RMS_THRESHOLD",
+    "thresholdLogRms": -1.36,
+    "precision": 1,
+    "recall": 0.9848888888888889,
+    "falseBillableRatio": 0,
+    "billedActiveMs": 35456
+  },
+  "featureImportance": [
+    {
+      "name": "spectral_spread",
+      "weight": -3.1748311655650565,
+      "abs": 3.1748311655650565
+    },
+    {
+      "name": "peak_amplitude",
+      "weight": 2.67053883957484,
+      "abs": 2.67053883957484
+    },
+    {
+      "name": "spectral_flux",
+      "weight": 2.1537359741154827,
+      "abs": 2.1537359741154827
+    },
+    {
+      "name": "log_rms",
+      "weight": 1.841985250500712,
+      "abs": 1.841985250500712
+    },
+    {
+      "name": "band_500_1000",
+      "weight": 1.6129739221353547,
+      "abs": 1.6129739221353547
+    },
+    {
+      "name": "spectral_centroid",
+      "weight": 1.542126860953439,
+      "abs": 1.542126860953439
+    },
+    {
+      "name": "dominant_frequency",
+      "weight": 1.5294103090532765,
+      "abs": 1.5294103090532765
+    },
+    {
+      "name": "band_1000_2000",
+      "weight": 1.4151608286629103,
+      "abs": 1.4151608286629103
+    },
+    {
+      "name": "spectral_slope",
+      "weight": -1.2119619456427775,
+      "abs": 1.2119619456427775
+    },
+    {
+      "name": "band_250_500",
+      "weight": 1.0591746496639098,
+      "abs": 1.0591746496639098
+    }
+  ],
+  "status": "READY",
+  "statusReasons": [],
+  "limitations": [
+    "This bundled model is trained on procedurally synthesised fixtures, not on a physical appliance. Its metrics demonstrate the pipeline only and must not be read as real-world accuracy.",
+    "The acoustic passport is a calibration-fit consistency check, not an anti-spoof or identity guarantee. A similar machine can share the same spectral shape.",
+    "Audio-only sensing cannot detect speaker playback of a previously recorded machine. Supervised venues are required.",
+    "Two identical machines running at the same time cannot be reliably distinguished by one microphone.",
+    "A renter-controlled phone or laptop cannot secure an unattended object; this system does not physically lock anything.",
+    "Tab suspension, sleep or microphone loss stops accrual, but creates an evidence gap that is not billed.",
+    "The classifier is trained on one object in one acoustic environment; it is not a universal appliance recogniser."
+  ],
+  "provenance": "SYNTHETIC_REFERENCE",
+  "soundprint": {
+    "schema": "whirr.soundprint.v1",
+    "method": "BAND_PROFILE_COSINE",
+    "status": "ENROLLED",
+    "gateEnabled": true,
+    "matchThreshold": 0.9148,
+    "bands": [
+      {
+        "fromHz": 50,
+        "toHz": 120,
+        "active": 0.22523,
+        "idle": 0.18411
+      },
+      {
+        "fromHz": 120,
+        "toHz": 250,
+        "active": 0.23355,
+        "idle": 0.10979
+      },
+      {
+        "fromHz": 250,
+        "toHz": 500,
+        "active": 0.18697,
+        "idle": 0.10279
+      },
+      {
+        "fromHz": 500,
+        "toHz": 1000,
+        "active": 0.14559,
+        "idle": 0.14842
+      },
+      {
+        "fromHz": 1000,
+        "toHz": 2000,
+        "active": 0.10045,
+        "idle": 0.06952
+      },
+      {
+        "fromHz": 2000,
+        "toHz": 4000,
+        "active": 0.06304,
+        "idle": 0.16663
+      },
+      {
+        "fromHz": 4000,
+        "toHz": 6000,
+        "active": 0.02744,
+        "idle": 0.11847
+      },
+      {
+        "fromHz": 6000,
+        "toHz": 7800,
+        "active": 0.01772,
+        "idle": 0.10027
+      }
+    ],
+    "activeMedianSimilarity": 0.97498,
+    "activeP10Similarity": 0.9348,
+    "nonActiveP95Similarity": 0.91262,
+    "separation": 0.02218,
+    "activeFrames": 1108,
+    "nonActiveFrames": 2290,
+    "activeTakeCount": 5,
+    "activeBlockRatio": 0.0397,
+    "nonActivePassRatio": 0.0437,
+    "notes": [
+      "This is an enrollment-fit consistency guard. It is computed from the calibration takes, not a held-out identity classifier.",
+      "It can make active time uncertain; it can never turn idle or ambiguous time into billable time.",
+      "A similar or identical machine can share this spectral profile, and recorded playback is not detectable by a microphone.",
+      "The calibration separation is narrow. The gate is enabled because it retained active frames and rejected most non-active profiles, but it should be rechecked on real sessions and after any room or microphone change."
+    ]
+  },
+  "notes": "Deterministic synthetic reference model. Trained by scripts/train-reference.ts from procedurally generated fixture takes; not calibrated on a physical object."
+}
