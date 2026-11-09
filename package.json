@@ -1,6 +1,6 @@
 {
   "name": "whirr",
-  "version": "4.0.0-rc.1",
+  "version": "4.1.0-rc.1",
   "private": true,
   "description": "Whirr Bench — acoustic pay-per-use for shared workshops. Running minutes only, a PayPal Sandbox cap before use, and an offline-verifiable proof.",
   "license": "MIT",
