@@ -6,7 +6,7 @@ import { Icon } from './visuals.tsx';
 
 export function Brand() {
   return (
-    <Link to="/" className="brand" aria-label="Whirr home">
+    <Link to="/" className="brand" aria-label="Whirr Bench home">
       <span className="brand__mark" aria-hidden="true">
         <svg width="19" height="19" viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <circle cx="16" cy="18" r="4.4" fill="currentColor" opacity=".9" />
@@ -14,9 +14,10 @@ export function Brand() {
           <path d="M3.5 12.5a13.7 13.7 0 0 1 25 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity=".45" />
         </svg>
       </span>
-      <span>
+      <span className="brand__word">
         Whirr<span className="brand__dot" aria-hidden="true" />
       </span>
+      <span className="brand__edition">Bench</span>
     </Link>
   );
 }
@@ -29,7 +30,7 @@ export function SiteHeader() {
       <div className="site-header__inner">
         <Brand />
         <nav className="nav" aria-label="Main navigation">
-          <NavLink to="/shelf">Shelf</NavLink>
+          <NavLink to="/shelf">Bench</NavLink>
           <NavLink to="/verify">Verify</NavLink>
           <NavLink to="/judge">Judge mode</NavLink>
           {session?.operator ? (
@@ -82,7 +83,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer__inner">
         <span>
-          Whirr — acoustic metering for ordinary objects. Sandbox prototype, no real money.
+          Whirr Bench — acoustic pay-per-use for shared workshops. Sandbox prototype, no real money.
         </span>
         <span className="row" style={{ gap: '0.5rem' }}>
           <Icon name="shield" size={14} />
