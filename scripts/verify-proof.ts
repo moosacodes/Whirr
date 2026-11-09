@@ -5,7 +5,7 @@ import { verifyDocument } from '../packages/verify/src/index.ts';
 async function main(): Promise<void> {
   const file = process.argv[2];
   if (!file) {
-    console.error('Usage: npm run proof:verify -- <document.json>');
+    console.error('Usage: npm run proof:verify -- <document.json> [pinned-key-id]');
     process.exitCode = 2;
     return;
   }
@@ -22,7 +22,8 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  const result = await verifyDocument(parsed);
+  const pinnedKeyId = process.argv[3]?.trim() || undefined;
+  const result = await verifyDocument(parsed, pinnedKeyId ? { trustedKeyId: pinnedKeyId } : {});
   console.log(`Whirr ${result.kind} · ${result.valid ? 'VERIFIED' : 'NOT VERIFIED'}`);
   for (const check of result.checks) {
     console.log(`${check.pass ? 'PASS' : 'FAIL'}  ${check.label}: ${check.detail}`);
