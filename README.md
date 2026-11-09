@@ -2,13 +2,13 @@
 
 **Every object has a sound. Give it a passport.**
 
-Whirr 3.0 is an acoustic passport office for ordinary objects: teach an object its sound, meter only confident use, and issue a signed, redacted **proof bundle** that a stranger can verify offline. The object stays dumb; the proof gets portable.
+Whirr 3.0.1 is an acoustic passport office for ordinary objects: teach an object its sound, meter only confident use, and issue a signed, redacted **proof bundle** that a stranger can verify offline. The object stays dumb; the proof gets portable.
 
 Whirr is a consent-based, usage-metered commerce layer for ordinary objects. A commodity microphone hears an object working, a locally trained classifier separates confident activity from idle and ambiguous sound, and the renter pays only for confident active time through a PayPal Sandbox authorization with a hard approved cap.
 
 No smart plug. No retrofit sensor. No object firmware. The object stays exactly as dumb as it was.
 
-> **Project status (9 November 2026):** the application, local ML pipeline, acoustic-passport identity gate, billing engine, evidence receipts, PayPal Sandbox integration and tests are implemented and runnable. A genuine **Sandbox** authorization and capture has been completed and provider-reconciled; the evidence and IDs are in [`docs/paypal-sandbox.md`](docs/paypal-sandbox.md). There are still **no real-object recordings**, so the bundled reference model and its passport remain synthetic pipeline evidence. Verified signed-webhook delivery, public deployment, video and Devpost submission are open items. See [`docs/go-no-go.md`](docs/go-no-go.md).
+> **Release candidate 3.0.1 (9 November 2026):** the application, local ML pipeline, acoustic-passport identity gate, billing engine, evidence receipts, PayPal Sandbox integration and tests are implemented and runnable. A genuine **Sandbox** authorization and capture has been completed and provider-reconciled; the evidence and IDs are in [`docs/paypal-sandbox.md`](docs/paypal-sandbox.md). There are still **no real-object recordings**, so the bundled reference model and its passport remain synthetic pipeline evidence. Verified signed-webhook delivery, public deployment, video and Devpost submission are open items. See [`docs/go-no-go.md`](docs/go-no-go.md) and the [3.0.1 release notes](docs/release-notes-3.0.1.md).
 
 ---
 
@@ -28,7 +28,7 @@ No smart plug. No retrofit sensor. No object firmware. The object stays exactly 
 | Portable proof v3 | Signed `whirr.proof-bundle.v3`: Merkle interval proofs, separate integrity/sensing/payment trust domains, capture provenance, redacted public bundle, QR, `/proof/:id`, CLI pinning and a single-file offline verifier |
 | Live intelligence | Open-set `UNKNOWN_OBJECT` / `LOW_CONFIDENCE` rejection, aggregated interval explanations, sensor diagnostics, bounded retry queue and interval-only replay |
 | Payment recovery | Authorization expiry, guarded reauthorization before usage, four-state payment timeline, webhook-only loopback proxy and no live PayPal calls |
-| Product surfaces | Landing, Judge Mode, Object Studio, Capture Lab, Model Review, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
+| Product surfaces | Landing, Judge Mode, Object Studio, Capture Lab, Model Review, guided Gate A trials, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
 | Safety | Operator key authentication, signed cookies, CSRF/origin checks, rate limits, CSP, ownership checks, body limits, no live PayPal host permitted |
 
 The bundled reference model is trained on procedurally synthesised fan audio. Its measured metrics demonstrate the pipeline; they are **not** evidence of accuracy on a physical fan.
@@ -53,6 +53,7 @@ Open:
 - Standalone verifier (no application imports): <http://localhost:5173/verify-offline.html>
 - Seeded service card: <http://localhost:5173/s/obj_reference_fan>
 - Seeded acoustic passport: <http://localhost:5173/passport/obj_reference_fan>
+- Guided Gate A trials (operator): <http://localhost:5173/studio/objects/obj_reference_fan/gate-a>
 - Offline replay: <http://localhost:5173/demo/offline>
 
 Read the generated operator key only when you need to sign in:
@@ -76,6 +77,17 @@ Paste it at <http://localhost:5173/operator/login>. The key is stored in `.whirr
 7. Open the receipt and run verification. A demo receipt explicitly says `DEMO_NO_PAYMENT`; it is never presented as a PayPal transaction.
 
 The offline demo replays the labelled synthetic fixture using the same frozen feature extractor, classifier and hysteresis code as the live path. It is labelled as a replay and proves the pipeline, not field accuracy.
+
+## Gate A: real-object trials
+
+Gate A is deliberately separate from the automated suite. The automated tests prove the pipeline, signing, arithmetic and payment contract; they cannot prove that a physical object was present. Use the guided page at `/studio/objects/:objectId/gate-a` with a live microphone and the actual object.
+
+1. Put the object where it normally runs and select the microphone that will meter it.
+2. Run three trials. Each trial is a 6-second ON capture followed by a 6-second OFF capture. The page records the actual active ratio, idle/uncertain time, mean confidence, passport score, clipping and failure codes. Failed phases can be retried; every attempt remains in the trial log.
+3. Download the `whirr.gate-a-trial-log.v1` JSON. It is client-reported evidence, not a signed proof of physical presence.
+4. A named reviewer must inspect the log and, only if the trials are genuine, create `docs/evidence/gate-a.json` with `realObject: true`, the three trials and the reviewer/date. `npm run gate:v3` will then and only then report Gate A PASS.
+
+Synthetic fixtures, imported WAVs and replay sessions never count. The checked-in `docs/evidence/gate-a.json` is intentionally marked OPEN. `npm run gate:a:export -- <sessionId>` packages a session for review but also keeps Gate A OPEN.
 
 ## PayPal Sandbox
 
@@ -113,12 +125,13 @@ Without credentials, everything still runs except payment: sessions are marked `
 | `npm run demo:offline` | Replay the fixture in Node and print a quote |
 | `npm run proof:verify -- file.json` | Verify a signed passport or receipt proof locally |
 | `npm run proof:verify -- bundle.json [key-id]` | Verify a v3 bundle, optionally pinned to an installation fingerprint |
+| `npm run bench` | Measure local classifier, meter and proof-verification hot paths |
 | `npm run gate:v3` | Honest PASS/OPEN/FAIL report from this database, files and provider configuration |
 | `npm run gate:a:export` | Export a Gate A review pack without closing Gate A |
 | `npm run proxy:webhook` | Loopback proxy exposing only `POST /api/paypal/webhook` (not public HTTPS) |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm test` | Unit + integration tests (requires `npm run setup` first) |
-| `npm run test:e2e` | Playwright public proof, Tamper Lab and standalone verifier checks at 1440×900 and 390×844 |
+| `npm run test:e2e` | Playwright proof, Tamper Lab, standalone verifier and full page sweep at 1440×900, 834×1112 and 390×844 |
 | `npm run smoke` | Runtime, auth and CSRF smoke checks via Fastify injection |
 | `npm run verify` | Typecheck + tests |
 
@@ -176,6 +189,8 @@ docs/                      architecture, model card, safety, threat model, PayPa
 - [Acoustic protocol](docs/acoustic-protocol.md)
 - [Proof verification](docs/proof-verification.md)
 - [Whirr 3.0 demo script](docs/demo-v3.md)
+- [3.0.1 release notes](docs/release-notes-3.0.1.md)
+- [Performance measurements](docs/performance.md)
 
 ## License
 
