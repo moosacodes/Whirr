@@ -1,0 +1,31 @@
+{
+  "schema": "whirr.performance.v1",
+  "generatedAt": "2026-11-09T21:20:30.876Z",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "win32-x64",
+    "cpu": "Intel(R) Core(TM) i5-10400F CPU @ 2.90GHz"
+  },
+  "fixture": {
+    "frames": 1715,
+    "durationMs": 54976
+  },
+  "classifier": {
+    "passes": 20,
+    "inferenceMs": 3.714870000000002,
+    "msPerFrame": 0.002166104956268223,
+    "realtimeFactor": 14798.902787984498
+  },
+  "meter": {
+    "passes": 20,
+    "inferenceAndHysteresisMs": 3.6591700000000005,
+    "msPerFrame": 0.0021336268221574346,
+    "realtimeFactor": 15024.172148328717
+  },
+  "proofVerification": {
+    "iterations": 50,
+    "msPerVerification": 2.7891460000000006,
+    "checks": 21,
+    "valid": true
+  }
+}
