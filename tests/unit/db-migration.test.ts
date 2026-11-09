@@ -45,6 +45,8 @@ describe('schema migration', () => {
     expect(sessionColumns).toContain('authorization_expires_at');
     expect(sessionColumns).toContain('capture_claim_json');
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'proof_bundles'")?.name).toBe('proof_bundles');
+    expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'field_test_recordings'")?.name).toBe('field_test_recordings');
+    expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'field_test_reports'")?.name).toBe('field_test_reports');
     store.close();
   });
 });
