@@ -1,0 +1,17 @@
+{
+  "name": "Whirr — make anything rentable",
+  "short_name": "Whirr",
+  "description": "Usage-metered access to ordinary objects, sensed by a microphone. PayPal Sandbox only.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14110f",
+  "theme_color": "#14110f",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
