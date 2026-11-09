@@ -119,3 +119,13 @@ npm run proof:verify -- path/to/document.json
 ```
 
 The protocol tests cover canonical JSON, signing, tampering, key rotation, legacy labelling and semantic checks. The integration test covers a stable signed passport, severe-preflight blocking, v2 explanations, fairness arithmetic, redacted proof verification and a hold race.
+
+## Whirr 3.0 protocol notes
+
+The signed envelope schema stays `whirr.signed.v2`; v3 adds the `proof-bundle` document type and payload `whirr.proof-bundle.v3`. Existing passports and receipt proofs are unchanged.
+
+Evidence leaves use `whirr.evidence-leaf.v1` over the session ID, sequence, timestamps, state, model version, confidence rounded to three decimals, sorted quality flags and optional explanation. Parent nodes use `whirr.merkle.v1:<left>:<right>` with SHA-256; odd nodes are promoted unchanged. The signed root and every inclusion proof are verified offline, and the receipt timeline is compared field-by-field with the ledger.
+
+Intervals may carry structured uncertainty reasons derived from flags: `UNKNOWN_OBJECT`, `LOW_CONFIDENCE`, `SOUNDPRINT_MISMATCH`, `COMPETING_SOUND`, `CLIPPED`, `SILENT`, `LOW_LEVEL`, `GAP`, `DEVICE_LOST`, `TAB_HIDDEN`. Explanations are aggregated across each closed interval instead of copying the final frame.
+
+The bundle separates integrity (cryptographically checkable), sensing (signed capture claim and classifier evidence, not physical truth) and payment (installation-recorded; not verifiable offline). See [proof verification](proof-verification.md) and [demo v3](demo-v3.md).
