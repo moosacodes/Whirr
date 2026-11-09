@@ -85,6 +85,25 @@ test.describe('public pages', () => {
   }
 });
 
+test.describe('v4 bench experience', () => {
+  test('bench story, sound tag and ticket surfaces render cleanly', async ({ page }) => {
+    await visit(page, '/');
+    await expect(page.getByRole('heading', { name: /Borrow the tool/i })).toBeVisible();
+    await expect(page.getByText('A timer bills the clock.')).toBeVisible();
+    await expect(page.getByText('PayPal is the handshake')).toBeVisible();
+
+    await visit(page, '/shelf');
+    await expect(page.getByRole('heading', { name: /Tools with a sound tag/i })).toBeVisible();
+    await expect(page.getByText('Sound tag').first()).toBeVisible();
+    await expect(page.getByText('Pay for the run, not the clock.')).toBeVisible();
+
+    await visit(page, '/s/obj_reference_fan');
+    await expect(page.getByRole('heading', { name: 'Reference desk fan' })).toBeVisible();
+    await expect(page.getByText('Authorize the cap. Then use the tool.')).toBeVisible();
+    await expect(page.getByText('Sound tag').first()).toBeVisible();
+  });
+});
+
 test.describe('operator pages', () => {
   test.beforeEach(async ({ page }) => {
     await signInAsOperator(page);
