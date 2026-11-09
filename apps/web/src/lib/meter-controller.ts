@@ -14,6 +14,20 @@ import type { IntervalExplanation } from '../../../../packages/contracts/src/typ
 
 export type LiveMeterInterval = MeterInterval & { explanation?: IntervalExplanation };
 
+export type UploadState = 'ONLINE' | 'RETRYING' | 'OFFLINE';
+
+export interface SensorDiagnostics {
+  deviceLabel: string | null;
+  sampleRate: number | null;
+  permission: 'GRANTED' | 'DENIED' | 'UNKNOWN';
+  frames: number;
+  queueDepth: number;
+  uploadFailures: number;
+  level: number;
+  passportScore: number | null;
+  lastFrameAgeMs: number | null;
+}
+
 export interface MeterControllerOptions {
   model: ModelArtifact;
   sessionId: string;
@@ -30,6 +44,8 @@ export interface MeterControllerOptions {
   onBands?: (bands: number[]) => void;
   onExplanation?: (explanation: IntervalExplanation) => void;
   onSoundprint?: (score: number | undefined, mismatch: boolean) => void;
+  onDiagnostics?: (diagnostics: SensorDiagnostics) => void;
+  onUploadState?: (state: UploadState) => void;
   onError: (message: string, fatal: boolean) => void;
   onDeviceLost: () => void;
   onCapReached: (quoteMinor: number) => void;
@@ -43,11 +59,19 @@ interface BatchResponse {
   meterClockMs: number;
 }
 
+interface ExplanationBucket {
+  frames: number;
+  passportSum: number;
+  passportCount: number;
+  features: Map<string, { valueSum: number; contributionSum: number; count: number }>;
+}
+
 const FLUSH_INTERVAL_MS = 2_000;
 
 /**
  * Owns the live sensing loop. React never touches audio buffers; this class
  * runs inference, keeps the hysteresis state and uploads only sealed intervals.
+ * Failed uploads stay in the in-memory queue and are retried in order.
  */
 export class MeterController {
   private readonly options: MeterControllerOptions;
@@ -63,6 +87,25 @@ export class MeterController {
   private capNotified = false;
   private frameTick = 0;
   private latestExplanation: IntervalExplanation | null = null;
+  private readonly explanations = new Map<number, ExplanationBucket>();
+  private frameCount = 0;
+  private uploadFailures = 0;
+  private latestLevel = 0;
+  private latestPassport: number | null = null;
+  private lastFrameAt: number | null = null;
+  private uploadState: UploadState = 'ONLINE';
+
+  private readonly handleOffline = () => {
+    if (navigator.onLine === false) this.setUploadState('OFFLINE');
+  };
+  private readonly handleOnline = () => {
+    if (this.pending.length > 0) {
+      this.setUploadState('RETRYING');
+      void this.flush().catch(() => undefined);
+    } else {
+      this.setUploadState('ONLINE');
+    }
+  };
 
   constructor(options: MeterControllerOptions) {
     this.options = options;
@@ -82,6 +125,8 @@ export class MeterController {
     this.meter = new MeterStream(this.options.model.policy);
     this.meter.reset(this.options.baseMs);
     this.running = true;
+    window.addEventListener('offline', this.handleOffline);
+    window.addEventListener('online', this.handleOnline);
 
     this.engine = new MicrophoneEngine({
       onFrame: (frame) => {
@@ -106,18 +151,25 @@ export class MeterController {
           topFeatures: explanation.topFeatures,
           summary: explanation.summary,
         };
+        this.addExplanation(this.meter.currentStartMs, this.latestExplanation);
         this.frameTick += 1;
+        this.frameCount += 1;
+        this.latestPassport =
+          typeof prediction.soundprintScore === 'number' ? prediction.soundprintScore : null;
+        this.lastFrameAt = Date.now();
         if (this.frameTick % 3 === 0) {
           const bands = frame.features.slice(10, 18).map((value) => Math.max(0, Math.min(1, value)));
           this.options.onBands?.(bands);
           this.options.onExplanation?.(this.latestExplanation);
+          this.emitDiagnostics();
         }
         this.options.onSoundprint?.(prediction.soundprintScore, Boolean(prediction.soundprintMismatch));
         const closed = this.meter.push(prediction);
         this.lastEndMs = Math.max(this.lastEndMs, globalEnd);
         for (const closedInterval of closed) {
-          const interval: LiveMeterInterval = this.latestExplanation
-            ? { ...closedInterval, explanation: this.latestExplanation }
+          const sealed = this.sealExplanation(closedInterval.startMs) ?? this.latestExplanation;
+          const interval: LiveMeterInterval = sealed
+            ? { ...closedInterval, explanation: sealed }
             : closedInterval;
           this.billedMs += interval.state === 'ACTIVE_CONFIDENT' ? interval.endMs - interval.startMs : 0;
           this.pending.push(interval);
@@ -141,23 +193,28 @@ export class MeterController {
           this.options.onCapReached(quote.finalMinor);
         }
       },
-      onLevel: (rms) => this.options.onLevel(rms),
+      onLevel: (rms) => {
+        this.latestLevel = rms;
+        this.options.onLevel(rms);
+      },
       onError: (message) => this.options.onError(message, false),
       onEnded: () => {
         if (!this.running || this.stopped) return;
         this.running = false;
         this.stopTimer();
         if (this.meter) {
-      const closed = this.meter.disconnect(this.lastEndMs, 'DEVICE_LOST');
-      for (const closedInterval of closed) {
-        const interval: LiveMeterInterval = this.latestExplanation
-          ? { ...closedInterval, explanation: this.latestExplanation }
-          : closedInterval;
+          const closed = this.meter.disconnect(this.lastEndMs, 'DEVICE_LOST');
+          for (const closedInterval of closed) {
+            const sealed = this.sealExplanation(closedInterval.startMs) ?? this.latestExplanation;
+            const interval: LiveMeterInterval = sealed
+              ? { ...closedInterval, explanation: sealed }
+              : closedInterval;
             this.billedMs += interval.state === 'ACTIVE_CONFIDENT' ? interval.endMs - interval.startMs : 0;
             this.pending.push(interval);
             this.options.onInterval(interval);
           }
         }
+        this.emitDiagnostics();
         void this.flush().catch(() => undefined);
         this.options.onDeviceLost();
       },
@@ -167,6 +224,8 @@ export class MeterController {
       await this.engine.start(deviceId);
     } catch (error) {
       this.running = false;
+      this.removeNetworkListeners();
+      this.emitDiagnostics('DENIED');
       if (this.engine) await this.engine.stop();
       this.engine = null;
       throw error;
@@ -179,6 +238,7 @@ export class MeterController {
         }
       });
     }, FLUSH_INTERVAL_MS);
+    this.emitDiagnostics();
   }
 
   /** Stops capture, seals the open interval and uploads every pending interval. */
@@ -187,6 +247,7 @@ export class MeterController {
     this.stopped = true;
     this.running = false;
     this.stopTimer();
+    this.removeNetworkListeners();
     if (this.engine) {
       await this.engine.stop();
       this.engine = null;
@@ -194,8 +255,9 @@ export class MeterController {
     if (this.meter) {
       const closed = this.meter.flush(this.lastEndMs);
       for (const closedInterval of closed) {
-        const interval: LiveMeterInterval = this.latestExplanation
-          ? { ...closedInterval, explanation: this.latestExplanation }
+        const sealed = this.sealExplanation(closedInterval.startMs) ?? this.latestExplanation;
+        const interval: LiveMeterInterval = sealed
+          ? { ...closedInterval, explanation: sealed }
           : closedInterval;
         this.billedMs += interval.state === 'ACTIVE_CONFIDENT' ? interval.endMs - interval.startMs : 0;
         this.pending.push(interval);
@@ -204,16 +266,25 @@ export class MeterController {
     }
     await this.flush();
     this.options.onState('DISCONNECTED');
+    this.emitDiagnostics();
   }
 
-  /** Stops without flushing (unmount / fatal auth error). */
+  /**
+   * Stops capture and makes one best-effort final upload. Any failed batch is
+   * retained by flush; callers must surface the error rather than presenting a
+   * successful close.
+   */
   async hardStop(): Promise<void> {
     this.stopped = true;
     this.running = false;
     this.stopTimer();
+    this.removeNetworkListeners();
     if (this.engine) {
       await this.engine.stop();
       this.engine = null;
+    }
+    if (this.pending.length > 0) {
+      await this.flush().catch(() => undefined);
     }
   }
 
@@ -224,6 +295,82 @@ export class MeterController {
     }
   }
 
+  private removeNetworkListeners(): void {
+    window.removeEventListener('offline', this.handleOffline);
+    window.removeEventListener('online', this.handleOnline);
+  }
+
+  private addExplanation(startMs: number, explanation: IntervalExplanation): void {
+    const bucket = this.explanations.get(startMs) ?? {
+      frames: 0,
+      passportSum: 0,
+      passportCount: 0,
+      features: new Map(),
+    };
+    bucket.frames += 1;
+    if (typeof explanation.passportScore === 'number') {
+      bucket.passportSum += explanation.passportScore;
+      bucket.passportCount += 1;
+    }
+    for (const feature of explanation.topFeatures) {
+      const current = bucket.features.get(feature.name) ?? {
+        valueSum: 0,
+        contributionSum: 0,
+        count: 0,
+      };
+      current.valueSum += feature.value;
+      current.contributionSum += feature.contribution;
+      current.count += 1;
+      bucket.features.set(feature.name, current);
+    }
+    this.explanations.set(startMs, bucket);
+  }
+
+  private sealExplanation(startMs: number): IntervalExplanation | null {
+    const bucket = this.explanations.get(startMs);
+    if (!bucket) return null;
+    this.explanations.delete(startMs);
+    const features = [...bucket.features.entries()]
+      .map(([name, value]) => ({
+        name,
+        value: value.valueSum / Math.max(1, value.count),
+        contribution: value.contributionSum,
+      }))
+      .sort((left, right) => right.contribution - left.contribution)
+      .slice(0, 6);
+    const passportScore =
+      bucket.passportCount > 0 ? bucket.passportSum / bucket.passportCount : null;
+    const leading = features
+      .slice(0, 3)
+      .map((feature) => feature.name)
+      .join(', ');
+    return {
+      schema: 'whirr.explanation.v1',
+      passportScore,
+      topFeatures: features,
+      summary: `Aggregated over ${bucket.frames} frames: ${leading || 'no dominant feature'} carried the decision. ${
+        passportScore === null
+          ? 'No acoustic passport score was available.'
+          : `Mean passport similarity ${(passportScore * 100).toFixed(0)}%.`
+      }`,
+    };
+  }
+
+  private emitDiagnostics(permission: 'GRANTED' | 'DENIED' | 'UNKNOWN' = 'GRANTED'): void {
+    this.options.onDiagnostics?.({
+      deviceLabel: this.engine?.deviceLabel ?? null,
+      sampleRate: this.engine?.sampleRate ?? null,
+      permission,
+      frames: this.frameCount,
+      queueDepth: this.pending.length,
+      uploadFailures: this.uploadFailures,
+      level: this.latestLevel,
+      passportScore: this.latestPassport,
+      lastFrameAgeMs:
+        this.lastFrameAt === null ? null : Math.max(0, Date.now() - this.lastFrameAt),
+    });
+  }
+
   private async flush(): Promise<void> {
     if (this.flushInFlight) {
       await this.flushInFlight;
@@ -231,6 +378,7 @@ export class MeterController {
     if (this.pending.length === 0) return;
     const batch = this.pending.splice(0, this.pending.length);
     const seq = this.options.seq.value + 1;
+    this.emitDiagnostics();
     const request = api<BatchResponse>(`/api/sessions/${this.options.sessionId}/intervals`, {
       method: 'POST',
       body: {
@@ -250,14 +398,28 @@ export class MeterController {
       .then((response) => {
         if (response.lastClientSeq > this.options.seq.value) this.options.seq.value = response.lastClientSeq;
         else if (!response.duplicate) this.options.seq.value = seq;
+        this.uploadFailures = 0;
+        this.setUploadState('ONLINE');
+        this.emitDiagnostics();
       })
       .catch((error) => {
+        this.uploadFailures += 1;
         this.pending.unshift(...batch);
+        this.setUploadState(
+          typeof navigator !== 'undefined' && navigator.onLine === false ? 'OFFLINE' : 'RETRYING',
+        );
+        this.emitDiagnostics();
         throw error;
       });
     this.flushInFlight = request.finally(() => {
       this.flushInFlight = null;
     });
     await this.flushInFlight;
+  }
+
+  private setUploadState(state: UploadState): void {
+    if (this.uploadState === state) return;
+    this.uploadState = state;
+    this.options.onUploadState?.(state);
   }
 }

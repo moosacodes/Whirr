@@ -48,6 +48,14 @@ export class MicrophoneEngine {
     return this.running;
   }
 
+  get deviceLabel(): string | null {
+    return this.stream?.getAudioTracks()[0]?.label || null;
+  }
+
+  get sampleRate(): number | null {
+    return this.context?.sampleRate ?? null;
+  }
+
   async start(deviceId?: string, signal?: AbortSignal): Promise<void> {
     if (this.running) return;
     if (signal?.aborted) throw new DOMException('Microphone start was cancelled.', 'AbortError');
