@@ -17,6 +17,8 @@ export class Store {
     this.db.exec(SCHEMA_SQL);
     this.ensureColumn('observed_intervals', 'explanation_json', 'TEXT');
     this.ensureColumn('disputes', 'reason_code', 'TEXT');
+    this.ensureColumn('sessions', 'authorization_expires_at', 'TEXT');
+    this.ensureColumn('sessions', 'capture_claim_json', 'TEXT');
     const version = this.get<{ user_version: number }>('PRAGMA user_version');
     if (!version || version.user_version !== SCHEMA_VERSION) {
       this.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION};`);

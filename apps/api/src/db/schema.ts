@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   paypal_refund_id TEXT,
   provider_status TEXT,
   provider_reconciled_at TEXT,
+  authorization_expires_at TEXT,
+  capture_claim_json TEXT,
   captured_minor INTEGER,
   evidence_hash TEXT,
   failure_reason TEXT
@@ -314,6 +316,15 @@ CREATE TABLE IF NOT EXISTS object_holds (
 );
 
 CREATE INDEX IF NOT EXISTS idx_holds_object ON object_holds(object_id, expires_at);
+
+CREATE TABLE IF NOT EXISTS proof_bundles (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL UNIQUE REFERENCES sessions(id) ON DELETE CASCADE,
+  payload_hash TEXT NOT NULL,
+  document_json TEXT NOT NULL,
+  public_document_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS receipt_proofs (
   id TEXT PRIMARY KEY,
