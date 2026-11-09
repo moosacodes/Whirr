@@ -574,8 +574,16 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
     limitRequest(ctx, req, 'paypal-status', 60, 60_000);
     const { id } = req.params as { id: string };
     const { actor } = sessionActor(ctx, req, id);
-    const query = req.query as { reconcile?: string };
-    return getPaymentStatus(ctx, actor, id, query.reconcile !== '0');
+    // A GET is a safe read. Reconciliation performs provider and local state
+    // changes, so it has an explicit POST endpoint protected by CSRF.
+    return getPaymentStatus(ctx, actor, id, false);
+  });
+
+  app.post('/api/sessions/:id/paypal/reconcile', async (req) => {
+    limitRequest(ctx, req, 'paypal-reconcile', 30, 60_000);
+    const { id } = req.params as { id: string };
+    const { actor } = sessionActor(ctx, req, id);
+    return getPaymentStatus(ctx, actor, id, true);
   });
 
   app.post('/api/sessions/:id/start', async (req) => {

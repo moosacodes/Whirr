@@ -377,10 +377,13 @@ export function buildSessionView(ctx: AppContext, session: SessionRow, actor: Ac
     (session.payment_state === 'AUTHORIZED' && !authorizationExpired) || session.payment_state === 'DEMO_MODE';
   const approved =
     session.review_mode === 'AUTO' || Boolean(session.operator_approved_at);
+  const captureReady =
+    session.payment_state === 'AUTHORIZED' && session.state === 'REVIEWED';
+  const retryingLostCapture =
+    session.payment_state === 'CAPTURE_REQUESTED' && session.state === 'SETTLEMENT_PENDING';
   const canCapture =
     session.quote_minor > 0 &&
-    session.payment_state === 'AUTHORIZED' &&
-    session.state === 'REVIEWED' &&
+    (captureReady || retryingLostCapture) &&
     Boolean(session.reviewed_quote_hash) &&
     session.reviewed_quote_hash === session.quote_hash &&
     approved &&
@@ -493,6 +496,7 @@ export function buildSessionView(ctx: AppContext, session: SessionRow, actor: Ac
       canAcceptReview:
         session.state === 'STOPPED' && open === 0 && Boolean(session.quote_hash) && !session.reviewed_at,
       canCapture,
+      canRetryCapture: retryingLostCapture && canCapture,
       canVoid:
         session.payment_state === 'AUTHORIZED' &&
         session.quote_minor === 0 &&
