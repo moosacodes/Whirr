@@ -183,6 +183,7 @@ function setPayment(
     captureId?: string | null;
     refundId?: string | null;
     capturedMinor?: number | null;
+    authorizationExpiresAt?: string | null;
     finalizedAt?: string | null;
     failureReason?: string | null;
   },
@@ -202,6 +203,7 @@ function setPayment(
   if (input.captureId !== undefined) set('paypal_capture_id', input.captureId);
   if (input.refundId !== undefined) set('paypal_refund_id', input.refundId);
   if (input.capturedMinor !== undefined) set('captured_minor', input.capturedMinor);
+  if (input.authorizationExpiresAt !== undefined) set('authorization_expires_at', input.authorizationExpiresAt);
   if (input.finalizedAt !== undefined) set('finalized_at', input.finalizedAt);
   if (input.failureReason !== undefined) set('failure_reason', input.failureReason);
   if (fields.length === 0) return;
@@ -410,6 +412,7 @@ export async function authorizeReturnPayment(
       state: 'READY',
       authorizationId: authoritative.id,
       providerStatus: authoritative.status,
+      authorizationExpiresAt: authoritative.expiration_time ?? null,
       failureReason: null,
     });
     ctx.store.run('UPDATE sessions SET provider_reconciled_at = ? WHERE id = ?', ctx.now().toISOString(), session.id);
@@ -446,6 +449,12 @@ export async function capturePayment(
   let session = requireSessionForActor(ctx, sessionId, actor);
   if (session.captured_minor !== null || session.payment_state === 'CAPTURE_COMPLETED') {
     return buildSessionView(ctx, session, actor);
+  }
+  if (session.authorization_expires_at && Date.parse(session.authorization_expires_at) <= ctx.now().getTime()) {
+    throw errors.conflict(
+      'AUTHORIZATION_EXPIRED',
+      'The PayPal authorization expired before capture. Reauthorize before metering or open a new session; no charge was made.',
+    );
   }
   if (session.state !== 'REVIEWED') {
     throw errors.conflict('REVIEW_REQUIRED', 'The renter must review and accept the bill before capture.');
@@ -621,6 +630,49 @@ export async function capturePayment(
     setPayment(ctx, session.id, { providerStatus: 'CAPTURE_OUTCOME_UNKNOWN' });
     throw providerFailure(error);
   }
+}
+
+export async function reauthorizePayment(
+  ctx: AppContext,
+  actor: Actor,
+  sessionId: string,
+  origin: string,
+): Promise<{ orderId: string; approveUrl: string | null }> {
+  requirePayPal(ctx);
+  const session = requireSessionForActor(ctx, sessionId, actor);
+  if (session.state !== 'READY' || session.payment_state !== 'AUTHORIZED') {
+    throw errors.conflict('INVALID_STATE', 'Reauthorization is only available before metering starts.');
+  }
+  if (!session.authorization_expires_at || Date.parse(session.authorization_expires_at) > ctx.now().getTime()) {
+    throw errors.conflict('AUTHORIZATION_ACTIVE', 'The existing authorization has not expired.');
+  }
+  const intervals = loadIntervals(ctx, session.id);
+  if (session.billable_ms > 0 || intervals.length > 0 || session.reviewed_at) {
+    throw errors.conflict(
+      'AUTHORIZATION_IN_USE',
+      'This authorization has recorded usage or a reviewed bill and cannot be silently replaced. Use operator recovery.',
+    );
+  }
+  const oldAuthorization = session.paypal_authorization_id;
+  setPayment(ctx, session.id, {
+    paymentState: 'NONE',
+    state: 'CONSENTED',
+    orderId: null,
+    approveUrl: null,
+    authorizationId: null,
+    providerStatus: oldAuthorization ? `REAUTHORIZED_AFTER_EXPIRY:${oldAuthorization}` : 'REAUTHORIZED_AFTER_EXPIRY',
+    authorizationExpiresAt: null,
+    failureReason: null,
+  });
+  appendAudit(ctx.store, {
+    actorType: actor.type,
+    actorId: actor.id,
+    action: 'payment.reauthorization_started',
+    subjectType: 'session',
+    subjectId: session.id,
+    metadata: { previousAuthorizationId: oldAuthorization, previousExpiry: session.authorization_expires_at, billableMs: 0 },
+  }, ctx.now());
+  return createAuthorizationOrder(ctx, session.renter_id, session.id, origin);
 }
 
 export async function voidPayment(ctx: AppContext, actor: Actor, sessionId: string): Promise<SessionView> {
