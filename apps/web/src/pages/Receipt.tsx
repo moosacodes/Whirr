@@ -6,7 +6,8 @@ import type {
   ReceiptVerification,
   ReceiptTimelineEntry,
   SessionView,
-  SignedReceiptProof,
+  SignedProofBundle,
+  TrustDomainStatus,
 } from '../../../../packages/contracts/src/types.ts';
 import {
   Button,
@@ -46,7 +47,7 @@ export function ReceiptPage() {
   const [data, setData] = useState<ReceiptResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [proof, setProof] = useState<SignedReceiptProof | null>(null);
+  const [bundle, setBundle] = useState<SignedProofBundle | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'billed' | 'free' | 'uncertain' | 'mismatch'>('all');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -61,9 +62,9 @@ export function ReceiptPage() {
 
   useEffect(() => {
     let cancelled = false;
-    api<SignedReceiptProof>(`/api/sessions/${id}/proof`)
+    api<SignedProofBundle>(`/api/sessions/${id}/bundle`)
       .then((next) => {
-        if (!cancelled) setProof(next);
+        if (!cancelled) setBundle(next);
       })
       .catch((err) => {
         if (!cancelled) setProofError(errorMessage(err));
@@ -74,14 +75,14 @@ export function ReceiptPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!proof) {
+    if (!bundle) {
       setQr(null);
       return;
     }
-    makeQrDataUrl(`${window.location.origin}/api/proofs/${proof.payload.proofId}`)
+    makeQrDataUrl(`${window.location.origin}/proof/${bundle.payload.bundleId}`)
       .then(setQr)
       .catch(() => setQr(null));
-  }, [proof]);
+  }, [bundle]);
 
   usePageTitle(data ? `Receipt ${data.receipt.receiptId}` : 'Evidence receipt');
 
@@ -144,10 +145,9 @@ export function ReceiptPage() {
             </Button>
             <a className="btn btn--secondary" href={`/api/sessions/${id}/receipt/export`}>
               <Icon name="download" size={15} /> JSON
-            </a>
-            <a className="btn btn--secondary" href={`/api/sessions/${id}/proof`} download>
-              <Icon name="shield" size={15} /> Signed proof
-            </a>
+            </a>              <a className="btn btn--secondary" href={`/api/sessions/${id}/bundle`} download>
+                <Icon name="shield" size={15} /> Proof bundle v3
+              </a>
             <a className="btn btn--ghost" href={`/api/sessions/${id}/receipt/export?redacted=1`}>
               Redacted
             </a>
@@ -447,6 +447,28 @@ export function ReceiptPage() {
             </section>
 
             <section className="card stack">
+              <h2 className="h3">Capture provenance</h2>
+              {session.captureClaim ? (
+                <>
+                  <span className="chip chip--warn">{session.captureClaim.provenance.replaceAll('_', ' ').toLowerCase()}</span>
+                  <dl className="kv">
+                    <dt>Provenance</dt>
+                    <dd>{session.captureClaim.provenance}</dd>
+                    <dt>Device</dt>
+                    <dd>{session.captureClaim.deviceLabel ?? 'not recorded'}</dd>
+                    <dt>Sample rate</dt>
+                    <dd className="mono">{session.captureClaim.sampleRate ? `${session.captureClaim.sampleRate} Hz` : '—'}</dd>
+                    <dt>Claimed</dt>
+                    <dd>{dateTime(session.captureClaim.claimedAt)}</dd>
+                  </dl>
+                  <p className="tiny muted">{session.captureClaim.note}</p>
+                </>
+              ) : (
+                <p className="tiny muted">No capture claim exists for this session. The receipt cannot attribute the intervals to a live microphone.</p>
+              )}
+            </section>
+
+            <section className="card stack">
               <h2 className="h3">Model</h2>
               <div className="row">
                 <span className={`chip chip--${receipt.model.status === 'READY' ? 'ok' : receipt.model.status === 'LIMITED' ? 'warn' : 'danger'}`}>
@@ -498,32 +520,49 @@ export function ReceiptPage() {
             <section className="card stack">
               <span className="eyebrow">Shareable proof card</span>
               <h2 className="h3">A receipt with a seal.</h2>
-              {proof ? (
+              {bundle ? (
                 <>
                   <div className="proof-card">
                     <div className="row row--between">
-                      <span className="chip chip--ok">signed · redacted</span>
-                      <span className="tiny mono">{proof.payload.proofId}</span>
+                      <span className="chip chip--ok">signed · bundle v3</span>
+                      <span className="tiny mono">{bundle.payload.bundleId}</span>
                     </div>
                     <div className="proof-card__qr">
-                      {qr ? <img src={qr} alt="QR code to the signed receipt proof" width={148} height={148} /> : null}
+                      {qr ? <img src={qr} alt="QR code to the public proof bundle" width={148} height={148} /> : null}
                     </div>
                     <p className="small" style={{ margin: 0 }}>
-                      {proof.payload.object.name} · {money(proof.payload.pricing.quoteMinor, proof.payload.pricing.currency)} ·{' '}
-                      {duration(proof.payload.pricing.billableMs)}
+                      {bundle.payload.receipt.object.name} · {money(bundle.payload.receipt.pricing.quoteMinor, bundle.payload.receipt.pricing.currency)} ·{' '}
+                      {duration(bundle.payload.receipt.totals.billableMs)}
                     </p>
                     <p className="tiny muted">
-                      No renter reference, full payment ID or audio. The QR fetches this proof by its public ID; verify the
-                      signature offline at <Link to="/verify">/verify</Link>.
+                      Includes the full receipt proof, passport, {bundle.payload.merkle.leafCount} Merkle interval leaves and a three-domain trust matrix. The QR opens the redacted public bundle.
                     </p>
-                    <a className="btn btn--secondary btn--sm" href={`/api/sessions/${id}/proof`} download>
-                      <Icon name="download" size={14} /> Download proof JSON
-                    </a>
+                    <div className="row">
+                      <Link className="btn btn--secondary btn--sm" to={`/proof/${bundle.payload.bundleId}`}>
+                        Open public proof
+                      </Link>
+                      <a className="btn btn--ghost btn--sm" href={`/api/sessions/${id}/bundle`} download>
+                        <Icon name="download" size={14} /> Authenticated bundle
+                      </a>
+                    </div>
                   </div>
-                  <code className="mono tiny break">{proof.keyId}</code>
+                  <code className="mono tiny break">{bundle.keyId}</code>
+                  <div className="stack" style={{ gap: '0.45rem' }}>
+                    {bundle.payload.trust.map((domain: TrustDomainStatus) => (
+                      <div key={domain.domain} className="panel">
+                        <div className="row row--between">
+                          <strong className="small">{domain.domain}</strong>
+                          <span className={`chip ${domain.status === 'VERIFIED_OFFLINE' ? 'chip--ok' : domain.status === 'NOT_VERIFIABLE_OFFLINE' ? 'chip--warn' : 'chip--danger'}`}>
+                            {domain.status.replaceAll('_', ' ').toLowerCase()}
+                          </span>
+                        </div>
+                        <p className="tiny muted" style={{ marginTop: 4 }}>{domain.detail}</p>
+                      </div>
+                    ))}
+                  </div>
                 </>
               ) : (
-                <p className="tiny muted">{proofError ?? 'Preparing the signed proof…'}</p>
+                <p className="tiny muted">{proofError ?? 'Preparing the signed proof bundle…'}</p>
               )}
             </section>
 
