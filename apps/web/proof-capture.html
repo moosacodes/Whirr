@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Whirr physical proof — desk fan</title>
+    <style>
+      :root {
+        --bg: #0b0a09;
+        --panel: #171512;
+        --line: #35302a;
+        --ink: #f6f0e7;
+        --muted: #b5aa9b;
+        --accent: #d8ff72;
+        --warn: #ffd58a;
+        --danger: #ff9a8a;
+        --ok: #9dffc2;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); }
+      body {
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+      }
+      main { width: min(960px, 100%); }
+      .eyebrow {
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(42px, 7vw, 88px);
+        letter-spacing: -0.045em;
+        line-height: 0.95;
+        margin: 14px 0 22px;
+      }
+      h2 { font-size: clamp(28px, 4vw, 52px); line-height: 1.05; margin: 0 0 14px; }
+      p { color: var(--muted); font-size: 18px; line-height: 1.55; margin: 0 0 14px; }
+      strong { color: var(--ink); }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: clamp(24px, 4vw, 44px);
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.38);
+      }
+      .steps { margin: 22px 0 28px; padding-left: 24px; color: var(--muted); font-size: 17px; line-height: 1.7; }
+      .steps strong { color: var(--ink); }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #161a08;
+        cursor: pointer;
+        font: inherit;
+        font-size: 20px;
+        font-weight: 800;
+        padding: 18px 34px;
+      }
+      button:disabled { cursor: default; opacity: 0.55; }
+      .hint { font-size: 14px; color: var(--muted); margin-top: 16px; }
+      .hidden { display: none !important; }
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 13px;
+        padding: 7px 12px;
+      }
+      .pill.ok { border-color: #3c654c; color: var(--ok); }
+      .pill.warn { border-color: #6c5730; color: var(--warn); }
+      .stepNo { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+      .instruction { min-height: 92px; }
+      .detail { color: var(--muted); font-size: 18px; }
+      .count {
+        color: var(--accent);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: clamp(58px, 12vw, 150px);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.06em;
+        line-height: 1;
+        margin: 22px 0 20px;
+      }
+      .bar {
+        height: 16px;
+        border-radius: 999px;
+        background: #29241e;
+        overflow: hidden;
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+        transition: width 80ms linear;
+      }
+      .level {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 13px;
+        margin-top: 14px;
+      }
+      .level .meter {
+        flex: 1;
+        height: 9px;
+        background: #29241e;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .level .meter span { display: block; width: 0; height: 100%; background: var(--ok); }
+      .log {
+        border-top: 1px solid var(--line);
+        margin-top: 26px;
+        padding-top: 18px;
+        color: var(--muted);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.8;
+        max-height: 170px;
+        overflow: auto;
+      }
+      .log b { color: var(--ink); font-weight: 600; }
+      .error { color: var(--danger); }
+      .complete { color: var(--ok); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card" id="app">
+        <div class="eyebrow">Whirr · physical proof</div>
+        <h1>Desk fan.<br />Metered by ear.</h1>
+        <p>
+          This window records real audio from the <strong>Jack Mic</strong> and extracts features on this device. It is
+          not a simulation: your fan must actually switch on and off for the active takes.
+        </p>
+        <ol class="steps">
+          <li>Put the desk fan <strong>near the microphone</strong>, pointing at it if possible.</li>
+          <li>Set the fan to <strong>high</strong>. Leave it <strong>off</strong> for now.</li>
+          <li>Keep the room reasonably quiet. Press <strong>BEGIN</strong>, then follow the large prompts.</li>
+        </ol>
+        <button id="begin" type="button">BEGIN · fan is off and in place</button>
+        <p class="hint" id="hint">Six takes: idle, active, idle, active, two different-sound takes. About three minutes. Nothing is uploaded until a take finishes.</p>
+
+        <section id="run" class="hidden">
+          <div class="status">
+            <span class="pill" id="devicePill">Microphone: waiting</span>
+            <span class="pill" id="takePill">Take 0 / 6</span>
+            <span class="pill" id="phasePill">Preparing</span>
+          </div>
+          <div class="stepNo" id="stepNo">Stand by</div>
+          <div class="instruction">
+            <h2 id="instruction">Preparing microphone</h2>
+            <div class="detail" id="detail">Allow the microphone if the browser asks.</div>
+          </div>
+          <div class="count" id="count">—</div>
+          <div class="bar"><span id="progress"></span></div>
+          <div class="level">
+            <span>MIC</span>
+            <span class="meter"><span id="levelBar"></span></span>
+            <span id="levelText">0.000000</span>
+          </div>
+          <div class="log" id="log"></div>
+        </section>
+
+        <section id="finished" class="hidden">
+          <div class="stepNo complete">Calibration captured</div>
+          <h2>Six real takes uploaded.</h2>
+          <p id="summary">The operator is training the model now.</p>
+          <div class="log" id="resultLog"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/src/proof-capture.js"></script>
+  </body>
+</html>
