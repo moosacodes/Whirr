@@ -78,6 +78,13 @@ import { createHold, releaseHold } from '../domain/holds.ts';
 import { listShelf, requireShelfObject } from '../domain/shelf.ts';
 import { drainOutbox, ingestWebhook } from '../domain/webhooks.ts';
 import { buildJudgeStatus, judgeChecks } from '../domain/judge.ts';
+import {
+  deleteFieldTrial,
+  fieldValidationSummary,
+  publicFieldReport,
+  submitFieldReport,
+  submitFieldTrial,
+} from '../domain/field-test.ts';
 import { normaliseOrigin } from '../config.ts';
 import {
   consentSchema,
@@ -97,6 +104,7 @@ import {
   takeRoleUpdateSchema,
   takeUploadSchema,
   termsPublishSchema,
+  fieldTrialUploadSchema,
 } from '../../../../packages/contracts/src/schemas.ts';
 import type {
   AuthSessionView,
@@ -263,6 +271,7 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
         webhookConfigured: ctx.config.paypal.webhookConfigured,
       },
       example: exampleQuotes(terms),
+      fieldValidation: fieldValidationSummary(ctx, modelRow),
       limitations: parseArtifact(modelRow).limitations,
       privacy: [
         'Audio is processed on this device. Only acoustic features and state intervals are sent to the local Whirr server; raw audio is never uploaded or stored.',
@@ -405,6 +414,44 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
     const result = trainObject(ctx, operator, id);
     const object = requireObject(ctx, id, operator.id);
     return { ...result, object: ownerObjectView(ctx, object) };
+  });
+
+  app.get('/api/operator/objects/:id/field-test', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    const object = requireObject(ctx, id, operator.id);
+    return ownerObjectView(ctx, object).fieldTest;
+  });
+
+  app.post('/api/operator/objects/:id/field-trials', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    limitRequest(ctx, req, 'field-trial', 30, 60_000);
+    const body = parseBody(fieldTrialUploadSchema, req.body);
+    const result = submitFieldTrial(ctx, operator, id, body);
+    reply.code(201);
+    return result;
+  });
+
+  app.delete('/api/operator/objects/:id/field-trials/:trialId', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const { id, trialId } = req.params as { id: string; trialId: string };
+    return { fieldTest: deleteFieldTrial(ctx, operator, id, trialId) };
+  });
+
+  app.post('/api/operator/objects/:id/field-report', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    limitRequest(ctx, req, 'field-report', 10, 60_000);
+    const result = submitFieldReport(ctx, operator, id);
+    reply.code(201);
+    return result;
+  });
+
+  app.get('/api/field-reports/:id', async (req) => {
+    limitRequest(ctx, req, 'field-report-public', 60, 60_000);
+    const { id } = req.params as { id: string };
+    return publicFieldReport(ctx, id);
   });
 
   app.put('/api/operator/objects/:id/terms', async (req, reply) => {

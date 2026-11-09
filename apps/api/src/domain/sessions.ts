@@ -11,6 +11,7 @@ import type {
 } from './rows.ts';
 import { parseArtifact, parseTerms } from './rows.ts';
 import { activeModel, activeTerms, getObject, getModel, getTerms } from './objects.ts';
+import { assertFieldValidationPassed } from './field-test.ts';
 import { newId } from '../lib/ids.ts';
 import { hashCanonical, signSessionToken, verifySessionToken } from '../lib/hash.ts';
 import { errors } from '../lib/errors.ts';
@@ -549,6 +550,7 @@ export function createSession(ctx: AppContext, renter: UserRow, objectId: string
     throw errors.conflict('NOT_CALIBRATED', 'This object has not been calibrated for billing yet.');
   }
   if (!terms) throw errors.conflict('NO_TERMS', 'This object has no published price terms.');
+  assertFieldValidationPassed(ctx, model);
 
   const existing = sameRenterIdempotentSession(ctx, objectId, renter.id);
   if (existing) return buildSessionView(ctx, existing, { type: 'renter', id: renter.id });
