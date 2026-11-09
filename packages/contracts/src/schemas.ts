@@ -3,6 +3,7 @@ import { FEATURE_COUNT, FEATURE_SPEC_VERSION, QUALITY_FLAGS } from '../../audio/
 import { SUPPORTED_CURRENCIES } from '../../meter/src/currency.ts';
 import { METER_STATES } from '../../meter/src/intervals.ts';
 import { OBJECT_CATEGORIES, OBJECT_GLYPHS, TAKE_LABELS, TAKE_ROLES } from './types.ts';
+import { FIELD_TRIAL_KINDS } from '../../audio/src/field-eval.ts';
 
 const finiteNumber = z.number().finite();
 const hash64 = z.string().regex(/^[a-f0-9]{64}$/, 'Expected a 64-character lowercase hex hash');
@@ -202,3 +203,35 @@ export const shelfListingSchema = z.object({
 });
 
 export const fairnessReserveSchema = z.object({});
+
+export const fieldTrialUploadSchema = z
+  .object({
+    kind: z.enum(FIELD_TRIAL_KINDS as unknown as [string, ...string[]]),
+    frames: z.array(featureVectorSchema).min(200).max(3_000),
+    frameFlags: z.array(z.array(qualityFlagSchema).max(8)).max(3_000).optional(),
+    timeline: z
+      .array(
+        z.object({
+          startMs: z.number().int().min(0).max(60_000),
+          endMs: z.number().int().min(1).max(60_000),
+          truth: z.enum(['OPERATING', 'IDLE']),
+        }),
+      )
+      .min(1)
+      .max(12),
+    durationMs: z.number().int().min(8_000).max(40_000),
+    sampleRate: z.number().int().min(8_000).max(192_000),
+    capturedAt: z.string().datetime(),
+    deviceLabel: z.string().trim().max(120).nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.frameFlags && value.frameFlags.length !== value.frames.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'frameFlags length must equal frames length',
+        path: ['frameFlags'],
+      });
+    }
+  });
+
+export type FieldTrialUploadInput = z.infer<typeof fieldTrialUploadSchema>;
