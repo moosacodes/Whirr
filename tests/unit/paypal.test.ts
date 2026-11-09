@@ -4,6 +4,7 @@ import {
   findApprovalLink,
   isSafeSandboxApprovalUrl,
   isSafeWebhookCertUrl,
+  PayPalApiError,
   PayPalClient,
 } from '../../packages/paypal/src/client.ts';
 
@@ -162,5 +163,62 @@ describe('PayPal Sandbox client', () => {
       ],
     });
     expect(authorization?.id).toBe('AUTH');
+  });
+
+  it('keeps pending and denied capture statuses distinct from success', async () => {
+    for (const status of ['PENDING', 'DENIED']) {
+      const { fetchImpl } = mockFetch((recorded) => {
+        if (recorded.url.endsWith('/v1/oauth2/token')) return { body: { access_token: 'token', expires_in: 3600 } };
+        return { body: { id: `CAP-${status}`, status, amount: { currency_code: 'USD', value: '0.07' } } };
+      });
+      const client = new PayPalClient({
+        baseUrl: 'https://api-m.sandbox.paypal.com',
+        clientId: 'client',
+        clientSecret: 'secret',
+        fetchImpl,
+      });
+      const capture = await client.captureAuthorization({
+        authorizationId: 'AUTH-1',
+        amountMinor: 7,
+        currency: 'USD',
+        requestId: `req-${status}`,
+        invoiceId: 'ses_123',
+      });
+      expect(capture.status).toBe(status);
+    }
+  });
+
+  it('reports a timeout as an unknown provider failure, not success', async () => {
+    const fetchImpl = (async () => {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }) as typeof fetch;
+    const client = new PayPalClient({
+      baseUrl: 'https://api-m.sandbox.paypal.com',
+      clientId: 'client',
+      clientSecret: 'secret',
+      fetchImpl,
+      timeoutMs: 20,
+    });
+    await expect(client.accessToken()).rejects.toMatchObject({ status: 504 });
+    await expect(client.accessToken()).rejects.toBeInstanceOf(PayPalApiError);
+  });
+
+  it('reuses the caller request id when a capture is retried', async () => {
+    const { fetchImpl, calls } = mockFetch((recorded) => {
+      if (recorded.url.endsWith('/v1/oauth2/token')) return { body: { access_token: 'token', expires_in: 3600 } };
+      return { body: { id: 'CAP-1', status: 'COMPLETED', amount: { currency_code: 'USD', value: '0.07' } } };
+    });
+    const client = new PayPalClient({
+      baseUrl: 'https://api-m.sandbox.paypal.com',
+      clientId: 'client',
+      clientSecret: 'secret',
+      fetchImpl,
+    });
+    const input = { authorizationId: 'AUTH-1', amountMinor: 7, currency: 'USD' as const, requestId: 'stable-capture-id', invoiceId: 'ses_123' };
+    await client.captureAuthorization(input);
+    await client.captureAuthorization(input);
+    const captures = calls.filter((call) => call.url.includes('/capture'));
+    expect(captures).toHaveLength(2);
+    expect(captures.every((call) => call.headers['PayPal-Request-Id'] === 'stable-capture-id')).toBe(true);
   });
 });
