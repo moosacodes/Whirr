@@ -158,7 +158,7 @@ async function main(): Promise<void> {
   add('F', 'Public repository, video and submission artifacts', 'OPEN', 'No remote is configured and no public video/Devpost artifact is part of this checkout.');
   add('G', 'Five comprehension tests and a recorded presentation', 'OPEN', 'No comprehension testing or recorded presentation is part of this checkout.');
 
-  console.log('Whirr 3.0.1 gate report');
+  console.log('Whirr 4.0.0 gate report');
   console.log(`Generated ${new Date().toISOString()} from ${dbPath}, model files and provider configuration.`);
   console.log('Status legend: PASS = verified here; OPEN = external action/evidence missing; FAIL = verified failure.\n');
   for (const gate of gates) {
