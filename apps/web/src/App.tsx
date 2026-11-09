@@ -10,6 +10,8 @@ const Studio = lazy(() => import('./pages/Studio.tsx').then((module) => ({ defau
 const Teach = lazy(() => import('./pages/Teach.tsx').then((module) => ({ default: module.Teach })));
 const ModelReview = lazy(() => import('./pages/ModelReview.tsx').then((module) => ({ default: module.ModelReview })));
 const GateA = lazy(() => import('./pages/GateA.tsx').then((module) => ({ default: module.GateA })));
+const CalibrationLab = lazy(() => import('./pages/CalibrationLab.tsx').then((module) => ({ default: module.CalibrationLab })));
+const FieldReportPage = lazy(() => import('./pages/FieldReport.tsx').then((module) => ({ default: module.FieldReportPage })));
 const Pricing = lazy(() => import('./pages/Pricing.tsx').then((module) => ({ default: module.Pricing })));
 const ServiceCardPage = lazy(() => import('./pages/ServiceCardPage.tsx').then((module) => ({ default: module.ServiceCardPage })));
 const RenterService = lazy(() => import('./pages/RenterService.tsx').then((module) => ({ default: module.RenterService })));
@@ -49,6 +51,7 @@ export function App() {
               <Route path="/operator/login" element={<OperatorLogin />} />
               <Route path="/s/:objectId" element={<RenterService />} />
               <Route path="/passport/:objectId" element={<Passport />} />
+              <Route path="/field-report/:reportId" element={<FieldReportPage />} />
               <Route path="/session/:id" element={<LiveSession />} />
               <Route path="/session/:id/replay" element={<Replay />} />
               <Route path="/session/:id/review" element={<ReviewPage />} />
@@ -90,6 +93,14 @@ export function App() {
                 element={
                   <RequireOperator>
                     <GateA />
+                  </RequireOperator>
+                }
+              />
+              <Route
+                path="/studio/objects/:objectId/calibration-lab"
+                element={
+                  <RequireOperator>
+                    <CalibrationLab />
                   </RequireOperator>
                 }
               />
