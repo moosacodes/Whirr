@@ -163,7 +163,7 @@ final     = max(0, capped − creditMinor)
 5. `COMPLETED` captures are reconciled by amount and currency. `PENDING` captures queue an outbox reconciliation. Denied/failed captures remain unpaid and never become `SETTLED`.
 6. Zero bills use `POST /api/sessions/:id/void`, followed by an authoritative `GET` confirming `VOIDED`.
 7. Refunds are operator-only, bounded by the captured amount, and recorded as provider resources.
-8. `GET /api/sessions/:id/paypal/status` reconciles at most every four seconds and returns provider-backed identifiers/status.
+8. `GET /api/sessions/:id/paypal/status` is read-only and returns the recorded provider-backed identifiers/status. An explicit `POST /api/sessions/:id/paypal/reconcile` performs authoritative provider reads; live pages call it only after a user action or payment return, so a GET cannot trigger settlement or provider traffic.
 
 A provider timeout after a request may leave an unknown outcome. The operation row is marked `UNKNOWN`; reconciliation by stored provider IDs resolves it. A retry reuses the stable request ID and never creates a second intentional capture.
 
@@ -213,7 +213,7 @@ Operator:
 
 Renter/session:
 
-`POST /api/auth/renter`, `POST /api/sessions`, `GET /api/sessions/:id`, `POST /api/sessions/:id/consent`, `POST /api/sessions/:id/demo-mode`, `POST /api/sessions/:id/paypal/order`, `POST /api/sessions/:id/paypal/authorize`, `GET /api/sessions/:id/paypal/status`, `POST /api/sessions/:id/start|pause|resume|stop`, `POST /api/sessions/:id/intervals`, `POST /api/sessions/:id/review/accept`, `POST /api/sessions/:id/capture`, `POST /api/sessions/:id/void`, `POST /api/sessions/:id/demo-complete`, `POST /api/sessions/:id/disputes`, `GET /api/sessions/:id/receipt[/verify|/export]`.
+`POST /api/auth/renter`, `POST /api/sessions`, `GET /api/sessions/:id`, `POST /api/sessions/:id/consent`, `POST /api/sessions/:id/demo-mode`, `POST /api/sessions/:id/paypal/order`, `POST /api/sessions/:id/paypal/authorize`, `GET /api/sessions/:id/paypal/status`, `POST /api/sessions/:id/paypal/reconcile`, `POST /api/sessions/:id/start|pause|resume|stop`, `POST /api/sessions/:id/intervals`, `POST /api/sessions/:id/review/accept`, `POST /api/sessions/:id/capture`, `POST /api/sessions/:id/void`, `POST /api/sessions/:id/demo-complete`, `POST /api/sessions/:id/disputes`, `GET /api/sessions/:id/receipt[/verify|/export]`.
 
 Webhook: `POST /api/paypal/webhook` (raw body, no CSRF header, signature verified).
 
