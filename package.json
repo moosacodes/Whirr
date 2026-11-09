@@ -1,8 +1,8 @@
 {
   "name": "whirr",
-  "version": "3.0.1",
+  "version": "4.0.0-rc.1",
   "private": true,
-  "description": "Make anything rentable. Without making it smart. A consent-based, usage-metered commerce layer for ordinary objects, sensed by a commodity microphone and settled with PayPal Sandbox.",
+  "description": "Whirr Bench — acoustic pay-per-use for shared workshops. Running minutes only, a PayPal Sandbox cap before use, and an offline-verifiable proof.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -32,7 +32,8 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "verify": "npm run typecheck && npm test",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "screenshots": "tsx scripts/capture-v4.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
