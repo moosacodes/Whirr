@@ -219,6 +219,12 @@ export class PayPalClient {
       const expiresIn = typeof parsed.expires_in === 'number' ? parsed.expires_in : 300;
       this.token = { value: parsed.access_token, expiresAt: now + expiresIn * 1000 };
       return parsed.access_token;
+    } catch (error) {
+      if (error instanceof PayPalApiError) throw error;
+      if ((error as Error).name === 'AbortError') {
+        throw new PayPalApiError('PayPal request timed out', { status: 504 });
+      }
+      throw new PayPalApiError(`PayPal network error: ${(error as Error).message}`, { status: 502 });
     } finally {
       clearTimeout(timer);
     }
