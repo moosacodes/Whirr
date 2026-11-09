@@ -109,4 +109,31 @@ describe('PayPal webhook ingestion', () => {
     expect(row?.verified).toBe(0);
     expect(row?.result).toContain('SIGNATURE_REJECTED');
   });
+
+  it('keeps pending, denied and reordered events distinct and replay-safe', async () => {
+    const ctx = context(true);
+    const events = [
+      ['WH-PENDING-1', 'PAYMENT.CAPTURE.PENDING'],
+      ['WH-DENIED-1', 'PAYMENT.CAPTURE.DENIED'],
+      ['WH-VOID-1', 'PAYMENT.AUTHORIZATION.VOIDED'],
+      ['WH-REFUND-1', 'PAYMENT.CAPTURE.REFUNDED'],
+    ] as const;
+    for (const [id, type] of events) {
+      const raw = JSON.stringify({ id, event_type: type, resource: { id: `CAP-${id}` } });
+      const first = await ingestWebhook(ctx, raw, headers);
+      expect(first).toMatchObject({ received: true, duplicate: false, verified: true, result: 'UNLINKED_EVENT' });
+      const replay = await ingestWebhook(ctx, raw, headers);
+      expect(replay).toMatchObject({ received: true, duplicate: true, verified: true, result: 'UNLINKED_EVENT' });
+    }
+
+    // Reordered delivery is still event-id deduplicated; a delivery order never
+    // turns an unlinked event into a claimed settlement.
+    const earlier = JSON.stringify({ id: 'WH-PENDING-1', event_type: 'PAYMENT.CAPTURE.PENDING', resource: { id: 'CAP-WH-PENDING-1' } });
+    expect((await ingestWebhook(ctx, earlier, headers)).duplicate).toBe(true);
+    const rows = ctx.store.all<{ event_id: string; verified: number; result: string }>(
+      "SELECT event_id, verified, result FROM paypal_webhook_events WHERE event_id LIKE 'WH-%' ORDER BY event_id",
+    );
+    expect(rows).toHaveLength(4);
+    expect(rows.every((row) => row.verified === 1 && row.result === 'UNLINKED_EVENT')).toBe(true);
+  });
 });
