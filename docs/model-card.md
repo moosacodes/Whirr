@@ -177,3 +177,9 @@ The model artifact contains training parameters, dataset hash, feature names, me
 ## 12. Ownership and license
 
 Original implementation for this project. MIT licensed. No third-party model weights, datasets, fonts beyond open-source font packages, or copyrighted audio are included.
+
+## 13. Open-set rejection (Whirr 3.0)
+
+New models carry an optional `rejection` policy with two thresholds. `minTopProbability` (default 0.55) marks a frame `LOW_CONFIDENCE` when the maximum class probability is weak. `unknownOtherProbability` (default 0.45) marks `UNKNOWN_OBJECT` when the `other` class dominates both idle and active. Both flags are disqualifying, so those frames become free `UNCERTAIN` time through the same hysteresis path as a passport mismatch.
+
+Older models without the `rejection` field remain readable and use the default policy. The bundled synthetic reference model is retrained with the field. No threshold was tuned on physical objects, and the synthetic competing-sound tests demonstrate only that the code path rejects a dominant unknown class; they are not field accuracy evidence.

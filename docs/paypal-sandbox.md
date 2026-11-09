@@ -116,9 +116,11 @@ Requirements:
 
 For local development, the simplest honest path is **polling** via `/api/sessions/:id/paypal/status`. A temporary tunnel is useful only while it is online; it is not durable judge hosting. Do not present simulator events as genuine webhook delivery.
 
-### Safe local proxy (manual pattern)
+### Webhook-only loopback proxy
 
-No proxy is included in the repo. If you need one, use a small reverse proxy that binds loopback, accepts only `POST /api/paypal/webhook`, forwards the raw body and the `paypal-*` headers to `http://127.0.0.1:8787`, and returns 404 for every other path. Point the tunnel at the proxy, not at the API. This keeps administrative routes off the public internet. The lack of a shipped proxy is an OPEN hardening item; see the gate document.
+Run `npm run proxy:webhook`. It binds `127.0.0.1:8790` by default and forwards **only** `POST /api/paypal/webhook` with the raw body and `paypal-*` headers to the loopback API. Every other method or path returns 404. It enforces a 256 KiB body limit and 60 requests/minute per peer. Point a tunnel at the proxy, not at the API.
+
+The proxy is loopback HTTP. It is not public HTTPS, does not terminate TLS, and does not close Gate E. Gate E requires a genuine signed PayPal event delivered over public HTTPS. The proxy also does not authenticate the tunnel; use a provider that terminates TLS and forwards only this path.
 
 ## 7. Status mapping
 
@@ -169,3 +171,11 @@ The payment gate is **closed** for this checkout. The run above produced all of 
 4. a receipt whose verification panel shows **8/8** checks true; the passport check was added after the capture and is recomputed from the stored intervals.
 
 This is a Sandbox transaction with simulated funds, not a live charge. The separate webhook gate (Gate E) remains **OPEN**: the webhook ID is configured, but no public HTTPS listener has received a signed event. Zero-charge void, denied, pending and reconciliation paths remain implemented and covered by automated tests; this document does not claim a live failure-path run.
+
+## 11. Authorization expiry, reauthorization and timeline
+
+The authorization expiry returned by PayPal is stored as `authorization_expires_at` and displayed on the session, READY panel and receipt bundle. Once it has passed, interval uploads and capture are blocked with `AUTHORIZATION_EXPIRED`; the UI does not offer a false success path.
+
+`POST /api/sessions/:id/paypal/reauthorize` is allowed only when all of these hold: the session is `READY`, payment is `AUTHORIZED`, the stored authorization has actually expired, and there is no interval, billable time or reviewed bill. A replacement order is recorded with an audit event and the old authorization ID is retained in the provider-status note. The endpoint refuses with `AUTHORIZATION_IN_USE` after usage, so an authorization cannot be silently swapped after a reviewed bill.
+
+The payment timeline projects `payment_operations` into four distinct states: `PENDING` (requested/authorized but not provider-reconciled), `DENIED` (failed), `UNKNOWN` (outcome not known), and `RECONCILED` (authoritative provider completion). A pending or unknown event is never styled as settled. The same timeline is embedded in v3 bundles.
