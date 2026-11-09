@@ -14,6 +14,7 @@ import { FRAME_SPEC_VERSION_CHECK, takeContentHash } from './training-utils.ts';
 import { evaluateValidationTakes, reportForModel } from './validation.ts';
 import { driftForObject } from './drift.ts';
 import { calibrationPreviewFor } from './calibration-preview.ts';
+import { assertFieldValidationPassed, fieldTestState } from './field-test.ts';
 import {
   FEATURE_SPEC_VERSION,
   QUALITY_FLAGS,
@@ -175,6 +176,7 @@ export function ownerObjectView(ctx: AppContext, object: ObjectRow): OwnerObject
     calibrationPreview: calibrationPreviewFor(ctx, object.id),
     drift: driftForObject(ctx, object.id, model?.created_at ?? null),
     shelfListed: (ctx.store.get<{ listed: number }>('SELECT listed FROM shelf_listings WHERE object_id = ?', object.id)?.listed ?? 1) === 1,
+    fieldTest: fieldTestState(ctx, object),
   };
 }
 
@@ -507,6 +509,7 @@ export function publishTerms(ctx: AppContext, operator: UserRow, objectId: strin
   if (model.status === 'REJECTED') {
     throw errors.conflict('MODEL_REJECTED', 'The active model did not pass the billing safety gate.');
   }
+  assertFieldValidationPassed(ctx, model);
   const latest = ctx.store.get<{ version: number }>(
     'SELECT MAX(version) AS version FROM price_terms WHERE object_id = ?',
     objectId,

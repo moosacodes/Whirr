@@ -192,6 +192,30 @@ export interface WebhookEventRow {
   raw_json: string;
 }
 
+export interface FieldTrialRow {
+  id: string;
+  object_id: string;
+  model_id: string;
+  trial_kind: 'THREE_CYCLE' | 'NOISE' | 'DISTANCE' | 'REPLAY';
+  frames_json: string;
+  frame_flags_json: string;
+  timeline_json: string;
+  capture_json: string;
+  quality_json: string;
+  attempt: number;
+  created_at: string;
+}
+
+export interface FieldReportRow {
+  id: string;
+  object_id: string;
+  model_id: string;
+  status: 'FIELD_PASS' | 'FIELD_FAIL';
+  report_json: string;
+  evidence_hash: string;
+  created_at: string;
+}
+
 export interface PayPalResourceRow {
   id: string;
   session_id: string | null;
