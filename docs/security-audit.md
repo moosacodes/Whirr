@@ -23,11 +23,19 @@
 | Receipt completeness | Refund state was recorded in the database but the receipt exposed no refund identifier or amount. | The payment record now includes the provider refund ID and refund amount; redacted exports mask the ID. |
 | Dependencies | Production `@fastify/static` had a high-severity path/route-guard advisory; Vitest had critical dev-worker advisories. | Upgraded to `@fastify/static` 10.1.10 and Vitest 4.1.12; `npm audit` reports 0 vulnerabilities. |
 | Configuration | The Judge reference model ignored `config.referenceModelPath`. | Judge uses the configured path. |
+| Capture retry | A lost response after a successful capture could leave the client unable to retry without risking a duplicate request. | `SETTLEMENT_PENDING` + `CAPTURE_REQUESTED` can retry with the same stable request ID; a completed capture returns early. |
+| Reauthorization | A replacement authorization could reuse the original order nonce. | Reauthorization retains the old order ID and derives a fresh `renew-<order>` idempotency key; it is refused after usage. |
+| Payment operations | A conflicting request ID for a different operation shape could be replayed. | Operation request IDs are conflict-checked against the persisted operation row before provider work. |
+| Refunds | A refund result was not independently checked against the authoritative provider resource. | Refund lookup verifies the provider refund ID, amount and currency; a mismatch becomes `UNRESOLVED` and never claims success. |
+| Proof bundles | Rebuilding a bundle could mint different signed bytes for unchanged evidence. | Bundles reuse stored signed bytes when receipt hash, Merkle root, passport and capture claim are unchanged. |
+| Proof verifier | Re-signed bundles could change interval totals or model/terms bindings while keeping a valid outer signature. | The verifier recomputes interval totals and checks model, status and terms-hash bindings; the standalone verifier mirrors the totals check. |
+| Responsive receipt | The receipt explorer's table escaped its mobile grid track at 390 px. | Grid tracks and table wrappers are constrained with `minmax(0, 1fr)`/`min-width: 0`; Playwright asserts no page overflow at 390, 834 and 1440 px. |
+| Webhook ingress | The audit previously noted no webhook-only proxy. | `npm run proxy:webhook` is shipped and returns 404 for every non-webhook path; it remains loopback-only and does not close Gate E. |
 
 ## 2. Verification performed
 
 - `npm run typecheck` — pass.
-- `npm test` — 41/41 pass at the audit date, including webhook-poisoning, PayPal URL, secure-cookie/origin and certificate-host tests. The current Whirr 2.0 suite is 51/51 after adding protocol, migration and signed-proof coverage.
+- `npm test` — **73/73 pass** at the 3.0.1 audit date, including the 11-case PayPal provider-contract harness, webhook ordering/replay, signed proof tampering, protocol migration and payment idempotency.
 - `npm run build` — pass.
 - `npm run smoke` — pass (health, judge, service card, operator auth).
 - `npm audit` — 0 vulnerabilities across the full tree.
@@ -39,7 +47,7 @@
 - No public HTTPS ingress or verified real PayPal signed webhook has been delivered; Gate E remains **OPEN**.
 - Local development has no TLS. Use a trusted HTTPS proxy and set `WHIRR_PUBLIC_ORIGIN` for any exposure.
 - `WHIRR_TRUST_PROXY=1` must only be used behind a trusted proxy; otherwise forwarded client IPs can be spoofed.
-- The public webhook route is still part of the full API. A dedicated webhook-only ingress proxy is not shipped; do not expose the operator API.
+- The webhook-only loopback proxy is a path restriction, not public HTTPS or tunnel authentication. Do not expose the operator API; Gate E remains OPEN until a genuine signed event arrives over public HTTPS.
 - No independent penetration test, formal threat-model review or physical anti-spoof test has been performed.
 - SQLite is not encrypted at rest, and a host administrator can rewrite the database; hash chains are a checkpoint, not an external timestamp.
 - The app is a single-host, supervised-venue prototype. It is not claimed to be tamper-proof, unattended-secure, production-ready or multi-tenant SaaS.
