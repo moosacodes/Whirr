@@ -633,6 +633,7 @@ export function trainModelFromTakes(takes: TrainingTake[], opts: TrainOptions): 
     weights,
     bias,
     policy: chosenPolicy,
+    rejection: { minTopProbability: 0.55, unknownOtherProbability: 0.45 },
     training: {
       takeCount: labelled.length,
       frameCount: allRows.length,

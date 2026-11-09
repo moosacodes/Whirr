@@ -53,7 +53,9 @@ export type QualityFlag =
   | 'GAP'
   | 'DEVICE_LOST'
   | 'TAB_HIDDEN'
-  | 'SOUNDPRINT_MISMATCH';
+  | 'SOUNDPRINT_MISMATCH'
+  | 'UNKNOWN_OBJECT'
+  | 'LOW_CONFIDENCE';
 
 export const QUALITY_FLAGS: readonly QualityFlag[] = [
   'CLIPPED',
@@ -63,6 +65,8 @@ export const QUALITY_FLAGS: readonly QualityFlag[] = [
   'DEVICE_LOST',
   'TAB_HIDDEN',
   'SOUNDPRINT_MISMATCH',
+  'UNKNOWN_OBJECT',
+  'LOW_CONFIDENCE',
 ];
 
 /** Flags that make a frame unusable as billable evidence. */
@@ -74,6 +78,8 @@ export const DISQUALIFYING_FLAGS: readonly QualityFlag[] = [
   'DEVICE_LOST',
   'TAB_HIDDEN',
   'SOUNDPRINT_MISMATCH',
+  'UNKNOWN_OBJECT',
+  'LOW_CONFIDENCE',
 ];
 
 export interface FeatureSpec {
