@@ -2,13 +2,19 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { webcrypto } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { createApp } from '../../apps/api/src/app.ts';
 import { loadConfig, type Config } from '../../apps/api/src/config.ts';
 import type { AppContext } from '../../apps/api/src/context.ts';
 import type { PassportView, SessionView, SignedProofBundle, SignedReceiptProof } from '../../packages/contracts/src/types.ts';
 import { verifyDocument } from '../../packages/verify/src/index.ts';
-import { verifyEnvelope } from '../../packages/protocol/src/index.ts';
+import {
+  bytesToBase64,
+  keyIdForPublicKey,
+  signEnvelope,
+  verifyEnvelope,
+} from '../../packages/protocol/src/index.ts';
 
 const TEST_KEY = 'v2-operator-key-0123456789abcdef';
 const TEST_SECRET = 'v2-cookie-secret-0123456789abcdef0123456789abcdef';
@@ -22,6 +28,17 @@ let operatorCookie: string;
 let sessionId: string;
 let proofId: string;
 let receiptHash: string;
+
+async function makeKey() {
+  const pair = await webcrypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,
+    ['sign', 'verify'],
+  );
+  const privateKey = bytesToBase64(new Uint8Array(await webcrypto.subtle.exportKey('pkcs8', pair.privateKey)));
+  const publicKey = bytesToBase64(new Uint8Array(await webcrypto.subtle.exportKey('spki', pair.publicKey)));
+  return { privateKey, publicKey, keyId: await keyIdForPublicKey(publicKey) };
+}
 
 function cookieOf(response: { headers: Record<string, unknown> }): string {
   const raw = response.headers['set-cookie'];
@@ -172,6 +189,16 @@ describe('Whirr 2.0 acoustic protocol', () => {
         silentRatio: 0.05,
         flags: [],
         detail: 'Stable room tone.',
+        capture: {
+          schema: 'whirr.capture-claim.v1',
+          provenance: 'CLIENT_CLAIMED_LIVE_MICROPHONE',
+          claimedAt: new Date().toISOString(),
+          deviceLabel: 'Test microphone',
+          sampleRate: 48_000,
+          permission: 'GRANTED',
+          frameCount: 100,
+          note: 'Integration test capture claim.',
+        },
       },
     });
     expect(ready.json<{ status: string }>().status).toBe('READY');
@@ -301,6 +328,71 @@ describe('Whirr 2.0 acoustic protocol', () => {
     const tamperedKey = structuredClone(bundle);
     tamperedKey.keyId = 'e'.repeat(32);
     expect((await verifyDocument(tamperedKey)).valid).toBe(false);
+
+    // Re-sign adversarial payloads with an internally consistent key. These
+    // must still fail because the verifier checks semantics, not only the
+    // outer envelope signature.
+    const attacker = await makeKey();
+    async function resign(mutator: (payload: SignedProofBundle['payload']) => void): Promise<SignedProofBundle> {
+      const payload = structuredClone(bundle.payload);
+      mutator(payload);
+      return (await signEnvelope('proof-bundle', payload, attacker.privateKey, attacker.publicKey)) as SignedProofBundle;
+    }
+
+    const signedTotalEdit = await resign((payload) => {
+      payload.receipt.totals.billableMs += 1_000;
+    });
+    const signedTotalResult = await verifyDocument(signedTotalEdit);
+    expect(signedTotalResult.envelope.valid).toBe(true);
+    expect(signedTotalResult.valid).toBe(false);
+    expect(signedTotalResult.checks.find((check) => check.id === 'ledger_totals')?.pass).toBe(false);
+
+    const signedIntervalEdit = await resign((payload) => {
+      payload.intervals[0]!.endMs += 1;
+    });
+    const signedIntervalResult = await verifyDocument(signedIntervalEdit);
+    expect(signedIntervalResult.envelope.valid).toBe(true);
+    expect(signedIntervalResult.checks.find((check) => check.id === 'merkle')?.pass).toBe(false);
+
+    const signedRateEdit = await resign((payload) => {
+      payload.receipt.pricing.minorPerMinute += 1;
+    });
+    const signedRateResult = await verifyDocument(signedRateEdit);
+    expect(signedRateResult.envelope.valid).toBe(true);
+    expect(signedRateResult.checks.find((check) => check.id === 'bundle_quote')?.pass).toBe(false);
+
+    const signedFairnessEdit = await resign((payload) => {
+      payload.receipt.pricing.creditMinor += 1;
+    });
+    const signedFairnessResult = await verifyDocument(signedFairnessEdit);
+    expect(signedFairnessResult.envelope.valid).toBe(true);
+    expect(signedFairnessResult.checks.find((check) => check.id === 'bundle_quote')?.pass).toBe(false);
+
+    const signedModelEdit = await resign((payload) => {
+      payload.model.precision = 1;
+    });
+    const signedModelResult = await verifyDocument(signedModelEdit);
+    expect(signedModelResult.envelope.valid).toBe(true);
+    expect(signedModelResult.checks.find((check) => check.id === 'model_binding')?.pass).toBe(false);
+
+    const signedCaptureEdit = await resign((payload) => {
+      if (payload.capture) payload.capture.provenance = 'PHYSICAL_PROOF' as never;
+    });
+    const signedCaptureResult = await verifyDocument(signedCaptureEdit);
+    expect(signedCaptureResult.envelope.valid).toBe(true);
+    expect(signedCaptureResult.checks.find((check) => check.id === 'capture_claim')?.pass).toBe(false);
+
+    const signedRedactionEdit = structuredClone(publicBundle);
+    signedRedactionEdit.payload.receipt.payment.captureId = 'CAP-FULL-PROVIDER-ID';
+    const resignPublic = (await signEnvelope(
+      'proof-bundle',
+      signedRedactionEdit.payload,
+      attacker.privateKey,
+      attacker.publicKey,
+    )) as SignedProofBundle;
+    const signedRedactionResult = await verifyDocument(resignPublic);
+    expect(signedRedactionResult.envelope.valid).toBe(true);
+    expect(signedRedactionResult.checks.find((check) => check.id === 'redaction')?.pass).toBe(false);
   });
 
   it('resolves a hold race without charging anything', async () => {
