@@ -3,6 +3,8 @@
 **Narrative:** ordinary object → sound tag → live meter → PayPal boundary → receipt you can check.  
 **Claim boundary:** the checked-in model is synthetic. A live microphone demo is not Gate A unless it is three genuine, reviewed ON/OFF trials on a physical object. Gate A and Gate E remain OPEN.
 
+**4.1 addition:** the Real-World Calibration Lab is the guided path for a physical object. It records live enrollment, trains locally, runs a three-cycle protocol plus noise/distance/replay trials, and refuses to publish a live-calibrated model without a passing report. It is not run in this checkout; see [`docs/field-test.md`](field-test.md).
+
 ## Before recording
 
 1. Run `npm run setup && npm run dev`.
@@ -145,3 +147,15 @@ Whirr’s defensible claim is not that a microphone knows physical truth. It is 
 - signed interval evidence lets a stranger verify the arithmetic and the bytes.
 
 The demo should make the boundary feel like craftsmanship, not a disclaimer.
+
+## Real-World Calibration Lab (4.1, physical)
+
+Do not put this segment in a recorded run unless a physical appliance is actually present. If it is, use a new object (not the synthetic reference fan):
+
+1. Open `/studio/objects/<objectId>/calibration-lab`.
+2. Record two idle, two operating and one background take with the computer’s microphone. Show that the trace only moves while the microphone is open and that the page returns to `MIC CLOSED` afterwards.
+3. Train the model and show the live model status. Do not call the training metrics field accuracy; they are leave-one-take-out.
+4. Run the guided three-cycle trial, following the ON/OFF prompts. Then run the noise, distance and replay trials. If the replay trial fails, say so; do not edit it out.
+5. Generate the report and open `/field-report/<id>`. Show the model hash, the gates, the measured false-billable time and the limitations. Then publish terms and open the Listening Room only if the report says `FIELD_PASS`.
+
+If the physical test is not available, show the lab in its microphone-closed state and state plainly that the field test is pending.

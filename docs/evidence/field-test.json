@@ -1,0 +1,22 @@
+{
+  "schema": "whirr.field-test-evidence.v1",
+  "status": "OPEN",
+  "gate": "H",
+  "physicalObjectTested": false,
+  "reportId": null,
+  "modelId": null,
+  "modelVersion": null,
+  "modelHash": null,
+  "reviewer": null,
+  "reviewedAt": null,
+  "trials": [],
+  "reason": "No physical appliance has been enrolled and no live field trial has been performed in this checkout. Synthetic fixtures, imported WAVs, the seeded reference fan and browser fake-device tests do not count as field evidence.",
+  "requiredForClosure": [
+    "Create or choose an object that is not the synthetic reference fan.",
+    "Record at least two live idle, two live operating and one live background take from the actual microphone, then train a READY USER_CALIBRATION model.",
+    "Perform the guided three-cycle ON/OFF trial plus the separate noise, distance and replay trials with the physical appliance.",
+    "Generate a server-evaluated FIELD_PASS report and preserve its report id, model hash, evidence hash and public JSON.",
+    "Have a named reviewer confirm the physical object, microphone, date and actions, and record that confirmation here."
+  ],
+  "closureRule": "Gate H may close only when a FIELD_PASS report exists for the active model hash, all four live trials are present, the report is inspectable, and a named reviewer confirms the physical evidence. A failed gate must remain failed; synthetic or imported audio cannot be substituted."
+}
