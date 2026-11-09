@@ -95,6 +95,9 @@ export function ModelReview() {
             <LinkButton to={`/studio/objects/${objectId}/pricing`} variant="primary">
               Pricing
             </LinkButton>
+            <LinkButton to={`/studio/objects/${objectId}/gate-a`} variant="secondary">
+              Run live Gate A trials
+            </LinkButton>
             <LinkButton to={`/studio/objects/${objectId}/poster`} variant="ghost">
               Poster
             </LinkButton>

@@ -221,7 +221,7 @@ export function ReviewPage() {
     setBusy('status');
     setError(null);
     try {
-      const status = await api<PaymentStatus>(`/api/sessions/${id}/paypal/status?reconcile=1`);
+      const status = await api<PaymentStatus>(`/api/sessions/${id}/paypal/reconcile`, { method: 'POST' });
       await load();
       if (status.paymentState === 'CAPTURE_COMPLETED') navigate(`/receipt/${id}`);
     } catch (err) {
@@ -578,13 +578,35 @@ export function ReviewPage() {
                 </>
               ) : null}
 
+              {view.state === 'SETTLEMENT_PENDING' && view.paymentState === 'CAPTURE_REQUESTED' ? (
+                <div className="stack" style={{ gap: '0.6rem' }}>
+                  <Notice tone="warn" title="Capture outcome unknown.">
+                    PayPal may have completed this capture even though Whirr did not receive the response. Retrying with
+                    the original request id is safe: PayPal returns the prior result instead of charging twice.
+                  </Notice>
+                  <Button
+                    onClick={() => void capture()}
+                    loading={busy === 'capture'}
+                    disabled={awaitingOperator || !view.flags.canRetryCapture}
+                    variant="money"
+                    block
+                    size="lg"
+                  >
+                    <Icon name="lock" size={16} /> Retry capture safely
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => void reconcile()} loading={busy === 'status'}>
+                    Reconcile with PayPal instead
+                  </Button>
+                </div>
+              ) : null}
+
               {settled ? (
                 <LinkButton to={`/receipt/${id}`} variant="primary" block>
                   Open evidence receipt <Icon name="arrow" size={16} />
                 </LinkButton>
               ) : null}
 
-              {view.state === 'SETTLEMENT_PENDING' ? (
+              {view.state === 'SETTLEMENT_PENDING' && view.paymentState !== 'CAPTURE_REQUESTED' ? (
                 <Button variant="secondary" onClick={() => void reconcile()} loading={busy === 'status'} block>
                   Check PayPal settlement
                 </Button>
