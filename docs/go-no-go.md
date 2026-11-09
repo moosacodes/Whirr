@@ -92,3 +92,18 @@ Whirr 3.0.1 preserves the v1/v2 read and verification paths, the historical Sand
 - **Gate A remains OPEN:** the guided page and export exist, but no genuine three-trial real-object log is checked in. Synthetic fixtures do not close it.
 - **Gate E remains OPEN:** no public HTTPS ingress has received a genuine PayPal-signed webhook.
 - **Release identity:** package version `3.0.1`; the verified commit and local tag are recorded in the release notes after the final consolidated run.
+
+## 8. Whirr 4.0 release-candidate verification
+
+Whirr 4.0 is a product/experience release built on the verified 3.0.1 baseline. It does not change the payment, pricing, protocol or evidence rules, and it does not close any external gate.
+
+- **Product surface:** workshop-first landing, bench discovery with sound tags, consent ticket, and a Listening Room whose field is driven by the real eight-band signal. The field states `MIC CLOSED` when sensing is off.
+- **Automated tests:** `npm test` — **73/73 pass** across 15 files. `npm run test:e2e` — **39/39 pass** across 1440×900, 834×1112 and 390×844.
+- **Build and smoke:** `npm run typecheck` 0 errors; `npm run build` passes; `npm run smoke` passes.
+- **Gate report:** **8 PASS · 4 OPEN · 0 FAIL**. Gate A, E, F and G remain OPEN for the same reasons as 3.0.1. No screenshot or UI state is treated as external evidence.
+- **Dependency audit:** 0 vulnerabilities across 277 dependencies.
+- **Screenshots:** `docs/v4/` contains nine captures. The Listening Room images are explicitly microphone-closed, not live physical evidence.
+- **Usability:** protocol exists at `docs/usability-4.0.md`; **0 participants, not run**. No comprehension claim is made.
+- **Release notes:** `docs/release-notes-4.0.0-rc.1.md`.
+
+**Decision:** GO for local product review and a labelled synthetic demonstration. **NO-GO** for any claim of a physical paid demo, public webhook completion, usability validation, or hackathon submission.
