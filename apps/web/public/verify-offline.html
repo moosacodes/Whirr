@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Whirr offline proof verifier</title>
+    <style>
+      :root { color-scheme: light; --ink:#171310; --paper:#f4eee4; --surface:#fffdf8; --line:rgba(23,19,16,.16); --accent:#c25b2a; --ok:#2f6b4f; --bad:#9c2f2a; --muted:#6f655c; --mono:ui-monospace,SFMono-Regular,Consolas,monospace; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:radial-gradient(rgba(23,19,16,.05) .6px,transparent .6px) 0 0/5px 5px,var(--paper); color:var(--ink); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      main { width:min(980px,calc(100% - 2rem)); margin:2rem auto 5rem; }
+      h1 { font:500 clamp(2rem,5vw,3.6rem)/1 Georgia,serif; letter-spacing:-.04em; margin:.4rem 0 1rem; }
+      h2 { font:500 1.35rem/1.2 Georgia,serif; margin:0 0 .4rem; overflow-wrap:anywhere; }
+      p { max-width:70ch; }
+      .eyebrow { font:600 .68rem/1.2 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+      .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:1.25rem; margin:1rem 0; box-shadow:0 20px 50px -38px rgba(23,19,16,.45); }
+      .drop { border:2px dashed var(--line); border-radius:16px; padding:2rem; text-align:center; background:rgba(255,253,248,.55); }
+      .drop.over { border-color:var(--accent); background:#fdf1e4; }
+      input[type=file] { display:none; }
+      button,.button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:.7rem 1.1rem; border-radius:999px; border:1px solid var(--line); background:var(--ink); color:#f5eee4; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
+      button.secondary,.button.secondary { background:var(--surface); color:var(--ink); }
+      textarea,input[type=text] { width:100%; border:1px solid var(--line); border-radius:10px; background:var(--surface); padding:.75rem; font:12px/1.45 var(--mono); }
+      textarea { min-height:130px; resize:vertical; }
+      .row { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+      .chip { display:inline-flex; padding:.25rem .55rem; border-radius:999px; border:1px solid var(--line); font-size:.72rem; font-weight:600; }
+      .pass { color:var(--ok); } .fail { color:var(--bad); } .warn { color:#8a5c10; }
+      .check { display:flex; gap:.7rem; border-left:3px solid var(--line); background:var(--surface); padding:.7rem .85rem; margin:.5rem 0; border-radius:8px; }
+      .check.pass { border-left-color:var(--ok); } .check.fail { border-left-color:var(--bad); }
+      .check strong { display:block; font-size:.86rem; } .check span { font-size:.76rem; color:var(--muted); }
+      code { font-family:var(--mono); font-size:.75rem; overflow-wrap:anywhere; }
+      .big { font:500 2.4rem/1 Georgia,serif; }
+      .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }
+      @media(max-width:720px){ .grid{grid-template-columns:1fr;} main{margin-top:1.2rem;} }
+      .muted { color:var(--muted); } .tiny { font-size:.76rem; }
+      .hidden { display:none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="eyebrow">Whirr · standalone verifier v3</span>
+      <h1>Check the bytes, not the server.</h1>
+      <p>
+        This is one static HTML file with no application imports and no network calls. It verifies the signed envelope,
+        the receipt arithmetic, every interval Merkle proof and the three trust domains. Payment is explicitly not
+        verifiable offline. Run it from a secure context (HTTPS or localhost) so WebCrypto is available.
+      </p>
+
+      <section class="card">
+        <h2>1 · Load a proof bundle</h2>
+        <div class="drop" id="drop">
+          <p style="margin:0 0 .8rem">Drop a <code>.json</code> proof bundle here, or open a <code>file://</code> copy.</p>
+          <input id="file" type="file" accept="application/json,.json" />
+          <button id="choose">Choose bundle JSON</button>
+          <span class="tiny muted" id="filename"></span>
+        </div>
+        <div class="row" style="margin-top:.8rem">
+          <label class="tiny muted" for="pin">Optional out-of-band key pin</label>
+          <input id="pin" type="text" placeholder="32-character installation key ID" style="flex:1;min-width:240px" />
+          <button class="secondary" id="reverify">Verify again</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2 · Or paste JSON</h2>
+        <textarea id="json" placeholder='{"schema":"whirr.signed.v2","type":"proof-bundle",...}'></textarea>
+        <div class="row" style="margin-top:.6rem">
+          <button id="verify-paste">Verify pasted bundle</button>
+          <button class="secondary" id="example">What this can and cannot prove</button>
+        </div>
+      </section>
+
+      <section id="result" class="hidden">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <span class="eyebrow">Result</span>
+            <span id="verdict" class="chip"></span>
+          </div>
+          <h2 id="title" style="margin-top:.6rem"></h2>
+          <div class="grid" style="margin:1rem 0">
+            <div><span class="eyebrow">Amount</span><div class="big" id="amount">—</div></div>
+            <div><span class="eyebrow">Billable</span><div class="big" id="duration">—</div></div>
+            <div><span class="eyebrow">Interval leaves</span><div class="big" id="leaves">—</div></div>
+          </div>
+          <dl id="meta" style="display:grid;grid-template-columns:150px 1fr;gap:.45rem 1rem;font-size:.82rem"></dl>
+        </div>
+
+        <div class="card">
+          <h2>Checks</h2>
+          <div id="checks"></div>
+        </div>
+
+        <div class="card">
+          <h2>Trust domains</h2>
+          <div id="trust"></div>
+        </div>
+
+        <div class="card">
+          <h2>Interval ledger</h2>
+          <p class="tiny muted">Each row is recomputed from the document content and checked against the signed Merkle root.</p>
+          <div id="intervals" style="overflow-x:auto"></div>
+        </div>
+
+        <div class="card">
+          <h2>Limitations</h2>
+          <ul id="limitations"></ul>
+        </div>
+      </section>
+
+      <section id="boundary" class="card hidden">
+        <h2>What offline verification proves</h2>
+        <p><strong>Integrity:</strong> these exact bytes were signed by the holder of the embedded installation key, the receipt hashes to the stated value, and each interval is included in the signed Merkle root.</p>
+        <p><strong>Sensing:</strong> the bundle may carry a signed <em>client claim</em> about the microphone path. It is not physical proof that an object was present, switched on or the only sound source.</p>
+        <p><strong>Payment:</strong> offline verification cannot contact PayPal. A capture reference is installation-recorded unless separately reconciled online with the provider.</p>
+        <p><strong>Key substitution:</strong> without an out-of-band key pin, the embedded key is self-attested. Pinning a fingerprint detects a different signer; it does not by itself establish the signer's real-world identity.</p>
+      </section>
+    </main>
+
+    <script>
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+      let current = null;
+
+      function canonicalJson(value) {
+        if (value === null) return 'null';
+        if (typeof value === 'number') {
+          if (!Number.isFinite(value)) throw new Error('Non-finite number');
+          return JSON.stringify(value);
+        }
+        if (typeof value === 'boolean' || typeof value === 'string') return JSON.stringify(value);
+        if (Array.isArray(value)) return '[' + value.map((item) => canonicalJson(item === undefined ? null : item)).join(',') + ']';
+        if (typeof value === 'object') {
+          const keys = Object.keys(value).filter((key) => value[key] !== undefined).sort();
+          return '{' + keys.map((key) => JSON.stringify(key) + ':' + canonicalJson(value[key])).join(',') + '}';
+        }
+        throw new Error('Unsupported canonical JSON value');
+      }
+
+      function bytesToBase64(bytes) {
+        let binary = '';
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        return btoa(binary);
+      }
+
+      function base64ToBytes(value) {
+        const binary = atob(value);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+        return bytes;
+      }
+
+      async function sha256Hex(input) {
+        const bytes = typeof input === 'string' ? encoder.encode(input) : input;
+        const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        const digest = await crypto.subtle.digest('SHA-256', buffer);
+        return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function keyIdForPublicKey(publicKey) {
+        return (await sha256Hex(base64ToBytes(publicKey))).slice(0, 32);
+      }
+
+      function signaturePayloadEnvelope(envelope) {
+        return canonicalJson({
+          schema: 'whirr.signed.v2',
+          type: envelope.type,
+          algorithm: envelope.algorithm,
+          keyId: envelope.keyId,
+          publicKey: envelope.publicKey,
+          payload: envelope.payload,
+        });
+      }
+
+      async function verifyEnvelope(envelope) {
+        const errors = [];
+        if (!envelope || typeof envelope !== 'object') return { valid: false, errors: ['Not an object.'] };
+        if (envelope.schema !== 'whirr.signed.v2') errors.push('Unsupported signed schema.');
+        if (envelope.algorithm !== 'ECDSA_P256_SHA256') errors.push('Unsupported algorithm.');
+        if (!['passport', 'receipt-proof', 'proof-bundle'].includes(envelope.type)) errors.push('Unsupported document type.');
+        if (typeof envelope.publicKey !== 'string' || typeof envelope.signature !== 'string') errors.push('Missing public key or signature.');
+        if (errors.length) return { valid: false, errors };
+        try {
+          const expected = await keyIdForPublicKey(envelope.publicKey);
+          if (expected !== envelope.keyId) errors.push('Public key does not match key ID.');
+          const keyBytes = base64ToBytes(envelope.publicKey);
+          const key = await crypto.subtle.importKey(
+            'spki',
+            keyBytes.buffer.slice(keyBytes.byteOffset, keyBytes.byteOffset + keyBytes.byteLength),
+            { name: 'ECDSA', namedCurve: 'P-256' },
+            false,
+            ['verify'],
+          );
+          const signature = base64ToBytes(envelope.signature);
+          const valid = await crypto.subtle.verify(
+            { name: 'ECDSA', hash: 'SHA-256' },
+            key,
+            signature.buffer.slice(signature.byteOffset, signature.byteOffset + signature.byteLength),
+            encoder.encode(signaturePayloadEnvelope(envelope)),
+          );
+          if (!valid) errors.push('Signature does not match.');
+        } catch (error) {
+          errors.push('Verification error: ' + error.message);
+        }
+        return { valid: errors.length === 0, errors };
+      }
+
+      async function evidenceLeafHash(input) {
+        return sha256Hex(canonicalJson({
+          schema: 'whirr.evidence-leaf.v1',
+          sessionId: input.sessionId,
+          seq: input.seq,
+          startMs: input.startMs,
+          endMs: input.endMs,
+          state: input.state,
+          modelVersion: input.modelVersion,
+          confidenceBucket: Math.round(input.confidence * 1000) / 1000,
+          qualityFlags: [...input.qualityFlags].sort(),
+          ...(input.explanation === undefined ? {} : { explanation: input.explanation }),
+        }));
+      }
+
+      async function merkleParent(left, right) {
+        return sha256Hex('whirr.merkle.v1:' + left + ':' + right);
+      }
+
+      async function verifyMerkleProof(leaf, proof, root) {
+        let current = leaf;
+        for (const step of proof) {
+          if (!/^[a-f0-9]{64}$/.test(step.hash) || !['left', 'right'].includes(step.side)) return false;
+          current = step.side === 'left' ? await merkleParent(step.hash, current) : await merkleParent(current, step.hash);
+        }
+        return current === root;
+      }
+
+      function recomputeQuote(input) {
+        const rounded = Math.floor((input.minorPerMinute * input.billableMs + 30000) / 60000);
+        const base = Math.min(input.capMinor, rounded);
+        const credit = Math.min(input.creditMinor ?? 0, base);
+        return { rounded, baseQuoteMinor: base, quoteMinor: Math.max(0, base - credit) };
+      }
+
+      function money(minor, currency) {
+        try { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(minor / 100); }
+        catch { return (minor / 100).toFixed(2) + ' ' + currency; }
+      }
+
+      function duration(ms) {
+        const seconds = ms / 1000;
+        return seconds < 60 ? seconds.toFixed(1) + 's' : Math.floor(seconds / 60) + 'm ' + String(Math.round(seconds % 60)).padStart(2, '0') + 's';
+      }
+
+      function add(checks, pass, label, detail) {
+        checks.push({ pass, label, detail });
+      }
+
+      async function verifyBundle(bundle, pin) {
+        const checks = [];
+        const envelope = await verifyEnvelope(bundle);
+        add(checks, envelope.valid, 'Signed envelope', envelope.valid ? 'ECDSA P-256 signature and key ID verify.' : envelope.errors.join(' '));
+        const payload = bundle.payload;
+        add(checks, payload.schema === 'whirr.proof-bundle.v3' && payload.bundleVersion === 3, 'Bundle schema', String(payload.schema));
+        add(checks, pin ? bundle.keyId === pin : true, pin ? 'Key pin' : 'Key pin (optional)',
+          pin ? (bundle.keyId === pin ? 'Matches the pinned key.' : 'Signer key does not match the pin.') : 'No pin supplied: the embedded key is self-attested.');
+
+        const receipt = payload.receipt;
+        const proof = payload.receiptProof;
+        const proofEnvelope = await verifyEnvelope(proof);
+        add(checks, proofEnvelope.valid && proof.type === 'receipt-proof', 'Nested receipt proof', proofEnvelope.valid ? 'Nested signature verifies.' : proofEnvelope.errors.join(' '));
+        add(checks, proof.payload.receiptHash === receipt.evidenceSha256 && proof.payload.sessionId === payload.sessionId, 'Receipt proof binding', 'Receipt hash and session match the nested proof.');
+
+        if (payload.passport) {
+          const passport = await verifyEnvelope(payload.passport);
+          add(checks, passport.valid && payload.passport.type === 'passport', 'Nested passport', passport.valid ? 'Passport signature verifies.' : passport.errors.join(' '));
+        } else {
+          add(checks, true, 'Nested passport', 'No passport is embedded.');
+        }
+
+        if (payload.redacted === true) {
+          const payment = receipt.payment || {};
+          const ids = ['orderId', 'authorizationId', 'captureId', 'refundId'].map((key) => payment[key]).filter((value) => typeof value === 'string');
+          add(checks, receipt.renterRef === 'REDACTED' && ids.every((id) => id.startsWith('REDACTED')), 'Public redaction', 'Renter reference and full provider identifiers are redacted.');
+        } else {
+          const fresh = JSON.parse(JSON.stringify(receipt));
+          delete fresh.verification;
+          delete fresh.evidenceSha256;
+          const hash = await sha256Hex(canonicalJson(fresh));
+          add(checks, hash === receipt.evidenceSha256, 'Full receipt hash', hash === receipt.evidenceSha256 ? 'Canonical receipt hash recomputes.' : 'Receipt was edited after hashing.');
+        }
+
+        const pricing = receipt.pricing;
+        const expected = recomputeQuote({
+          minorPerMinute: pricing.minorPerMinute,
+          billableMs: receipt.totals.billableMs,
+          capMinor: pricing.capMinor,
+          creditMinor: pricing.creditMinor,
+        });
+        add(checks,
+          expected.quoteMinor === pricing.quoteMinor &&
+            expected.baseQuoteMinor + pricing.creditMinor === pricing.baseQuoteMinor &&
+            pricing.quoteMinor <= pricing.capMinor,
+          'Quote arithmetic and cap',
+          'Expected ' + expected.quoteMinor + ' minor; document says ' + pricing.quoteMinor + '; cap ' + pricing.capMinor + '.');
+
+        const domains = new Set((payload.trust || []).map((entry) => entry.domain));
+        const paymentDomain = (payload.trust || []).find((entry) => entry.domain === 'PAYMENT');
+        add(checks, ['INTEGRITY', 'SENSING', 'PAYMENT'].every((domain) => domains.has(domain)), 'Trust domains', 'Integrity, sensing and payment are separated.');
+        add(checks, paymentDomain && paymentDomain.status === 'NOT_VERIFIABLE_OFFLINE', 'Payment not overclaimed', paymentDomain ? paymentDomain.detail : 'Missing payment domain.');
+
+        const intervals = payload.intervals || [];
+        const timeline = receipt.timeline || [];
+        add(checks, intervals.length === timeline.length && payload.merkle.leafCount === intervals.length, 'Interval count', intervals.length + ' leaves / ' + timeline.length + ' receipt rows.');
+
+        const leaves = [];
+        let merklePass = intervals.length > 0;
+        let ledgerPass = true;
+        let previousEnd = -1;
+        for (let index = 0; index < intervals.length; index += 1) {
+          const interval = intervals[index];
+          const leaf = await evidenceLeafHash({
+            sessionId: payload.sessionId,
+            seq: interval.seq,
+            startMs: interval.startMs,
+            endMs: interval.endMs,
+            state: interval.state,
+            modelVersion: interval.modelVersion,
+            confidence: interval.confidence,
+            qualityFlags: interval.qualityFlags || [],
+            ...(interval.explanation === undefined ? {} : { explanation: interval.explanation }),
+          });
+          leaves.push(leaf);
+          if (leaf !== interval.leafHash) merklePass = false;
+          if (!(await verifyMerkleProof(leaf, interval.merkleProof || [], payload.merkle.root))) merklePass = false;
+          const row = timeline[index];
+          if (
+            !row ||
+            row.startMs !== interval.startMs ||
+            row.endMs !== interval.endMs ||
+            row.state !== interval.state ||
+            row.confidence !== interval.confidence ||
+            canonicalJson(row.qualityFlags || []) !== canonicalJson(interval.qualityFlags || []) ||
+            canonicalJson(row.explanation || null) !== canonicalJson(interval.explanation || null)
+          ) ledgerPass = false;
+          if (interval.seq !== index + 1 || interval.startMs < previousEnd || interval.endMs <= interval.startMs) ledgerPass = false;
+          previousEnd = Math.max(previousEnd, interval.endMs);
+        }
+        add(checks, merklePass, 'Merkle inclusion proofs', merklePass ? 'All ' + intervals.length + ' leaves reach the signed root.' : 'A leaf, proof or root was edited.');
+        add(checks, ledgerPass, 'Ledger matches receipt', ledgerPass ? 'Timestamps, states, flags and explanations match.' : 'The receipt and signed ledger disagree.');
+
+        const capture = payload.capture;
+        add(checks, !capture || capture.schema === 'whirr.capture-claim.v1', 'Capture provenance', capture ? capture.provenance + ' — client-reported, not physical proof.' : 'No capture claim; sensing attribution is unverified.');
+        add(checks, Array.isArray(payload.limitations) && payload.limitations.length > 0, 'Limitations', 'The bundle carries its own limitations.');
+
+        return { checks, receipt, payload };
+      }
+
+      function render(result) {
+        const { checks, receipt, payload } = result;
+        document.getElementById('result').classList.remove('hidden');
+        const failed = checks.filter((check) => !check.pass);
+        const verdict = document.getElementById('verdict');
+        verdict.textContent = failed.length === 0 ? 'ALL CHECKS PASS' : failed.length + ' CHECK(S) FAIL';
+        verdict.className = 'chip ' + (failed.length === 0 ? 'pass' : 'fail');
+        document.getElementById('title').textContent = receipt.object.name + ' · ' + payload.bundleId;
+        document.getElementById('amount').textContent = money(receipt.pricing.quoteMinor, receipt.pricing.currency);
+        document.getElementById('duration').textContent = duration(receipt.totals.billableMs);
+        document.getElementById('leaves').textContent = String(payload.intervals.length);
+
+        const meta = document.getElementById('meta');
+        meta.innerHTML = '';
+        [
+          ['Receipt', receipt.receiptId],
+          ['Session', payload.sessionId],
+          ['Merkle root', payload.merkle.root],
+          ['Key ID', current.keyId],
+          ['Receipt hash', receipt.evidenceSha256],
+          ['Created', payload.createdAt],
+          ['Payment', receipt.payment.mode + ' · ' + receipt.payment.state],
+        ].forEach(([label, value]) => {
+          const dt = document.createElement('dt'); dt.textContent = label; dt.className = 'muted';
+          const dd = document.createElement('dd'); dd.textContent = String(value); dd.style.margin = '0';
+          dd.style.fontFamily = 'var(--mono)'; dd.style.fontSize = '.72rem'; dd.style.overflowWrap = 'anywhere';
+          meta.append(dt, dd);
+        });
+
+        const list = document.getElementById('checks');
+        list.innerHTML = '';
+        checks.forEach((check) => {
+          const node = document.createElement('div');
+          node.className = 'check ' + (check.pass ? 'pass' : 'fail');
+          const strong = document.createElement('strong'); strong.textContent = (check.pass ? 'PASS · ' : 'FAIL · ') + check.label;
+          const span = document.createElement('span'); span.textContent = check.detail;
+          node.append(document.createElement('span'), strong, span);
+          list.append(node);
+        });
+
+        const trust = document.getElementById('trust');
+        trust.innerHTML = '';
+        payload.trust.forEach((domain) => {
+          const node = document.createElement('div');
+          node.className = 'check';
+          const strong = document.createElement('strong'); strong.textContent = domain.domain + ' · ' + domain.status.replaceAll('_', ' ').toLowerCase();
+          const span = document.createElement('span'); span.textContent = domain.detail;
+          node.append(strong, span);
+          trust.append(node);
+        });
+
+        const table = document.getElementById('intervals');
+        table.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:.75rem"><thead><tr><th>Seq</th><th>Window</th><th>State</th><th>Leaf</th></tr></thead><tbody></tbody></table>';
+        const body = table.querySelector('tbody');
+        payload.intervals.forEach((interval) => {
+          const row = document.createElement('tr');
+          [interval.seq, (interval.startMs / 1000).toFixed(2) + '–' + (interval.endMs / 1000).toFixed(2) + 's', interval.state.replaceAll('_', ' ').toLowerCase(), interval.leafHash.slice(0, 20) + '…'].forEach((value) => {
+            const cell = document.createElement('td');
+            cell.textContent = String(value);
+            cell.style.cssText = 'padding:.45rem;border-top:1px solid var(--line);font-family:var(--mono);font-size:.7rem;';
+            row.append(cell);
+          });
+          body.append(row);
+        });
+
+        const limitations = document.getElementById('limitations');
+        limitations.innerHTML = '';
+        payload.limitations.forEach((value) => {
+          const li = document.createElement('li'); li.textContent = value; li.style.marginBottom = '.45rem'; limitations.append(li);
+        });
+      }
+
+      async function check(value) {
+        current = value;
+        try {
+          const pin = document.getElementById('pin').value.trim();
+          if (!value || value.schema !== 'whirr.signed.v2' || value.type !== 'proof-bundle') {
+            throw new Error('This verifier accepts Whirr proof bundles (signed v2 envelope, proof-bundle type). Legacy artifacts are not presented as verified.');
+          }
+          const result = await verifyBundle(value, pin);
+          render(result);
+        } catch (error) {
+          current = null;
+          document.getElementById('result').classList.add('hidden');
+          alert(error.message);
+        }
+      }
+
+      async function load(text, name) {
+        try {
+          const parsed = JSON.parse(text);
+          document.getElementById('filename').textContent = name || '';
+          document.getElementById('json').value = JSON.stringify(parsed, null, 2);
+          await check(parsed);
+        } catch (error) {
+          alert('Could not parse JSON: ' + error.message);
+        }
+      }
+
+      document.getElementById('choose').onclick = () => document.getElementById('file').click();
+      document.getElementById('file').onchange = async (event) => {
+        const file = event.target.files[0];
+        if (file) await load(await file.text(), file.name);
+      };
+      const drop = document.getElementById('drop');
+      drop.ondragover = (event) => { event.preventDefault(); drop.classList.add('over'); };
+      drop.ondragleave = () => drop.classList.remove('over');
+      drop.ondrop = async (event) => {
+        event.preventDefault();
+        drop.classList.remove('over');
+        const file = event.dataTransfer.files[0];
+        if (file) await load(await file.text(), file.name);
+      };
+      document.getElementById('verify-paste').onclick = () => checkFromTextarea();
+      document.getElementById('reverify').onclick = () => { if (current) check(current); };
+      document.getElementById('example').onclick = () => document.getElementById('boundary').classList.toggle('hidden');
+      async function checkFromTextarea() {
+        try { await check(JSON.parse(document.getElementById('json').value)); }
+        catch (error) { alert('Could not parse JSON: ' + error.message); }
+      }
+    </script>
+  </body>
+</html>

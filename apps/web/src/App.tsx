@@ -17,6 +17,8 @@ import { OperatorConsole } from './pages/OperatorConsole.tsx';
 import { Judge } from './pages/Judge.tsx';
 import { OfflineDemo } from './pages/OfflineDemo.tsx';
 import { Verify } from './pages/Verify.tsx';
+import { Proof } from './pages/Proof.tsx';
+import { Replay } from './pages/Replay.tsx';
 import { Shelf } from './pages/Shelf.tsx';
 import { Poster } from './pages/Poster.tsx';
 import { NotFound } from './pages/NotFound.tsx';
@@ -36,12 +38,14 @@ export function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/judge" element={<Judge />} />
               <Route path="/verify" element={<Verify />} />
+              <Route path="/proof/:id" element={<Proof />} />
               <Route path="/shelf" element={<Shelf />} />
               <Route path="/demo/offline" element={<OfflineDemo />} />
               <Route path="/operator/login" element={<OperatorLogin />} />
               <Route path="/s/:objectId" element={<RenterService />} />
               <Route path="/passport/:objectId" element={<Passport />} />
               <Route path="/session/:id" element={<LiveSession />} />
+              <Route path="/session/:id/replay" element={<Replay />} />
               <Route path="/session/:id/review" element={<ReviewPage />} />
               <Route path="/receipt/:id" element={<ReceiptPage />} />
               <Route
