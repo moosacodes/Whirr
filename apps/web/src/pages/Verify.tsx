@@ -47,21 +47,41 @@ export function Verify() {
     await check(text, file.name);
   };
 
-  const tamper = async (kind: 'amount' | 'signature' | 'object') => {
+  const tamper = async (kind: 'amount' | 'signature' | 'object' | 'interval' | 'merkle' | 'passport' | 'key') => {
     try {
       const parsed = JSON.parse(input) as Record<string, unknown>;
       if (!isRecord(parsed.payload)) throw new Error('Load a signed document first.');
       if (kind === 'signature') {
         const signature = String(parsed.signature ?? '');
         parsed.signature = `${signature.slice(0, -1)}${signature.endsWith('A') ? 'B' : 'A'}`;
+      } else if (kind === 'key') {
+        parsed.keyId = '0'.repeat(32);
       } else if (kind === 'amount') {
         const payload = parsed.payload as Record<string, unknown>;
-        const pricing = isRecord(payload.pricing) ? payload.pricing : null;
+        const receipt = isRecord(payload.receipt) ? payload.receipt : null;
+        const pricing = isRecord(payload.pricing) ? payload.pricing : receipt && isRecord(receipt.pricing) ? receipt.pricing : null;
         if (!pricing || typeof pricing.quoteMinor !== 'number') throw new Error('This document has no editable quote amount.');
         pricing.quoteMinor += 1;
+      } else if (kind === 'interval') {
+        const payload = parsed.payload as Record<string, unknown>;
+        const intervals = Array.isArray(payload.intervals) ? payload.intervals : null;
+        const first = intervals && isRecord(intervals[0]) ? intervals[0] : null;
+        if (!first) throw new Error('This document has no v3 interval ledger.');
+        first.state = first.state === 'IDLE' ? 'ACTIVE_CONFIDENT' : 'IDLE';
+      } else if (kind === 'merkle') {
+        const payload = parsed.payload as Record<string, unknown>;
+        const merkle = isRecord(payload.merkle) ? payload.merkle : null;
+        if (!merkle || typeof merkle.root !== 'string') throw new Error('This document has no Merkle root.');
+        merkle.root = `${merkle.root.slice(0, -1)}${merkle.root.endsWith('0') ? '1' : '0'}`;
+      } else if (kind === 'passport') {
+        const payload = parsed.payload as Record<string, unknown>;
+        const passport = isRecord(payload.passport) ? payload.passport : null;
+        if (!passport) throw new Error('This bundle has no nested passport.');
+        passport.keyId = 'f'.repeat(32);
       } else {
         const payload = parsed.payload as Record<string, unknown>;
-        const object = isRecord(payload.object) ? payload.object : null;
+        const receipt = isRecord(payload.receipt) ? payload.receipt : null;
+        const object = isRecord(payload.object) ? payload.object : receipt && isRecord(receipt.object) ? receipt.object : null;
         if (!object) throw new Error('This document has no object block.');
         object.name = `${String(object.name)} (edited)`;
       }
@@ -152,6 +172,10 @@ export function Verify() {
             <div className="row">
               <Button variant="secondary" size="sm" onClick={() => void tamper('amount')}>Change the amount</Button>
               <Button variant="secondary" size="sm" onClick={() => void tamper('object')}>Change the object name</Button>
+              <Button variant="secondary" size="sm" onClick={() => void tamper('interval')}>Edit an interval</Button>
+              <Button variant="secondary" size="sm" onClick={() => void tamper('merkle')}>Edit the Merkle root</Button>
+              <Button variant="secondary" size="sm" onClick={() => void tamper('passport')}>Edit the passport key</Button>
+              <Button variant="secondary" size="sm" onClick={() => void tamper('key')}>Substitute the bundle key</Button>
               <Button variant="danger" size="sm" onClick={() => void tamper('signature')}>Corrupt the signature</Button>
             </div>
           </section>
