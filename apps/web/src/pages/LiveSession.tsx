@@ -21,8 +21,10 @@ import {
 import {
   ExplanationCard,
   Icon,
+  ListeningField,
   MeterStateBadge,
   ObjectGlyph,
+  SoundTag,
   SpectralWaterfall,
   Timeline,
   TimelineLegend,
@@ -574,9 +576,10 @@ export function LiveSession() {
   return (
     <div className="page container page--wide">
       <PageHeader
-        eyebrow="Renter session"
+        eyebrow="Listening room"
         breadcrumbs={
           <>
+            <Link to="/shelf">Bench</Link> <span aria-hidden="true">/</span>{' '}
             <Link to={`/s/${view.objectId}`}>{view.objectName}</Link> <span aria-hidden="true">/</span>{' '}
             <span className="mono">{view.id.slice(-8)}</span>
           </>
@@ -589,7 +592,7 @@ export function LiveSession() {
         lede={
           terminal
             ? 'This session is no longer sensing. Review the evidence and settle or issue a receipt.'
-            : 'The microphone runs only while you can see this page. Hiding the tab or losing the device pauses the meter; uncertain time is never billed.'
+            : 'You are at the bench. The microphone runs only while you can see this page. Hiding the tab or losing the device pauses the meter; uncertain time is never billed.'
         }
         actions={<span className="chip">{SESSION_STATE_COPY[view.state]}</span>}
       />
@@ -717,59 +720,59 @@ export function LiveSession() {
 
         <div className="sidebar-layout" style={{ marginTop: '1.5rem' }}>
           <div className="stack">
-            <section className="meter">
-              <div className="meter__halo" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="listening-stage">
-                <div className={`listening-stage__object ${sensing ? 'is-listening' : ''}`}>
-                  <ObjectGlyph glyph={view.objectGlyph} size={94} tone="accent" />
+            <section className={`meter meter--stage${sensing ? ' is-live' : ''}`}>
+              <div className="listening-room__top">
+                <div className="listening-room__visual">
+                  <ListeningField
+                    glyph={view.objectGlyph}
+                    level={level}
+                    bands={bands}
+                    state={sensing ? meterState : 'DISCONNECTED'}
+                    live={sensing}
+                    label={view.objectName}
+                  />
                 </div>
-                <div className="listening-stage__copy">
-                  <span className="eyebrow">Listening room · {sensing ? 'live' : 'closed'}</span>
-                  <strong>{view.objectName}</strong>
-                  <span className="tiny muted">
+                <div className="listening-room__readout">
+                  <div className="row row--between">
+                    <span className="eyebrow listening-room__eyebrow">The sound of use</span>
+                    <MeterStateBadge state={sensing ? meterState : 'DISCONNECTED'} />
+                  </div>
+                  <h2 className="meter__word">
                     {sensing
-                      ? soundprintScore === null
-                        ? 'analysing the room on this device'
-                        : `${Math.round(soundprintScore * 100)}% passport similarity`
-                      : 'the microphone is released and no intervals are uploading'}
-                  </span>
-                </div>
-                <div className="listening-stage__signal" aria-hidden="true">
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <span key={index} style={{ opacity: sensing ? 1 : 0.2 }} />
-                  ))}
+                      ? METER_COPY[meterState].label
+                      : view.state === 'PAUSED'
+                        ? 'Paused'
+                        : view.state === 'READY'
+                          ? 'Ready'
+                          : view.state === 'ACTIVE'
+                            ? 'Reconnect'
+                            : 'Awaiting approval'}
+                  </h2>
+                  <p className="meter__detail">
+                    {sensing
+                      ? METER_COPY[meterState].detail
+                      : view.state === 'PAUSED'
+                        ? 'Sensing is paused. Paused time is not billable. Resume when you are ready.'
+                        : view.state === 'ACTIVE'
+                          ? 'The server clock is running but no new intervals are being billed. Press Reconnect to reopen the microphone.'
+                          : 'Complete the sandbox authorization to unlock the microphone.'}
+                  </p>
+                  <div className="listening-room__signature">
+                    <span className="mono tiny">
+                      {sensing && soundprintScore !== null
+                        ? `${Math.round(soundprintScore * 100)}% sound-tag match`
+                        : 'SOUND TAG / WAITING FOR SOUND'}
+                    </span>
+                    <span className="tiny">
+                      {sensing
+                        ? soundprintMismatch
+                          ? 'Outside the enrolled profile — this time is marked uncertain and free.'
+                          : 'The meter compares each confident frame with the enrolled object profile.'
+                        : 'The microphone is released. Nothing is being classified or uploaded.'}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="row row--between">
-                <MeterStateBadge state={sensing ? meterState : 'DISCONNECTED'} />
-                <span className="tiny mono muted">
-                  {sensing ? 'MIC OPEN · ON-DEVICE' : view.state === 'ACTIVE' ? 'SENSING INTERRUPTED' : 'MIC OFF'}
-                </span>
-              </div>
-              <h2 className="meter__word">
-                {sensing
-                  ? METER_COPY[meterState].label
-                  : view.state === 'PAUSED'
-                    ? 'Paused'
-                    : view.state === 'READY'
-                      ? 'Ready'
-                      : view.state === 'ACTIVE'
-                        ? 'Reconnect'
-                        : 'Awaiting approval'}
-              </h2>
-              <p className="meter__detail">
-                {sensing
-                  ? METER_COPY[meterState].detail
-                  : view.state === 'PAUSED'
-                    ? 'Sensing is paused. Paused time is not billable. Resume when you are ready.'
-                    : view.state === 'ACTIVE'
-                      ? 'The server clock is running but no new intervals are being billed. Press Reconnect to reopen the microphone.'
-                      : 'Complete the sandbox authorization to unlock the microphone.'}
-              </p>
 
               <div className="meter__numbers">
                 <div className="meter__number">
@@ -800,11 +803,12 @@ export function LiveSession() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '1.2rem' }}>
+              <div className="listening-room__trace stack" style={{ gap: '0.7rem' }}>
+                <div className="row row--between">
+                  <span className="eyebrow listening-room__eyebrow">Live acoustic trace</span>
+                  <span className="tiny mono">{sensing ? 'MIC OPEN · ON-DEVICE' : 'MIC CLOSED'}</span>
+                </div>
                 <Waveform level={level} live={sensing} />
-              </div>
-
-              <div className="stack" style={{ gap: '0.55rem', marginTop: '0.9rem' }}>
                 <div className="row row--between">
                   <span className="eyebrow">Eight-band energy · live</span>
                   <span className="tiny mono muted">{sensing ? 'on-device' : 'microphone closed'}</span>
@@ -1113,6 +1117,7 @@ export function LiveSession() {
                   ? 'The meter compares confident activity with this object’s enrolled spectral profile. A mismatch becomes free, uncertain time.'
                   : 'This model does not have an active identity gate. Metering still excludes idle, uncertain and disconnected time.'}
               </p>
+              <SoundTag soundprint={view.model.soundprint} dark />
               <LinkButton to={`/passport/${view.objectId}`} variant="secondary" block>
                 Open public passport <Icon name="external" size={15} />
               </LinkButton>

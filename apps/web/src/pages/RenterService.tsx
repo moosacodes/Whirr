@@ -11,7 +11,7 @@ import {
   TextInput,
   usePageTitle,
 } from '../components/ui.tsx';
-import { Icon, ObjectGlyph, TimelineLegend } from '../components/visuals.tsx';
+import { Icon, ObjectGlyph, SoundTag, TimelineLegend } from '../components/visuals.tsx';
 import { formatMinor } from '../../../../packages/meter/src/currency.ts';
 import { money } from '../lib/format.ts';
 
@@ -93,7 +93,8 @@ export function RenterService() {
       <div className="stack-lg">
         <div className="row row--between">
           <div className="breadcrumbs">
-            <Link to="/">Whirr</Link> <span aria-hidden="true">/</span> <span>{view.object.name}</span>
+            <Link to="/">Whirr</Link> <span aria-hidden="true">/</span> <Link to="/shelf">Bench</Link>{' '}
+            <span aria-hidden="true">/</span> <span>{view.object.name}</span>
           </div>
           <SandboxBanner configured={view.sandbox.configured} webhookConfigured={view.sandbox.webhookConfigured} />
         </div>
@@ -120,8 +121,9 @@ export function RenterService() {
                 </div>
               </div>
               <p className="lede" style={{ fontSize: '1rem' }}>
-                {view.object.description || 'A ordinary object, metered by sound. No new hardware, no lock, no app install.'}
+                {view.object.description || 'An ordinary object, metered by sound. No new hardware, no lock, no app install.'}
               </p>
+              <SoundTag soundprint={view.model?.soundprint} />
               <div className="grid-3" style={{ gap: '0.6rem' }}>
                 <div className="stat">
                   <span className="stat__value" style={{ fontSize: '1.5rem' }}>{formatMinor(view.terms.minorPerMinute, view.terms.currency)}</span>
@@ -151,8 +153,8 @@ export function RenterService() {
 
             <div style={{ background: 'var(--surface-2)', padding: 'clamp(1.4rem,3vw,2.4rem)', borderLeft: '1px solid var(--line)' }}>
               <div className="stack">
-                <span className="eyebrow">Consent to rent</span>
-                <h2 className="h2" style={{ fontSize: 'clamp(1.5rem,2.5vw,2rem)' }}>One object. One microphone. One cap.</h2>
+                <span className="eyebrow">Take it for a run</span>
+                <h2 className="h2" style={{ fontSize: 'clamp(1.5rem,2.5vw,2rem)' }}>Authorize the cap. Then use the tool.</h2>
                 <p className="small muted">
                   You are about to authorize <strong>{money(view.terms.capMinor, view.terms.currency)}</strong> in PayPal
                   Sandbox. Nothing is captured until the session is stopped and you review the evidence.
@@ -203,7 +205,7 @@ export function RenterService() {
                   size="lg"
                   block
                 >
-                  {view.sandbox.configured ? 'Continue to PayPal Sandbox' : 'Continue with demo metering'}
+                  {view.sandbox.configured ? 'Authorize cap & open the meter' : 'Open the demo meter'}
                 </Button>
                 <p className="tiny muted">
                   {view.sandbox.configured
