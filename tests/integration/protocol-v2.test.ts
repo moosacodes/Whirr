@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { createApp } from '../../apps/api/src/app.ts';
 import { loadConfig, type Config } from '../../apps/api/src/config.ts';
 import type { AppContext } from '../../apps/api/src/context.ts';
-import type { PassportView, SessionView, SignedReceiptProof } from '../../packages/contracts/src/types.ts';
+import type { PassportView, SessionView, SignedProofBundle, SignedReceiptProof } from '../../packages/contracts/src/types.ts';
 import { verifyDocument } from '../../packages/verify/src/index.ts';
 import { verifyEnvelope } from '../../packages/protocol/src/index.ts';
 
@@ -260,6 +260,47 @@ describe('Whirr 2.0 acoustic protocol', () => {
     const publicProof = await call('GET', `/api/proofs/${proofId}`);
     expect(publicProof.statusCode).toBe(200);
     expect(publicProof.json<SignedReceiptProof>().payload.proofId).toBe(proofId);
+
+    const bundleResponse = await call('GET', `/api/sessions/${sessionId}/bundle`, { cookie: renterCookie });
+    expect(bundleResponse.statusCode).toBe(200);
+    const bundle = bundleResponse.json<SignedProofBundle>();
+    expect(bundle.type).toBe('proof-bundle');
+    expect(bundle.payload.schema).toBe('whirr.proof-bundle.v3');
+    expect(bundle.payload.redacted).toBe(false);
+    expect(bundle.payload.intervals.length).toBe(2);
+    expect(bundle.payload.merkle.leafCount).toBe(2);
+    const authenticatedBundle = await verifyDocument(bundle, { trustedKeyId: bundle.keyId });
+    expect(authenticatedBundle, JSON.stringify(authenticatedBundle.checks)).toMatchObject({ valid: true, kind: 'proof-bundle' });
+    expect(authenticatedBundle.checks.find((check) => check.id === 'merkle')?.pass).toBe(true);
+    const wrongPin = await verifyDocument(bundle, { trustedKeyId: '0'.repeat(32) });
+    expect(wrongPin.valid).toBe(false);
+
+    const publicBundleResponse = await call('GET', `/api/proof-bundles/${bundle.payload.bundleId}`);
+    expect(publicBundleResponse.statusCode).toBe(200);
+    const publicBundle = publicBundleResponse.json<SignedProofBundle>();
+    expect(publicBundle.payload.redacted).toBe(true);
+    expect(publicBundle.payload.receipt.renterRef).toBe('REDACTED');
+    expect(JSON.stringify(publicBundle)).not.toContain('rawAudio');
+    const publicVerification = await verifyDocument(publicBundle);
+    expect(publicVerification, JSON.stringify(publicVerification.checks)).toMatchObject({ valid: true, kind: 'proof-bundle' });
+
+    const tamperedAmount = structuredClone(bundle);
+    tamperedAmount.payload.receipt.pricing.quoteMinor += 1;
+    expect((await verifyDocument(tamperedAmount)).valid).toBe(false);
+    const tamperedInterval = structuredClone(bundle);
+    tamperedInterval.payload.intervals[0]!.state = 'IDLE';
+    expect((await verifyDocument(tamperedInterval)).valid).toBe(false);
+    const tamperedProof = structuredClone(bundle);
+    tamperedProof.payload.intervals[0]!.merkleProof = [];
+    expect((await verifyDocument(tamperedProof)).valid).toBe(false);
+    const tamperedPassport = structuredClone(bundle);
+    if (tamperedPassport.payload.passport) {
+      tamperedPassport.payload.passport.keyId = 'f'.repeat(32);
+    }
+    expect((await verifyDocument(tamperedPassport)).valid).toBe(false);
+    const tamperedKey = structuredClone(bundle);
+    tamperedKey.keyId = 'e'.repeat(32);
+    expect((await verifyDocument(tamperedKey)).valid).toBe(false);
   });
 
   it('resolves a hold race without charging anything', async () => {

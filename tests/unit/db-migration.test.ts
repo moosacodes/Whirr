@@ -11,7 +11,7 @@ const dir = mkdtempSync(path.join(tmpdir(), 'whirr-migrate-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('schema migration', () => {
-  it('adds v2 columns and tables to a v1 database without losing rows', () => {
+  it('adds v3 columns and tables to a v1 database without losing rows', () => {
     const file = path.join(dir, 'v1.db');
     const old = new DatabaseSync(file);
     old.exec(`
@@ -41,6 +41,10 @@ describe('schema migration', () => {
     expect(store.getMeta('schema_version')).toBe(String(SCHEMA_VERSION));
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'passport_versions'")?.name).toBe('passport_versions');
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'object_holds'")?.name).toBe('object_holds');
+    const sessionColumns = store.all<{ name: string }>('PRAGMA table_info(sessions)').map((column) => column.name);
+    expect(sessionColumns).toContain('authorization_expires_at');
+    expect(sessionColumns).toContain('capture_claim_json');
+    expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'proof_bundles'")?.name).toBe('proof_bundles');
     store.close();
   });
 });
