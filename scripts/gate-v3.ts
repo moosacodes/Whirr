@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Store } from '../apps/api/src/db/index.ts';
+import { SCHEMA_VERSION } from '../apps/api/src/db/schema.ts';
 import { verifyDocument } from '../packages/verify/src/index.ts';
 import type { SignedProofBundle } from '../packages/contracts/src/types.ts';
 
@@ -37,7 +38,12 @@ async function main(): Promise<void> {
   }
   const store = new Store(dbPath);
   const schema = store.getMeta('schema_version');
-  add('schema', 'Database schema is additive v3', schema === '3' ? 'PASS' : 'FAIL', `schema_version=${schema ?? 'missing'}`);
+  add(
+    'schema',
+    `Database schema is additive v${SCHEMA_VERSION}`,
+    schema === String(SCHEMA_VERSION) ? 'PASS' : 'FAIL',
+    `schema_version=${schema ?? 'missing'} (expected ${SCHEMA_VERSION})`,
+  );
 
   const latest = store.get<{ id: string; document_json: string; public_document_json: string }>(
     'SELECT id, document_json, public_document_json FROM proof_bundles ORDER BY created_at DESC LIMIT 1',
@@ -158,7 +164,31 @@ async function main(): Promise<void> {
   add('F', 'Public repository, video and submission artifacts', 'OPEN', 'No remote is configured and no public video/Devpost artifact is part of this checkout.');
   add('G', 'Five comprehension tests and a recorded presentation', 'OPEN', 'No comprehension testing or recorded presentation is part of this checkout.');
 
-  console.log('Whirr 4.0.0 gate report');
+  const field = await readJson<{
+    status?: string;
+    physicalObjectTested?: boolean;
+    reportId?: string | null;
+    modelHash?: string | null;
+    trials?: unknown[];
+  }>('docs/evidence/field-test.json');
+  const fieldTrialCount = Array.isArray(field?.trials) ? field.trials.length : 0;
+  const fieldPassed =
+    field?.status === 'FIELD_PASS' &&
+    field.physicalObjectTested === true &&
+    Boolean(field.reportId) &&
+    Boolean(field.modelHash) &&
+    fieldTrialCount >= 4;
+  add(
+    'H',
+    'Live-calibrated model validated on a physical object',
+    fieldPassed ? 'PASS' : 'OPEN',
+    fieldPassed
+      ? `FIELD_PASS report ${field.reportId} for model ${field.modelHash} with ${fieldTrialCount} live trials.`
+      : 'No physical field-test evidence exists. The lab, server recomputation, guards and UI are implemented, but synthetic fixtures and browser fake devices do not close this gate.'
+  );
+
+  const pkg = await readJson<{ version?: string }>('package.json');
+  console.log(`Whirr ${pkg?.version ?? 'unknown'} gate report`);
   console.log(`Generated ${new Date().toISOString()} from ${dbPath}, model files and provider configuration.`);
   console.log('Status legend: PASS = verified here; OPEN = external action/evidence missing; FAIL = verified failure.\n');
   for (const gate of gates) {
@@ -169,7 +199,7 @@ async function main(): Promise<void> {
   const open = gates.filter((gate) => gate.status === 'OPEN');
   console.log(`\n${gates.filter((gate) => gate.status === 'PASS').length} PASS · ${open.length} OPEN · ${failures.length} FAIL`);
   if (failures.length > 0) {
-    console.log('\nGate A and Gate E are not closed by this report. A FAIL is a verified failure and must be fixed, not relabelled.');
+    console.log('\nA FAIL is a verified failure and must be fixed, not relabelled.');
     process.exitCode = 1;
   }
 }

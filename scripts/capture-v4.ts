@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
+import { loadConfig } from '../apps/api/src/config.ts';
 
 const base = process.env.WHIRR_WEB_URL ?? 'http://127.0.0.1:5173';
 const out = 'docs/v4';
@@ -33,6 +34,21 @@ async function main(): Promise<void> {
   await page.screenshot({ path: `${out}/listening-room-desktop.png`, fullPage: false });
   await page.screenshot({ path: `${out}/listening-room-desktop-full.png`, fullPage: true });
 
+  const operator = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+  const operatorPage = await operator.newPage();
+  const config = loadConfig();
+  await operatorPage.goto(`${base}/operator/login`, { waitUntil: 'networkidle' });
+  await operatorPage.getByLabel('Operator key').fill(config.operatorKey);
+  await operatorPage.getByRole('button', { name: 'Sign in' }).click();
+  await operatorPage.waitForURL(/\/studio$/);
+  await operatorPage.goto(`${base}/studio/objects/obj_reference_fan/calibration-lab`, { waitUntil: 'networkidle' });
+  await operatorPage.getByRole('heading', { name: 'Prove it on a real object.' }).waitFor();
+  await operatorPage.screenshot({ path: `${out}/calibration-lab-desktop.png`, fullPage: true });
+  await operatorPage.setViewportSize({ width: 390, height: 844 });
+  await operatorPage.goto(`${base}/studio/objects/obj_reference_fan/calibration-lab`, { waitUntil: 'networkidle' });
+  await operatorPage.getByRole('heading', { name: 'Prove it on a real object.' }).waitFor();
+  await operatorPage.screenshot({ path: `${out}/calibration-lab-mobile.png`, fullPage: true });
+
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   const mobilePage = await mobile.newPage();
 
@@ -47,7 +63,7 @@ async function main(): Promise<void> {
   await mobilePage.screenshot({ path: `${out}/bench-card-mobile.png`, fullPage: false });
 
   await browser.close();
-  console.log(`Captured Whirr 4.0 surfaces in ${out}`);
+  console.log(`Captured Whirr 4.1 surfaces in ${out}`);
 }
 
 main().catch((error) => {
