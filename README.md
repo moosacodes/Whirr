@@ -2,11 +2,11 @@
 
 **Borrow the tool. Pay for the work.**
 
-Whirr 4.0 turns an ordinary shared-workshop tool into a pay-per-use service **by listening to it**. No lock, dongle or firmware. A member opens the tool’s bench card, authorizes a hard cap in PayPal Sandbox, and uses the machine normally. The browser hears it run, bills only confident running minutes, and gives both sides a signed receipt that can be verified offline.
+Whirr 4.1 turns an ordinary shared-workshop tool into a pay-per-use service **by listening to it**. No lock, dongle or firmware. A member opens the tool’s bench card, authorizes a hard cap in PayPal Sandbox, and uses the machine normally. The browser hears it run, bills only confident running minutes, and gives both sides a signed receipt that can be verified offline.
 
 The product bet is a category, not a dashboard: **acoustic pay-per-use for physical equipment that already exists**. The object stays ordinary; the payment boundary and the evidence become programmable.
 
-> **Release candidate 4.0.0-rc.1 (9 November 2026):** the Whirr Bench product surface, workshop-first discovery, sound-tag identity, Listening Room, responsive renter flow, browser evidence and demo assets are implemented. The 3.0.1 hardening, proof protocol and historical Sandbox capture are preserved. No physical-object Gate A evidence, genuine public webhook, public submission or five-person usability study exists in this checkout. See [`docs/go-no-go.md`](docs/go-no-go.md) and the [4.0 release notes](docs/release-notes-4.0.0-rc.1.md).
+> **Release candidate 4.1.0-rc.1 (9 November 2026):** the Whirr Bench experience is preserved and a guided Real-World Calibration Lab now records an appliance from the actual microphone, trains a device-specific model from live takes, and evaluates it on held-out three-cycle, noise, distance and replay trials. A live-calibrated model cannot be published without a passing, inspectable field report. No physical field test has been performed in this checkout, so Gate H remains OPEN; Gate A, E, F and G also remain OPEN. See [`docs/field-test.md`](docs/field-test.md), [`docs/go-no-go.md`](docs/go-no-go.md) and the [`4.1.0-rc.1 release notes`](docs/release-notes-4.1.0-rc.1.md).
 
 ---
 
@@ -27,6 +27,9 @@ The product bet is a category, not a dashboard: **acoustic pay-per-use for physi
 | Live intelligence | Open-set `UNKNOWN_OBJECT` / `LOW_CONFIDENCE` rejection, aggregated interval explanations, sensor diagnostics, bounded retry queue and interval-only replay |
 | Payment recovery | Authorization expiry, guarded reauthorization before usage, four-state payment timeline, webhook-only loopback proxy and no live PayPal calls |
 | 4.0 bench experience | Workshop-first landing, sound-tag bench cards, rate/cap/calibration discovery, consent ticket and a dark Listening Room driven by the real eight-band signal |
+| Real-World Calibration Lab | Guided live idle/operating/background enrollment, local device-specific training, three-cycle ON/OFF protocol, separate noise/distance/replay trials and server-recomputed field metrics |
+| Field evidence | Public inspectable report with model/dataset hashes, anonymised recording metadata, every pre-declared gate, methodology, measured precision/recall/false-billable/billing error and explicit limitations |
+| Publication guard | A live-calibrated model needs a `FIELD_PASS` report for its exact model id before terms or Listening Room sessions are allowed; the synthetic reference demo stays separate |
 | Product surfaces | Landing, Bench, Judge Mode, Object Studio, Capture Lab, Model Review, guided Gate A trials, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
 | Safety | Operator key authentication, signed cookies, CSRF/origin checks, rate limits, CSP, ownership checks, body limits, no live PayPal host permitted |
 
@@ -53,6 +56,7 @@ Open:
 - Seeded service card: <http://localhost:5173/s/obj_reference_fan>
 - Seeded acoustic passport: <http://localhost:5173/passport/obj_reference_fan>
 - Guided Gate A trials (operator): <http://localhost:5173/studio/objects/obj_reference_fan/gate-a>
+- Real-World Calibration Lab (operator; the seeded fan intentionally shows the synthetic exclusion): <http://localhost:5173/studio/objects/obj_reference_fan/calibration-lab>
 - Offline replay: <http://localhost:5173/demo/offline>
 
 Read the generated operator key only when you need to sign in:
@@ -76,6 +80,20 @@ Paste it at <http://localhost:5173/operator/login>. The key is stored in `.whirr
 7. Open the receipt and run verification. A demo receipt explicitly says `DEMO_NO_PAYMENT`; it is never presented as a PayPal transaction.
 
 The offline demo replays the labelled synthetic fixture using the same frozen feature extractor, classifier and hysteresis code as the live path. It is labelled as a replay and proves the pipeline, not field accuracy.
+
+For the real-object milestone, create a new object, open its **Real-World Calibration Lab**, and follow the live enrollment and four-trial protocol. The lab is physically performed, not scripted: see [`docs/field-test.md`](docs/field-test.md).
+
+## Real-World Calibration Lab (4.1)
+
+This is the evidence path for the core invention, not a skin over the reference demo.
+
+1. Record at least two live idle takes, two live operating takes and one live background take from the actual microphone. Imported WAVs and synthetic takes are visible in the Capture Lab but are rejected by the field test's live-calibration gate.
+2. Train the device-specific model locally. Training uses the existing frozen features, classifier, hysteresis and safety gate; no cloud model or API key is involved.
+3. Run the guided three-cycle ON/OFF trial, then the separate 12-second noise, distance and replay trials. The server validates each protocol timeline and re-runs the frozen model over the captured features.
+4. Generate the field-test report. It records the model version and hash, dataset hash, anonymised recording metadata, methodology, every gate, measured precision, recall, false-billable duration and billing error, plus the limitations. It is public at `/field-report/:reportId`.
+5. A `FIELD_FAIL` report is preserved as a failure and blocks terms and sessions. A `USER_CALIBRATION` model needs a `FIELD_PASS` report for its exact model id before publishing. The synthetic reference fan is unaffected and remains a separate labelled demo.
+
+**Status in this checkout:** the lab, API, guard, public report, unit tests and browser checks exist. **No physical appliance has been enrolled and no field report exists.** `docs/evidence/field-test.json` is intentionally OPEN. Tests do not substitute synthetic evidence for the physical procedure.
 
 ## Gate A: real-object trials
 
@@ -130,8 +148,8 @@ Without credentials, everything still runs except payment: sessions are marked `
 | `npm run proxy:webhook` | Loopback proxy exposing only `POST /api/paypal/webhook` (not public HTTPS) |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm test` | Unit + integration tests (requires `npm run setup` first) |
-| `npm run test:e2e` | Playwright proof, Tamper Lab, standalone verifier, 4.0 bench and full page sweep at 1440×900, 834×1112 and 390×844 |
-| `npm run screenshots` | Capture the 4.0 bench, ticket and microphone-closed Listening Room into `docs/v4/` |
+| `npm run test:e2e` | Playwright proof, Tamper Lab, standalone verifier, bench, calibration-lab mic-closed/auth/separation checks and full page sweep at 1440×900, 834×1112 and 390×844 |
+| `npm run screenshots` | Capture the bench, ticket, microphone-closed Listening Room and calibration-lab surfaces into `docs/v4/` |
 | `npm run smoke` | Runtime, auth and CSRF smoke checks via Fastify injection |
 | `npm run verify` | Typecheck + tests |
 
@@ -193,6 +211,7 @@ docs/                      architecture, model card, safety, threat model, PayPa
 - [Whirr 4.0 product brief](docs/product-4.0.md)
 - [Whirr 4.0 design language](docs/design-system-4.0.md)
 - [Whirr 4.0 demo script](docs/demo-4.0.md)
+- [Real-World Calibration Lab and field-test protocol](docs/field-test.md)
 - [Whirr 4.0 submission explanation](docs/submission-4.0.md)
 - [Five-person comprehension protocol — not run](docs/usability-4.0.md)
 - [4.0.0-rc.1 release notes](docs/release-notes-4.0.0-rc.1.md)
