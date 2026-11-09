@@ -20,6 +20,10 @@ export default defineConfig({
       name: 'mobile-390',
       use: { viewport: { width: 390, height: 844 } },
     },
+    {
+      name: 'tablet-834',
+      use: { viewport: { width: 834, height: 1112 } },
+    },
   ],
   webServer: {
     command: 'npm run dev',

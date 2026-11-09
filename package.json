@@ -1,6 +1,6 @@
 {
   "name": "whirr",
-  "version": "1.0.0",
+  "version": "3.0.1",
   "private": true,
   "description": "Make anything rentable. Without making it smart. A consent-based, usage-metered commerce layer for ordinary objects, sensed by a commodity microphone and settled with PayPal Sandbox.",
   "license": "MIT",
@@ -22,6 +22,7 @@
     "key": "tsx scripts/print-key.ts",
     "demo:offline": "tsx scripts/offline-demo.ts",
     "proof:verify": "tsx scripts/verify-proof.ts",
+    "bench": "tsx scripts/benchmark.ts",
     "gate:v3": "tsx scripts/gate-v3.ts",
     "gate:a:export": "tsx scripts/export-gate-a.ts",
     "proxy:webhook": "tsx scripts/webhook-proxy.ts",
