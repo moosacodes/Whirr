@@ -124,6 +124,33 @@ export function RenterService() {
                 {view.object.description || 'An ordinary object, metered by sound. No new hardware, no lock, no app install.'}
               </p>
               <SoundTag soundprint={view.model?.soundprint} />
+              <div className="panel">
+                <div className="row row--between">
+                  <span className="eyebrow">Field validation</span>
+                  <span
+                    className={`chip ${
+                      view.fieldValidation.status === 'FIELD_PASS'
+                        ? 'chip--ok'
+                        : view.fieldValidation.status === 'FIELD_FAIL'
+                          ? 'chip--danger'
+                          : ''
+                    }`}
+                  >
+                    {view.fieldValidation.status.replaceAll('_', ' ').toLowerCase()}
+                  </span>
+                </div>
+                <p className="tiny muted" style={{ margin: '4px 0 0' }}>{view.fieldValidation.detail}</p>
+                {view.fieldValidation.reportUrl ? (
+                  <a
+                    className="btn btn--ghost btn--sm"
+                    href={view.fieldValidation.reportUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    Inspect the field-test report <Icon name="external" size={14} />
+                  </a>
+                ) : null}
+              </div>
               <div className="grid-3" style={{ gap: '0.6rem' }}>
                 <div className="stat">
                   <span className="stat__value" style={{ fontSize: '1.5rem' }}>{formatMinor(view.terms.minorPerMinute, view.terms.currency)}</span>

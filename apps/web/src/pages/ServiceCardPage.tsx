@@ -231,6 +231,27 @@ export function ServiceCardPage() {
                   {(activeModel.metrics.precision * 100).toFixed(1)}% precision
                 </li>
                 <li>
+                  <Icon
+                    name={
+                      view.fieldTest.status === 'FIELD_PASS' || view.fieldTest.status === 'NOT_ELIGIBLE'
+                        ? 'check'
+                        : 'alert'
+                    }
+                    size={15}
+                  />{' '}
+                  {view.fieldTest.status === 'FIELD_PASS'
+                    ? 'Real-object field test passed'
+                    : view.fieldTest.status === 'NOT_ELIGIBLE'
+                      ? 'Synthetic reference model — real-object field validation not applicable'
+                      : 'Real-object field test required'}
+                  {view.fieldTest.reportId ? (
+                    <>
+                      {' '}
+                      <Link className="tiny" to={`/field-report/${view.fieldTest.reportId}`}>inspect report</Link>
+                    </>
+                  ) : null}
+                </li>
+                <li>
                   <Icon name={activeModel.soundprint?.gateEnabled ? 'check' : 'alert'} size={15} /> Acoustic passport{' '}
                   {activeModel.soundprint?.gateEnabled
                     ? `enrolled · ${(activeModel.soundprint.matchThreshold * 100).toFixed(0)}% match gate`
