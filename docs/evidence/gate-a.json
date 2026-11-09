@@ -1,0 +1,18 @@
+{
+  "schema": "whirr.gate-a.v1",
+  "status": "OPEN",
+  "realObject": false,
+  "reviewer": null,
+  "reviewedAt": null,
+  "objectId": null,
+  "trials": [],
+  "reason": "No genuine real-object, live-microphone evidence has been reviewed in this checkout. Synthetic takes, imported WAVs and fixture replay do not count.",
+  "evidenceSource": "/studio/objects/:objectId/gate-a -> whirr.gate-a-trial-log.v1",
+  "requiredForClosure": [
+    "Run three separate live ON/OFF trials against the active model with the physical object and selected microphone.",
+    "Download the client-reported trial log and preserve every attempt, including failures and retries.",
+    "Have a named reviewer inspect the log and confirm the object, microphone, date and actual measurements.",
+    "Replace realObject with true, populate trials with the three reviewed trials, and set reviewer/reviewedAt."
+  ],
+  "closureRule": "Gate A may close only when realObject is true and at least three genuine reviewed trials are present. The signature layer cannot establish physical presence."
+}

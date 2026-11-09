@@ -1,4 +1,4 @@
-# Whirr 3.0 demo — proof-of-use economy
+# Whirr 3.0.1 demo — proof-of-use economy
 
 **Length:** about three minutes. **Claim boundary:** this script never presents synthetic replay, demo metering or Sandbox money as a physical paid session.
 
@@ -8,6 +8,7 @@
 2. Open the app at `http://localhost:5173` and `/judge` in one window.
 3. Have a real object and microphone ready if Gate A evidence is being recorded. Otherwise use the synthetic fallback and say so at the start.
 4. Open the browser console once and confirm no errors. Keep the operator key out of frame.
+5. For the real-object segment, use the guided **Gate A trials** page from Model Review. Do not use imported audio or fixture replay for that segment.
 
 ## 0:00–0:25 — Premise
 
@@ -22,6 +23,8 @@ Open the seeded service card and start a session in demo mode if PayPal approval
 > “Before billing, the installation runs a four-second room check. The acoustic passport is a calibration-fit gate, not an identity proof. Unknown, low-confidence and mismatched sound becomes free uncertainty.”
 
 If a real object is available, run an ON/OFF cycle. Show the confidence, passport score and uncertainty chips. Do **not** call one cycle Gate A; Gate A needs three genuine live ON/OFF trials and remains OPEN without them.
+
+The guided Gate A page runs three 6-second ON/OFF trials, reports the actual active ratio, free idle/uncertain time, mean confidence, passport score and failure codes, and exports a client-reported `whirr.gate-a-trial-log.v1`. A failed phase can be retried without deleting the earlier attempt. The exported log is not the gate-closing evidence file.
 
 ## 0:55–1:30 — Listening Room and payment state
 
@@ -58,7 +61,7 @@ Do not claim that a pin proves real-world identity.
 
 ## 2:35–3:00 — Honest close
 
-> “Gate A is open: there are no genuine real-object recordings and three live ON/OFF trials in this checkout. Gate E is open: no public HTTPS ingress has received a genuine signed PayPal webhook. Gate D is the historical Sandbox capture, preserved as simulated money, not a new charge. Everything local is reproducible; the external claims are not made.”
+> “Gate A is open unless this recording includes three genuine live ON/OFF trials and a reviewer has closed it in docs/evidence/gate-a.json. Gate E is open: no public HTTPS ingress has received a genuine signed PayPal webhook. Gate D is the historical Sandbox capture, preserved as simulated money, not a new charge. Everything local is reproducible; the external claims are not made.”
 
 Show `/judge` and `npm run gate:v3` with PASS, OPEN and FAIL kept distinct.
 
