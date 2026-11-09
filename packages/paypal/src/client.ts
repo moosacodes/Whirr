@@ -332,6 +332,12 @@ export class PayPalClient {
     });
   }
 
+  async getRefund(refundId: string): Promise<PayPalRefund> {
+    return this.request<PayPalRefund>(`/v2/payments/refunds/${encodeURIComponent(refundId)}`, {
+      method: 'GET',
+    });
+  }
+
   async refundCapture(input: {
     captureId: string;
     amountMinor?: number;
