@@ -178,6 +178,23 @@ export const preflightSchema = z.object({
   silentRatio: z.number().finite().min(0).max(1),
   flags: z.array(qualityFlagSchema).max(12),
   detail: z.string().trim().min(3).max(300),
+  capture: z
+    .object({
+      schema: z.literal('whirr.capture-claim.v1'),
+      provenance: z.enum([
+        'CLIENT_CLAIMED_LIVE_MICROPHONE',
+        'IMPORTED_EVIDENCE_REPLAY',
+        'SYNTHETIC_FIXTURE_REPLAY',
+        'DEMO_NO_PAYMENT',
+      ]),
+      claimedAt: z.string().datetime(),
+      deviceLabel: z.string().trim().max(120).nullable(),
+      sampleRate: z.number().int().min(8_000).max(192_000).nullable(),
+      permission: z.enum(['GRANTED', 'DENIED', 'UNKNOWN']),
+      frameCount: z.number().int().min(0).max(100_000).nullable(),
+      note: z.string().trim().max(240),
+    })
+    .optional(),
 });
 
 export const shelfListingSchema = z.object({

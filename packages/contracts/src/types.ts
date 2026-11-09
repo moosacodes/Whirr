@@ -1,6 +1,6 @@
 import type { Currency, MeterState } from '../../meter/src/index.ts';
 import type { Soundprint } from '../../audio/src/soundprint.ts';
-import type { SignedEnvelope } from '../../protocol/src/index.ts';
+import type { MerkleProofStep, SignedEnvelope } from '../../protocol/src/index.ts';
 
 export type { Currency, MeterState };
 
@@ -82,6 +82,45 @@ export const TAKE_ROLES = ['TRAINING', 'VALIDATION'] as const;
 export type TakeRole = (typeof TAKE_ROLES)[number];
 export type DriftStatus = 'FRESH' | 'DRIFT_SUSPECTED' | 'OVERDUE' | 'NO_DATA';
 export type PreflightStatus = 'READY' | 'NOISY' | 'UNSTABLE' | 'NO_SIGNAL';
+export const CAPTURE_PROVENANCES = [
+  'CLIENT_CLAIMED_LIVE_MICROPHONE',
+  'IMPORTED_EVIDENCE_REPLAY',
+  'SYNTHETIC_FIXTURE_REPLAY',
+  'DEMO_NO_PAYMENT',
+] as const;
+export type CaptureProvenance = (typeof CAPTURE_PROVENANCES)[number];
+
+export interface CaptureClaim {
+  schema: 'whirr.capture-claim.v1';
+  provenance: CaptureProvenance;
+  claimedAt: string;
+  deviceLabel: string | null;
+  sampleRate: number | null;
+  permission: 'GRANTED' | 'DENIED' | 'UNKNOWN';
+  frameCount: number | null;
+  note: string;
+}
+
+export const UNCERTAINTY_REASONS = [
+  'UNKNOWN_OBJECT',
+  'LOW_CONFIDENCE',
+  'SOUNDPRINT_MISMATCH',
+  'COMPETING_SOUND',
+  'CLIPPED',
+  'SILENT',
+  'LOW_LEVEL',
+  'GAP',
+  'DEVICE_LOST',
+  'TAB_HIDDEN',
+] as const;
+export type UncertaintyReason = (typeof UNCERTAINTY_REASONS)[number];
+
+export type TrustDomain = 'INTEGRITY' | 'SENSING' | 'PAYMENT';
+export interface TrustDomainStatus {
+  domain: TrustDomain;
+  status: 'VERIFIED_OFFLINE' | 'DECLARED' | 'NOT_VERIFIABLE_OFFLINE';
+  detail: string;
+}
 export type StructuredDisputeCode =
   | 'WRONG_OBJECT'
   | 'NOT_RUNNING'
@@ -217,6 +256,7 @@ export interface PreflightSummary {
   silentRatio: number;
   flags: string[];
   detail: string;
+  capture?: CaptureClaim;
 }
 
 export interface PreflightView extends PreflightSummary {
@@ -341,6 +381,16 @@ export interface IntervalView {
   qualityFlags: string[];
   evidenceHash: string;
   explanation?: IntervalExplanation;
+  uncertaintyReasons?: UncertaintyReason[];
+}
+
+export interface PaymentTimelineEvent {
+  id: string;
+  at: string;
+  type: string;
+  state: 'PENDING' | 'DENIED' | 'UNKNOWN' | 'RECONCILED';
+  providerRef: string | null;
+  detail: string;
 }
 
 export interface DisputeView {
@@ -415,6 +465,11 @@ export interface SessionView {
   disputes: DisputeView[];
   evidenceHash: string | null;
   sensorMode: 'LIVE' | 'REPLAY';
+  authorizationExpiresAt: string | null;
+  authorizationExpired: boolean;
+  captureClaim: CaptureClaim | null;
+  proofBundleId: string | null;
+  paymentTimeline: PaymentTimelineEvent[];
   flags: {
     canConsent: boolean;
     canCreateOrder: boolean;
@@ -428,6 +483,7 @@ export interface SessionView {
     canVoid: boolean;
     canApproveReview: boolean;
     awaitingOperator: boolean;
+    canReauthorize: boolean;
   };
   preflight: PreflightView | null;
   fairnessReserveMinor: number;
@@ -446,6 +502,63 @@ export interface ReceiptTimelineEntry {
   qualityFlags: string[];
   explanation?: IntervalExplanation;
 }
+
+export interface ProofBundleInterval extends ReceiptTimelineEntry {
+  seq: number;
+  modelVersion: string;
+  evidenceHash: string;
+  leafHash: string;
+  merkleProof: MerkleProofStep[];
+  uncertaintyReasons: UncertaintyReason[];
+}
+
+export interface ProofBundlePayload {
+  schema: 'whirr.proof-bundle.v3';
+  bundleVersion: 3;
+  bundleId: string;
+  createdAt: string;
+  redacted: boolean;
+  sessionId: string;
+  receipt: EvidenceReceipt;
+  receiptProof: SignedReceiptProof;
+  passport: SignedPassport | null;
+  capture: CaptureClaim | null;
+  intervals: ProofBundleInterval[];
+  merkle: {
+    schema: 'whirr.merkle.v1';
+    algorithm: 'SHA-256';
+    leafSchema: 'whirr.evidence-leaf.v1';
+    leafCount: number;
+    root: string;
+  };
+  model: {
+    version: string;
+    hash: string;
+    status: ModelStatus;
+    provenance: ModelProvenance;
+    precision: number;
+    recall: number;
+    falseBillableRatio: number;
+    takeCount: number;
+    featureSpecVersion: string;
+    datasetHash: string;
+  };
+  terms: { id: string; hash: string; currency: Currency; minorPerMinute: number; capMinor: number; version: number };
+  pricing: EvidenceReceipt['pricing'];
+  payment: EvidenceReceipt['payment'];
+  trust: TrustDomainStatus[];
+  verification: {
+    verifier: 'whirr-offline-v3';
+    independentOfApplication: true;
+    offline: true;
+    instructions: string[];
+    keyPinning: string;
+  };
+  limitations: string[];
+  attestation: string;
+}
+
+export type SignedProofBundle = SignedEnvelope<ProofBundlePayload>;
 
 export interface ReceiptVerification {
   checkedAt: string;
