@@ -313,6 +313,7 @@
         let merklePass = intervals.length > 0;
         let ledgerPass = true;
         let previousEnd = -1;
+        const stateMs = { ACTIVE_CONFIDENT: 0, IDLE: 0, UNCERTAIN: 0, DISCONNECTED: 0 };
         for (let index = 0; index < intervals.length; index += 1) {
           const interval = intervals[index];
           const leaf = await evidenceLeafHash({
@@ -340,10 +341,23 @@
             canonicalJson(row.explanation || null) !== canonicalJson(interval.explanation || null)
           ) ledgerPass = false;
           if (interval.seq !== index + 1 || interval.startMs < previousEnd || interval.endMs <= interval.startMs) ledgerPass = false;
+          if (!(interval.state in stateMs)) ledgerPass = false;
+          else stateMs[interval.state] += interval.endMs - interval.startMs;
+          if (interval.confidence < 0 || interval.confidence > 1 || !Array.isArray(interval.qualityFlags)) ledgerPass = false;
           previousEnd = Math.max(previousEnd, interval.endMs);
         }
         add(checks, merklePass, 'Merkle inclusion proofs', merklePass ? 'All ' + intervals.length + ' leaves reach the signed root.' : 'A leaf, proof or root was edited.');
         add(checks, ledgerPass, 'Ledger matches receipt', ledgerPass ? 'Timestamps, states, flags and explanations match.' : 'The receipt and signed ledger disagree.');
+        const observedMs = Object.values(stateMs).reduce((total, value) => total + value, 0);
+        const totalsPass =
+          receipt.totals.observedMs === observedMs &&
+          receipt.totals.billableMs === stateMs.ACTIVE_CONFIDENT &&
+          receipt.totals.idleMs === stateMs.IDLE &&
+          receipt.totals.uncertainMs === stateMs.UNCERTAIN &&
+          receipt.totals.disconnectedMs === stateMs.DISCONNECTED;
+        add(checks, totalsPass, 'Totals recompute from intervals', totalsPass
+          ? 'Observed ' + observedMs + ' ms = active ' + stateMs.ACTIVE_CONFIDENT + ' + idle ' + stateMs.IDLE + ' + uncertain ' + stateMs.UNCERTAIN + ' + disconnected ' + stateMs.DISCONNECTED + '.'
+          : 'Receipt totals do not equal the signed interval ledger.');
 
         const capture = payload.capture;
         add(checks, !capture || capture.schema === 'whirr.capture-claim.v1', 'Capture provenance', capture ? capture.provenance + ' — client-reported, not physical proof.' : 'No capture claim; sensing attribution is unverified.');
