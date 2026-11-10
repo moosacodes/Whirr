@@ -3,6 +3,23 @@ import type { Soundprint } from '../../audio/src/soundprint.ts';
 import type { MerkleProofStep, SignedEnvelope } from '../../protocol/src/index.ts';
 import type { FieldTestStateView, FieldValidationSummary } from './field-types.ts';
 
+export type {
+  AgreementView,
+  EventDemonstrationView,
+  EventModelDetailView,
+  EventModelSummaryView,
+  PhysicalProofVerificationView,
+  PromiseCatalogItem,
+  PromiseCatalogView,
+  PromiseExecutionListItem,
+  PromiseExecutionView,
+  PromiseJudgeView,
+  PromiseLabView,
+  PromiseObjectView,
+  PromiseProofView,
+  PromiseQuoteView,
+} from './promise-types.ts';
+
 export type { Currency, MeterState };
 export type {
   DiscoveryCandidateView,
