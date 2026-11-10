@@ -31,11 +31,13 @@ export function SiteHeader() {
         <Brand />
         <nav className="nav" aria-label="Main navigation">
           <NavLink to="/shelf">Bench</NavLink>
+          <NavLink to="/invisible-checkout">Invisible checkout</NavLink>
           <NavLink to="/verify">Verify</NavLink>
           <NavLink to="/judge">Judge mode</NavLink>
           {session?.operator ? (
             <>
               <NavLink to="/studio">Studio</NavLink>
+              <NavLink to="/studio/discovery">Discovery lab</NavLink>
               <NavLink to="/operator">Operator</NavLink>
             </>
           ) : (
