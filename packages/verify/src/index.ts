@@ -1,3 +1,4 @@
+import { verifyPhysicalProofDocument } from './physical.ts';
 import {
   canonicalJson,
   evidenceLeafHash,
@@ -20,7 +21,7 @@ export interface DocumentCheck {
 
 export interface DocumentVerification {
   valid: boolean;
-  kind: 'passport' | 'receipt-proof' | 'proof-bundle' | 'unknown';
+  kind: 'passport' | 'receipt-proof' | 'proof-bundle' | 'physical-proof' | 'unknown';
   envelope: EnvelopeVerification;
   checks: DocumentCheck[];
 }
@@ -451,7 +452,15 @@ export async function verifyDocument(
         ? 'receipt-proof'
         : value.type === 'proof-bundle'
           ? 'proof-bundle'
-          : 'unknown';
+          : value.type === 'physical-proof'
+            ? 'physical-proof'
+            : 'unknown';
+
+  if (kind === 'physical-proof') {
+    const physical = await verifyPhysicalProofDocument(value);
+    checks.push(...physical.checks);
+    return { valid: physical.valid, kind, envelope, checks };
+  }
 
   if (kind === 'passport') {
     add(
@@ -504,7 +513,7 @@ export async function verifyDocument(
     const complete = envelope.valid && bundleValid;
     return { valid: complete, kind, envelope, checks };
   } else {
-    add(checks, 'kind', 'Document kind', false, 'Only passport, receipt-proof and proof-bundle v3 documents are supported.');
+    add(checks, 'kind', 'Document kind', false, 'Only passport, receipt-proof, proof-bundle v3 and physical-proof v1 documents are supported.');
   }
 
   if (payload.schema === 'whirr.passport.v2' || payload.schema === 'whirr.receipt-proof.v2') {
@@ -535,7 +544,11 @@ export function summarizeDocument(value: unknown): string {
     const pricing = isRecord(receipt.pricing) ? receipt.pricing : null;
     return `${String(object?.name ?? 'Whirr object')} · ${String(pricing?.quoteMinor ?? '?')} minor · proof bundle v3`;
   }
+  if (value.type === 'physical-proof' && isRecord(payload.object) && isRecord(payload.evaluation)) {
+    return `${String(payload.object.name ?? 'Whirr object')} · ${String(payload.evaluation.outcome ?? '?')} · physical proof v1`;
+  }
   return 'Whirr signed document';
 }
 
+export { verifyPhysicalProofDocument } from './physical.ts';
 export type { SignedEnvelope };
