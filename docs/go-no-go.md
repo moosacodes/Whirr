@@ -159,3 +159,36 @@ Whirr 6.0 adds teachable physical agreements without altering the released 4.x e
 - **Release/submission gates OPEN:** no public push, deployment, YouTube video or Devpost submission is claimed.
 
 **Decision:** GO for local review of the implemented physical promise workflow and the labelled synthetic judge path. **NO-GO** for claiming physical field accuracy, a completed physical trial, a genuine 6.0 PayPal settlement, verified webhook delivery, public deployment, or hackathon submission until those external actions are performed and recorded.
+
+## 12. Whirr 7.0 AMBIENT release candidate
+
+Whirr 7.0 adds buyer-initiated physical cooperation without changing the released 4.x, 5.0 or 6.0 evidence and without closing their external gates. The new path is isolated in `packages/ambient-engine`, the schema-7 Ambient domain and routes, the four Ambient surfaces, the signed `whirr.ambient-proof.v1`, and the independent Ambient verifier.
+
+- **Release identity:** package version `7.0.0-rc.1`; branch `main`; base 6.0 `main` at `45e92e8a92c3b83117f9fcbc7807e21a102a2bfd`.
+- **Automated tests:** `npm test` — **133/133 pass across 23 files**. This includes the Ambient-focused **18/18** (`11` unit and `7` integration), the published-source catalog test, the demo replay ladder, exact-terms/role tests, evaluator interruption/continuity cases, payment invariants, and the preserved 4.x/5.0/6.0 suites.
+- **Browser QA:** `npm run test:e2e` — **57/57 pass** at 1440×900, 834×1112 and 390×844. The suite covers the public surfaces, the four Ambient surfaces, Judge Mode, the public proof, and authenticated operator/evidence pages, with page-level horizontal-overflow and runtime-error checks.
+- **Build and smoke:** `npm run typecheck` exits 0; `npm run build` passes with main JS **297.25 kB / 94.43 kB gzip**; `npm run smoke` passes.
+- **Wish source binding:** `GET /api/ambient` now returns published `sources` separately from agreement histories. A source requires an active object, a current READY event model, and either published service terms or an owner-approved Physical Promise. Compile and agreement creation reject `SOURCE_NOT_READY` and recheck model id, hash and dataset hash. This closes the software binding gap; it does not enroll or test a physical object.
+- **Reference proof:** agreement `ase_reference_qualified`, terms hash `0f8d41e02b0c70a80f705e5b666e7b440d99ec8100f072c523c3b2c8726a43fd`, proof `apr_f83736365f6d462297858f16f8cf5578`. The independent verifier reports **14/14 Ambient checks** passing; the standalone CLI prints **15 PASS** lines including signed-envelope validation. Provenance is **SYNTHETIC_REFERENCE**, not a physical field trial.
+- **Browser negotiation flow:** a buyer created a wish, the local provider accepted the exact terms, the buyer accepted the final terms, and the resulting demo window opened. The provider was a local test identity, not an independent external operator.
+- **Replay behavior:** a new demo session generates a labelled two-interval replay ladder; it remains `OBSERVING` until the user evaluates it. Demo sessions cannot create an order, authorization or capture.
+- **Schema:** version 7 is additive. Existing tables, historical Sandbox rows, 4.x receipts, 5.0 discovery rows and 6.0 promise rows are not rewritten.
+- **Screenshots:** eight true-viewport captures in `docs/v7/` at 1440 and 390 widths. All eight were visually inspected; a Judge summary-card identifier overflow at 1440 was fixed with wrapping and recaptured, and the Wish/overview captures were refreshed for the published-source catalog. No page-level horizontal overflow was observed. This is visual QA, not physical evidence.
+
+### 7.0 release gates
+
+| Gate | Requirement | Status | Scope / what remains |
+| --- | --- | --- | --- |
+| **A — Real source enrollment** | A real appliance is recorded, calibrated and bound as a published source | **OPEN** | The published-source binding path is implemented. No physical appliance was recorded in this checkout; the reference model and observations are synthetic. |
+| **B — Source observability** | Target operating state is distinguished from declared negative conditions | **OPEN** | Deterministic unit/integration cases pass; no genuine appliance, microphone or environmental drift trial was performed. |
+| **C — Physical window evaluation** | One genuine interrupted and one genuine qualifying observation are evaluated | **OPEN** | Replay and adversarial software cases pass. No physical pair exists. |
+| **D — Agreement consent** | Both authorized parties approve the correct immutable terms | **PASS** | Local buyer/provider roles approved the same exact terms through participant-scoped browser flows; superseded revisions are not capture-eligible. This is local software consent, not an external provider study. |
+| **E — Correct PayPal authorization** | The buyer approves the correct Sandbox authorization | **OPEN** | The 7.0 order/authorization path is implemented. No genuine 7.0 buyer approval exists. The historical 4.x USD 0.07 capture is separate and is not reused as 7.0 evidence. |
+| **F — Financial failure safety** | A failed agreement causes no unintended capture | **OPEN** | Fake-provider, duplicate, timeout, mismatch, expiry and interrupted-window tests pass. No genuine provider failure sequence was executed. |
+| **G — Financial success** | A qualifying, accepted agreement produces an authoritative Sandbox capture | **OPEN** | No genuine 7.0 authorization, capture, void or provider reconciliation occurred. |
+| **H — Genuine webhook** | An authentic PayPal-signed event is ingested and verified | **OPEN** | Signature verification, deduplication and reconciliation are implemented and tested; no public ingress and no genuine signed delivery exist. |
+| **I — Independent proof** | The released verifier validates an agreement and rejects defined tampering | **PASS** | The verifier recomputes the signed synthetic reference agreement and rejects altered terms, observations, acceptance and payment fields. It cannot establish physical truth or current provider state offline. |
+| **J — Product comprehension** | Genuine users understand request, compensation, failure and outcome | **OPEN** | No external comprehension test was run. |
+| **K — Public submission** | Public source, license, setup, demo video and Devpost entry are complete | **OPEN** | No push, deployment, public video or Devpost submission was performed. |
+
+**Decision:** GO for local review of the implemented Ambient workflow, the signed synthetic proof, and the clearly labelled replay demonstration. **NO-GO** for claiming a genuine physical Quiet Window, 7.0 PayPal settlement, verified webhook delivery, participant validation, public deployment, or hackathon submission. Gates A, B, C, E, F, G, H, J and K remain OPEN; Gate D and Gate I are closed only in the local/synthetic scope stated above.
