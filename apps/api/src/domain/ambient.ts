@@ -1407,6 +1407,22 @@ export async function acceptAmbientResult(
   if (row.agreement_hash !== input.termsHash) {
     throw errors.conflict('TERMS_CHANGED', 'The session terms do not match the acceptance.');
   }
+  const existingAcceptance = row.acceptance_json
+    ? (JSON.parse(row.acceptance_json) as { accepted?: boolean })
+    : null;
+  if (existingAcceptance?.accepted === input.accepted) {
+    const settled = new Set([
+      'READY_FOR_CAPTURE',
+      'DEMO_COMPLETE',
+      'BUYER_REJECTED',
+      'CAPTURED',
+      'VOID_CONFIRMED',
+      'RECONCILIATION_REQUIRED',
+    ]);
+    if (settled.has(row.state)) {
+      return ambientSessionView(ctx, row.id, { type: 'renter', id: renter.id });
+    }
+  }
   if (row.state !== 'QUALIFIED_AWAITING_ACCEPTANCE') {
     throw errors.conflict('NOT_AWAITING_ACCEPTANCE', 'This window is not awaiting buyer acceptance.');
   }
