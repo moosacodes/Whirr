@@ -47,6 +47,9 @@ describe('schema migration', () => {
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'proof_bundles'")?.name).toBe('proof_bundles');
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'field_test_recordings'")?.name).toBe('field_test_recordings');
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'field_test_reports'")?.name).toBe('field_test_reports');
+    expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'discovery_enrollments'")?.name).toBe('discovery_enrollments');
+    expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'discovery_trials'")?.name).toBe('discovery_trials');
+    expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'discovery_reports'")?.name).toBe('discovery_reports');
     store.close();
   });
 });
