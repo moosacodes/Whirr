@@ -1,4 +1,5 @@
 import { verifyPhysicalProofDocument } from './physical.ts';
+import { verifyAmbientProofDocument } from './ambient.ts';
 import {
   canonicalJson,
   evidenceLeafHash,
@@ -21,7 +22,7 @@ export interface DocumentCheck {
 
 export interface DocumentVerification {
   valid: boolean;
-  kind: 'passport' | 'receipt-proof' | 'proof-bundle' | 'physical-proof' | 'unknown';
+  kind: 'passport' | 'receipt-proof' | 'proof-bundle' | 'physical-proof' | 'ambient-proof' | 'unknown';
   envelope: EnvelopeVerification;
   checks: DocumentCheck[];
 }
@@ -451,15 +452,22 @@ export async function verifyDocument(
       : value.type === 'receipt-proof'
         ? 'receipt-proof'
         : value.type === 'proof-bundle'
-          ? 'proof-bundle'
-          : value.type === 'physical-proof'
-            ? 'physical-proof'
-            : 'unknown';
+          ? 'proof-bundle'            : value.type === 'physical-proof'
+              ? 'physical-proof'
+              : value.type === 'ambient-proof'
+                ? 'ambient-proof'
+                : 'unknown';
 
   if (kind === 'physical-proof') {
     const physical = await verifyPhysicalProofDocument(value);
     checks.push(...physical.checks);
     return { valid: physical.valid, kind, envelope, checks };
+  }
+
+  if (kind === 'ambient-proof') {
+    const ambient = await verifyAmbientProofDocument(value);
+    checks.push(...ambient.checks);
+    return { valid: ambient.valid, kind, envelope, checks };
   }
 
   if (kind === 'passport') {
@@ -547,8 +555,12 @@ export function summarizeDocument(value: unknown): string {
   if (value.type === 'physical-proof' && isRecord(payload.object) && isRecord(payload.evaluation)) {
     return `${String(payload.object.name ?? 'Whirr object')} · ${String(payload.evaluation.outcome ?? '?')} · physical proof v1`;
   }
+  if (value.type === 'ambient-proof' && isRecord(payload.target) && isRecord(payload.evaluation)) {
+    return `${String(payload.target.objectName ?? 'Whirr object')} · ${String(payload.evaluation.outcome ?? '?')} · ambient proof v1`;
+  }
   return 'Whirr signed document';
 }
 
 export { verifyPhysicalProofDocument } from './physical.ts';
+export { verifyAmbientProofDocument } from './ambient.ts';
 export type { SignedEnvelope };
