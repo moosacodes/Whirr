@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -369,6 +369,45 @@ CREATE TABLE IF NOT EXISTS field_test_reports (
 );
 
 CREATE INDEX IF NOT EXISTS idx_field_reports_object ON field_test_reports(object_id, created_at);
+
+CREATE TABLE IF NOT EXISTS discovery_enrollments (
+  id TEXT PRIMARY KEY,
+  object_id TEXT NOT NULL UNIQUE REFERENCES objects(id) ON DELETE CASCADE,
+  profile_json TEXT NOT NULL,
+  profile_hash TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('READY', 'WEAK')),
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_discovery_enrollments_object ON discovery_enrollments(object_id, created_at);
+
+CREATE TABLE IF NOT EXISTS discovery_trials (
+  id TEXT PRIMARY KEY,
+  object_id TEXT REFERENCES objects(id) ON DELETE CASCADE,
+  truth_object_id TEXT REFERENCES objects(id) ON DELETE SET NULL,
+  condition TEXT NOT NULL CHECK (condition IN ('BASELINE', 'ROOM_NOISE', 'APPLIANCE_NOISE', 'DISTANCE_1M', 'DISTANCE_2M', 'REPLAY', 'UNKNOWN_OBJECT')),
+  result TEXT NOT NULL CHECK (result IN ('MATCH', 'AMBIGUOUS', 'UNKNOWN')),
+  predicted_object_id TEXT REFERENCES objects(id) ON DELETE SET NULL,
+  score REAL,
+  margin REAL,
+  latency_ms REAL NOT NULL,
+  quality_json TEXT NOT NULL,
+  capture_json TEXT NOT NULL,
+  evidence_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_discovery_trials_created ON discovery_trials(created_at);
+
+CREATE TABLE IF NOT EXISTS discovery_reports (
+  id TEXT PRIMARY KEY,
+  status TEXT NOT NULL CHECK (status IN ('NOT_RUN', 'INCOMPLETE', 'PASS', 'FAIL')),
+  report_json TEXT NOT NULL,
+  evidence_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_discovery_reports_created ON discovery_reports(created_at);
 
 CREATE TABLE IF NOT EXISTS shelf_listings (
   object_id TEXT PRIMARY KEY REFERENCES objects(id) ON DELETE CASCADE,
