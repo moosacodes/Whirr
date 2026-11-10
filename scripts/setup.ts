@@ -3,8 +3,9 @@ import { writeReferenceFixtures } from './generate-fixtures.ts';
 import { trainReferenceModel } from './train-reference.ts';
 import { seedReference } from './seed.ts';
 import { writeEvaluation } from './evaluate-reference.ts';
+import { seedPromise } from './seed-promise.ts';
 
-function main(): void {
+async function main(): Promise<void> {
   console.log('Whirr setup\n');
   const config = loadConfig();
   console.log(`  database: ${config.dbPath}`);
@@ -34,11 +35,17 @@ function main(): void {
     `    fixture replay: ${(evaluation.fixture.billableMs / 1000).toFixed(2)}s billable → $${(evaluation.fixture.simulatedMinor / 100).toFixed(2)} simulated`,
   );
 
+  console.log('4/4 Seeding the synthetic physical promise reference…');
+  const promise = await seedPromise();
+  console.log(`    agreement ${promise.agreementId} · event model ${promise.eventModelId} (${promise.modelStatus})`);
+  console.log('    provenance: SYNTHETIC_REFERENCE — not a physical appliance field trial');
+
   console.log('\nReady.');
   console.log('  Read the operator key:  npm run key');
   console.log('  Start the app:          npm run dev');
   console.log(`  Reference service:      http://localhost:5173/s/${seeded.objectId}`);
   console.log('  Judge evidence:         http://localhost:5173/judge');
+  console.log(`  Physical promise:       http://localhost:5173/promise/${promise.agreementId}`);
   if (!config.paypal.configured) {
     console.log('\nPayPal is not configured, so sessions are labelled demo metering and no payment is created.');
     console.log('Add Sandbox credentials to .env (see .env.example and docs/paypal-sandbox.md) to run the real provider flow.');
@@ -46,7 +53,7 @@ function main(): void {
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   console.error(`\nSetup failed: ${(error as Error).message}`);
   process.exitCode = 1;
