@@ -20,6 +20,21 @@ export type {
   PromiseQuoteView,
 } from './promise-types.ts';
 
+export type {
+  AmbientAgreementView,
+  AmbientCatalogItem,
+  AmbientCatalogView,
+  AmbientJudgeView,
+  AmbientLiveSnapshotView,
+  AmbientModelSummaryView,
+  AmbientObjectView,
+  AmbientOfferView,
+  AmbientProofView,
+  AmbientSourceView,
+  AmbientSessionSummary,
+  AmbientSessionView,
+} from './ambient-types.ts';
+
 export type { Currency, MeterState };
 export type {
   DiscoveryCandidateView,
