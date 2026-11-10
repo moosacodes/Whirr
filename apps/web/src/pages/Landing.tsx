@@ -33,6 +33,27 @@ export function Landing() {
 
   return (
     <>
+      <section className="promise-launch">
+        <div className="container promise-launch__inner">
+          <div className="stack" style={{ gap: '0.45rem' }}>
+            <span className="eyebrow eyebrow--light">New in Whirr 6.0 · The Physical Promise Engine</span>
+            <h2>Teach the world what counts as work.</h2>
+            <p className="small">
+              Demonstrate an ordinary object. Compile the exact observable conditions. Settle with a buyer-approved
+              PayPal Sandbox authorization only when the evidence qualifies.
+            </p>
+          </div>
+          <div className="row">
+            <LinkButton to="/promise" variant="money">
+              Enter the Promise Engine <Icon name="arrow" size={16} />
+            </LinkButton>
+            <LinkButton to="/studio/promises" variant="secondary">
+              Open the Teaching Room
+            </LinkButton>
+          </div>
+        </div>
+      </section>
+
       <section className="hero hero--bench">
         <div className="hero__inner">
           <div className="hero__copy">

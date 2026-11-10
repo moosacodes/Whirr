@@ -316,6 +316,7 @@ export function Judge() {
         lede="These gates are computed from the database, the filesystem and the provider configuration right now. A missing credential, recording or webhook is shown as OPEN, never painted green."
         actions={
           <>
+            <LinkButton to="/promise" variant="primary">Whirr 6.0 physical promises</LinkButton>
             <LinkButton to="/invisible-checkout" variant="secondary">Whirr 5.0 experiment</LinkButton>
             <LinkButton to="/verify" variant="secondary">Open offline verifier</LinkButton>
             <LinkButton to={status.demoObjectId ? `/s/${status.demoObjectId}` : '/studio'} variant="primary">
