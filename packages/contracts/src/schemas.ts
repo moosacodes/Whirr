@@ -5,6 +5,7 @@ import { METER_STATES } from '../../meter/src/intervals.ts';
 import { OBJECT_CATEGORIES, OBJECT_GLYPHS, TAKE_LABELS, TAKE_ROLES } from './types.ts';
 import { FIELD_TRIAL_KINDS } from '../../audio/src/field-eval.ts';
 import { DISCOVERY_CONDITIONS } from '../../audio/src/discovery.ts';
+export * from './promise-schemas.ts';
 
 const finiteNumber = z.number().finite();
 const hash64 = z.string().regex(/^[a-f0-9]{64}$/, 'Expected a 64-character lowercase hex hash');
