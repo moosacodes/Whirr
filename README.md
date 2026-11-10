@@ -1,11 +1,17 @@
-# Whirr Bench
+# Whirr 7.0 — Ambient
 
-**Borrow the tool. Pay for the work.**
+**Don't just buy what exists. Buy what could change.**
+
+Whirr Ambient lets a buyer request an observable change in a shared physical environment, lets an authorized provider voluntarily accept or counter, and uses a deterministic agreement, a permitted microphone, and PayPal Sandbox compensation to make the cooperation inspectable and financially actionable.
+
+**Whirr 4.1 — the preserved Bench:** *Borrow the tool. Pay for the work.*
 
 Whirr 4.1 turns an ordinary shared-workshop tool into a pay-per-use service **by listening to it**. No lock, dongle or firmware. A member opens the tool’s bench card, authorizes a hard cap in PayPal Sandbox, and uses the machine normally. The browser hears it run, bills only confident running minutes, and gives both sides a signed receipt that can be verified offline.
 
 The product bet is a category, not a dashboard: **acoustic pay-per-use for physical equipment that already exists**. The object stays ordinary; the payment boundary and the evidence become programmable.
 
+> **Release candidate 7.0.0-rc.1 (10 November 2026): Ambient / The Negotiated World.** The vertical slice is implemented: Wish → Exchange → Window → Accord, published READY-model source binding, immutable offer revisions, exact buyer approval, a browser negative-space witness, a deterministic evaluator, a signed `whirr.ambient-proof.v1`, an independent verifier, PayPal Sandbox order/authorization/capture/void paths, and a credential-free judge replay. The seeded reference is **SYNTHETIC** and cannot capture money. **No physical Quiet Window field trial, genuine 7.0 Sandbox transaction, verified webhook, public deployment, user study, or Devpost submission exists.** See [`docs/product-7.0.md`](docs/product-7.0.md), [`docs/go-no-go.md`](docs/go-no-go.md), and [`docs/release-notes-7.0.md`](docs/release-notes-7.0.md).
+>
 > **Release candidate 4.1.0-rc.1 (9 November 2026):** the Whirr Bench experience is preserved and a guided Real-World Calibration Lab now records an appliance from the actual microphone, trains a device-specific model from live takes, and evaluates it on held-out three-cycle, noise, distance and replay trials. A live-calibrated model cannot be published without a passing, inspectable field report. No physical field test has been performed in this checkout, so Gate H remains OPEN; Gate A, E, F and G also remain OPEN. See [`docs/field-test.md`](docs/field-test.md), [`docs/go-no-go.md`](docs/go-no-go.md) and the [`4.1.0-rc.1 release notes`](docs/release-notes-4.1.0-rc.1.md).
 
 > **Whirr 5.0 — INVISIBLE CHECKOUT (experimental, not validated):** a separate feature branch asks whether an ordinary object can become discoverable through sound. It adds live two-object discovery enrollment, read-only `MATCH`/`AMBIGUOUS`/`UNKNOWN`, held-out trials with a pre-declared confusion protocol, and a public Listen → Discover → Confirm → Use → Settle surface. **No physical objects have been enrolled and no discovery metrics exist.** The evidence record is `NOT_RUN`, Gate I is OPEN, and the 4.x field gates, payments and historical Sandbox proof are unchanged. See [`docs/discovery-5.0.md`](docs/discovery-5.0.md) and [`docs/evidence/discovery.json`](docs/evidence/discovery.json). Do not publish or deploy this branch as validated evidence.
@@ -45,6 +51,50 @@ The product bet is a category, not a dashboard: **acoustic pay-per-use for physi
 The bundled reference model is trained on procedurally synthesised fan audio. Its measured metrics demonstrate the pipeline; they are **not** evidence of accuracy on a physical fan.
 
 The local AI is deliberately small: a 21-feature logistic regression that runs in the browser. No LLM, cloud call or API key is part of metering. An LLM cannot hear a fan or produce a billable interval, so adding one would be a cosmetic AI label rather than a better meter.
+
+## Whirr 7.0 Ambient quick start
+
+```bash
+npm install
+npm run setup
+npm run seed:ambient
+npm run dev
+```
+
+Open:
+
+- Ambient overview: <http://localhost:5173/ambient>
+- The Wish: <http://localhost:5173/ambient/wish>
+- Judge replays: <http://localhost:5173/ambient/judge>
+- Qualified reference Accord: <http://localhost:5173/ambient/accord/ase_reference_qualified>
+- Interrupted reference Accord: <http://localhost:5173/ambient/accord/ase_reference_interrupted>
+- Provider desk (operator session): <http://localhost:5173/ambient/operator>
+
+Use the operator key printed by `npm run key` to sign in at `/operator/login`. The key is a password; never commit it or show it in a recording.
+
+### 7.0 implementation map
+
+| Area | Implementation |
+| --- | --- |
+| Wish compiler | Deterministic local rules, no paid LLM; refuses unmeasurable physical claims |
+| Exchange | Immutable revisions, provider accept/reject/counter, exact buyer approval |
+| Temporal engine | Active baseline, continuous non-detection, gap limit, interruption/sensor-loss reset |
+| Witness | Local browser inference; interval states only, no raw audio upload |
+| Window | Signal-driven qualifying ring, explicit unknown/loss states, replay and live modes |
+| Payment | Sandbox order, authorization, capture, void, durable operations, webhook reconciliation |
+| Proof | Signed agreement/evidence/evaluation/consent/payment record with independent replay |
+| Demo safety | Synthetic replay labelled; `DEMO_MODE`; no order and no capture |
+| Preserved | 4.x Bench, calibration lab, discovery experiment, 6.0 promise engine and historical evidence |
+
+### 7.0 honest limits
+
+- The reference model and both seeded Ambient histories are synthetic.
+- No physical appliance was enrolled or observed for this release.
+- No genuine 7.0 Sandbox buyer approval, capture, void, or webhook was performed.
+- A microphone cannot prove silence, power-off, machine identity, safety, or legal authority.
+- The proof does not establish real-world truth and is not a substitute for a security audit.
+
+The canonical gate status is [`docs/go-no-go.md`](docs/go-no-go.md).
 
 ## Quick start
 
@@ -188,6 +238,8 @@ docs/                      architecture, model card, safety, threat model, PayPa
 
 ## Honest limits
 
+- **Whirr 7.0 is a vertical slice, not a field result.** The Ambient reference model, interrupted history, qualified history, buyer acceptance, and proof are synthetic. No physical Quiet Window trial or genuine 7.0 Sandbox settlement exists.
+- **The 7.0 proof separates trust domains.** A signature proves installation integrity and payload consistency; it does not prove that the microphone was honest, the room was silent, the machine was powered off, or PayPal currently holds a state without a provider lookup.
 - **The reference model is synthetic.** Real-object accuracy requires recording your own object; the UI and docs never present the bundled metrics as field evidence.
 - **A microphone is not a lock.** Speaker playback, a similar machine, or an unattended renter-controlled device can defeat acoustic sensing. Whirr refuses to bill uncertain time and is scoped to supervised venues, not unattended security.
 - **The acoustic passport is a calibration-fit consistency check, not identity proof.** A similar machine can share the spectral profile, playback can imitate it, and the gate is fit on the same calibration takes rather than a held-out identity dataset. It can only reduce billing by turning a questionable active frame into free uncertainty. The public probe is the same comparison in miniature: a low score is evidence about the room, not proof of who or what is present.
@@ -208,6 +260,22 @@ docs/                      architecture, model card, safety, threat model, PayPa
 
 ## Documentation
 
+- [Whirr 7.0 product](docs/product-7.0.md)
+- [Ambient invention and research basis](docs/ambient-invention.md)
+- [Ambient agreement specification](docs/ambient-agreement-spec.md)
+- [Intent engine](docs/intent-engine.md)
+- [Negative-space observation](docs/negative-space-observation.md)
+- [Cooperation mechanism](docs/cooperation-mechanism.md)
+- [Ambient witness](docs/ambient-witness.md)
+- [Ambient trust model](docs/ambient-trust-model.md)
+- [Ambient financial policy](docs/ambient-financial-policy.md)
+- [Ambient proof](docs/ambient-proof.md)
+- [Adversarial evaluation 7.0](docs/adversarial-evaluation-7.0.md)
+- [Field study 7.0 — OPEN](docs/field-study-7.0.md)
+- [Design system 7.0](docs/design-system-7.0.md)
+- [Demo 7.0](docs/demo-7.0.md)
+- [Submission 7.0](docs/submission-7.0.md)
+- [Release notes 7.0](docs/release-notes-7.0.md)
 - [Whirr 5.0 Invisible Checkout experiment](docs/discovery-5.0.md)
 - [Whirr 5.0 discovery evidence — NOT RUN](docs/evidence/discovery.json)
 - [Architecture](docs/architecture.md)
