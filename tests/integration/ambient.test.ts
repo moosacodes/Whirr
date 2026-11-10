@@ -292,6 +292,11 @@ describe('Whirr Ambient lifecycle', () => {
     expect(proof.verification.evaluationMatches).toBe(true);
     expect(proof.verification.consentOrderValid).toBe(true);
     expect(proof.verification.checks.every((check) => check.pass)).toBe(true);
+    expect(proofResponse.headers['cache-control']).toBe('no-store');
+    expect(proofResponse.headers['x-content-type-options']).toBe('nosniff');
+    expect(String(proofResponse.headers['content-security-policy'])).toContain("default-src 'self'");
+    const serializedPublic = JSON.stringify(proof.publicDocument);
+    expect(serializedPublic).not.toMatch(/"(?:frames|features|rawAudio|audioBase64)"/i);
 
     const publicProof = await call('GET', `/api/ambient/proofs/${proof.id}`);
     expect(publicProof.statusCode).toBe(200);
@@ -361,5 +366,118 @@ describe('Whirr Ambient lifecycle', () => {
       cookie: foreignCookie,
     });
     expect(foreign.statusCode).toBe(404);
+  });
+
+  it('scopes private agreement terms and model artifacts to participants', async () => {
+    const agreement = await offered();
+    const secondRenter = await call('POST', '/api/auth/renter', { body: {} });
+    const foreignCookie = cookieOf(secondRenter);
+
+    const anonymous = await call('GET', `/api/ambient/agreements/${agreement.id}`);
+    expect(anonymous.statusCode).toBe(404);
+    const foreign = await call('GET', `/api/ambient/agreements/${agreement.id}`, {
+      cookie: foreignCookie,
+    });
+    expect(foreign.statusCode).toBe(404);
+    const buyer = await call('GET', `/api/ambient/agreements/${agreement.id}`, {
+      cookie: renterCookie,
+    });
+    expect(buyer.statusCode).toBe(200);
+    expect(buyer.json<AmbientAgreementView>().roles.buyer).toBe(true);
+    const provider = await call('GET', `/api/operator/ambient/agreements/${agreement.id}`, {
+      cookie: operatorCookie,
+    });
+    expect(provider.statusCode).toBe(200);
+    expect(provider.json<AmbientAgreementView>().roles.provider).toBe(true);
+
+    const anonymousModel = await call('GET', `/api/ambient/agreements/${agreement.id}/model`);
+    expect(anonymousModel.statusCode).toBe(404);
+    const foreignModel = await call('GET', `/api/ambient/agreements/${agreement.id}/model`, {
+      cookie: foreignCookie,
+    });
+    expect(foreignModel.statusCode).toBe(404);
+    const buyerModel = await call('GET', `/api/ambient/agreements/${agreement.id}/model`, {
+      cookie: renterCookie,
+    });
+    expect(buyerModel.statusCode).toBe(200);
+    expect(buyerModel.json<{ artifact: unknown }>().artifact).toBeDefined();
+
+    const publicAgreement = await call('GET', '/api/ambient/agreements/amb_reference_window');
+    expect(publicAgreement.statusCode).toBe(200);
+    const publicModel = await call('GET', '/api/ambient/agreements/amb_reference_window/model');
+    expect(publicModel.statusCode).toBe(200);
+  });
+
+  it('enforces buyer/provider separation and rejects cross-renter session access', async () => {
+    const agreement = await accepted();
+    const secondRenter = await call('POST', '/api/auth/renter', { body: {} });
+    const foreignCookie = cookieOf(secondRenter);
+
+    const operatorDecision = await call('POST', `/api/ambient/agreements/${agreement.id}/decision`, {
+      cookie: operatorCookie,
+      body: { action: 'ACCEPT', termsHash: agreement.termsHash },
+    });
+    expect(operatorDecision.statusCode).toBe(401);
+    const renterResponse = await call('POST', `/api/operator/ambient/agreements/${agreement.id}/respond`, {
+      cookie: renterCookie,
+      body: { action: 'ACCEPT', termsHash: agreement.termsHash },
+    });
+    expect(renterResponse.statusCode).toBe(401);
+
+    const session = await demoSession(agreement.id);
+    const foreignStop = await call('POST', `/api/ambient/sessions/${session.id}/stop`, {
+      cookie: foreignCookie,
+      body: { reason: 'INTERRUPTED' },
+    });
+    expect(foreignStop.statusCode).toBe(404);
+    const foreignAcceptance = await call('POST', `/api/ambient/sessions/${session.id}/acceptance`, {
+      cookie: foreignCookie,
+      body: { accepted: true, termsHash: agreement.termsHash },
+    });
+    expect(foreignAcceptance.statusCode).toBe(404);
+    const operatorCapture = await call('POST', `/api/ambient/sessions/${session.id}/capture`, {
+      cookie: operatorCookie,
+      body: { confirmed: true, termsHash: agreement.termsHash },
+    });
+    expect(operatorCapture.statusCode).toBe(401);
+
+    const anonymousSession = await call('GET', `/api/ambient/sessions/${session.id}`);
+    expect(anonymousSession.statusCode).toBe(401);
+    const buyerView = await call('GET', `/api/ambient/sessions/${session.id}`, {
+      cookie: renterCookie,
+    });
+    expect(buyerView.statusCode).toBe(200);
+    expect(buyerView.headers['cache-control']).toBe('no-store');
+    expect(buyerView.headers['x-content-type-options']).toBe('nosniff');
+    expect(String(buyerView.headers['content-security-policy'])).toContain("default-src 'self'");
+  });
+
+  it('rejects Ambient mutations without CSRF or from a foreign origin', async () => {
+    const body = {
+      objectId: OBJECT_ID,
+      text: 'I need a 30 second quiet window without the reference desk fan running. I will pay $2.00.',
+      durationSeconds: 30,
+      fixedPriceMinor: 200,
+      currency: 'USD',
+    };
+    const missingCsrf = await app.inject({
+      method: 'POST',
+      url: '/api/ambient/compile',
+      headers: { cookie: renterCookie, 'content-type': 'application/json' },
+      payload: body,
+    });
+    expect(missingCsrf.statusCode).toBe(403);
+    const foreignOrigin = await app.inject({
+      method: 'POST',
+      url: '/api/ambient/compile',
+      headers: {
+        cookie: renterCookie,
+        'x-whirr-csrf': '1',
+        origin: 'https://evil.example',
+        'content-type': 'application/json',
+      },
+      payload: body,
+    });
+    expect(foreignOrigin.statusCode).toBe(403);
   });
 });

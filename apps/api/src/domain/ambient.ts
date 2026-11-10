@@ -54,7 +54,8 @@ import type {
 } from '../../../../packages/protocol/src/ambient-proof.ts';
 import { verifyAmbientProofDocument } from '../../../../packages/verify/src/ambient.ts';
 
-const DEMO_AGREEMENT_ID = 'amb_reference_window';
+export const PUBLIC_AMBIENT_AGREEMENT_ID = 'amb_reference_window';
+const DEMO_AGREEMENT_ID = PUBLIC_AMBIENT_AGREEMENT_ID;
 const DEMO_BUYER_ID = 'usr_ambient_viewer';
 const OFFER_TTL_MINUTES = 45;
 
@@ -333,6 +334,22 @@ export function ambientAgreementView(
       webhookConfigured: ctx.config.paypal.webhookConfigured,
     },
   };
+}
+
+export function ambientAgreementForActor(
+  ctx: AppContext,
+  idOrRow: string | AmbientAgreementRow,
+  actor?: Actor,
+): AmbientAgreementView {
+  const view = ambientAgreementView(ctx, idOrRow, actor);
+  if (
+    view.id !== PUBLIC_AMBIENT_AGREEMENT_ID &&
+    !view.roles.buyer &&
+    !view.roles.provider
+  ) {
+    throw errors.notFound('Ambient agreement not found.');
+  }
+  return view;
 }
 
 export function compileAmbientWish(
@@ -2216,9 +2233,9 @@ export function ambientJudge(ctx: AppContext): AmbientJudgeView {
   };
 }
 
-export function ambientModelDetail(ctx: AppContext, agreementId: string) {
-  const agreement = agreementRow(ctx, agreementId);
-  const row = modelRowForAgreement(ctx, agreement);
+export function ambientModelDetail(ctx: AppContext, agreementId: string, actor?: Actor) {
+  const view = ambientAgreementForActor(ctx, agreementId, actor);
+  const row = modelRowForAgreement(ctx, agreementRow(ctx, view.id));
   const artifact = JSON.parse(row.artifact_json) as EventModelArtifact;
   return {
     ...modelSummary(row),

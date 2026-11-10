@@ -31,6 +31,7 @@
 | Proof verifier | Re-signed bundles could change interval totals or model/terms bindings while keeping a valid outer signature. | The verifier recomputes interval totals and checks model, status and terms-hash bindings; the standalone verifier mirrors the totals check. |
 | Responsive receipt | The receipt explorer's table escaped its mobile grid track at 390 px. | Grid tracks and table wrappers are constrained with `minmax(0, 1fr)`/`min-width: 0`; Playwright asserts no page overflow at 390, 834 and 1440 px. |
 | Webhook ingress | The audit previously noted no webhook-only proxy. | `npm run proxy:webhook` is shipped and returns 404 for every non-webhook path; it remains loopback-only and does not close Gate E. |
+| Ambient agreement/model IDOR | Anonymous or foreign callers could retrieve private Ambient agreement terms or the full model artifact if they knew the agreement id. | Agreement, operator, and model-detail routes now require a matching buyer/provider actor or the explicitly public synthetic reference agreement. Foreign/private reads return 404. Regression coverage is in `tests/integration/ambient.test.ts`; see `ambient-authorization-matrix.md`. |
 
 ## 2. Verification performed
 
