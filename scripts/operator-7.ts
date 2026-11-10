@@ -245,7 +245,7 @@ async function getJson(url: string): Promise<{ ok: boolean; status: number; body
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(2_500) });
     const text = await response.text();
-    let body: unknown = text;
+    let body: unknown;
     try {
       body = JSON.parse(text);
     } catch {
@@ -823,7 +823,9 @@ async function validateDemo(run: OperatorRun): Promise<OperatorPhase> {
   let youtubeOk = false;
   try {
     const url = new URL(youtube);
-    youtubeOk = url.protocol === 'https:' && (url.hostname === 'youtu.be' || url.hostname.endsWith('youtube.com'));
+    youtubeOk =
+      url.protocol === 'https:' &&
+      (url.hostname === 'youtu.be' || url.hostname === 'youtube.com' || url.hostname.endsWith('.youtube.com'));
   } catch {
     // Leave youtubeOk false; the check below reports the missing URL.
   }
