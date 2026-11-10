@@ -4,6 +4,7 @@ import { SUPPORTED_CURRENCIES } from '../../meter/src/currency.ts';
 import { METER_STATES } from '../../meter/src/intervals.ts';
 import { OBJECT_CATEGORIES, OBJECT_GLYPHS, TAKE_LABELS, TAKE_ROLES } from './types.ts';
 import { FIELD_TRIAL_KINDS } from '../../audio/src/field-eval.ts';
+import { DISCOVERY_CONDITIONS } from '../../audio/src/discovery.ts';
 
 const finiteNumber = z.number().finite();
 const hash64 = z.string().regex(/^[a-f0-9]{64}$/, 'Expected a 64-character lowercase hex hash');
@@ -235,3 +236,58 @@ export const fieldTrialUploadSchema = z
   });
 
 export type FieldTrialUploadInput = z.infer<typeof fieldTrialUploadSchema>;
+
+const discoveryCaptureSchema = z.object({
+  schema: z.literal('whirr.capture-claim.v1'),
+  provenance: z.literal('CLIENT_CLAIMED_LIVE_MICROPHONE'),
+  claimedAt: z.string().datetime(),
+  deviceLabel: z.string().trim().max(120).nullable(),
+  sampleRate: z.number().int().min(8_000).max(192_000).nullable(),
+  permission: z.literal('GRANTED'),
+  frameCount: z.number().int().min(0).max(100_000).nullable(),
+  note: z.string().trim().max(240),
+});
+
+const discoveryTrialFramesSchema = z.object({
+  frames: z.array(featureVectorSchema).min(30).max(1_500),
+  frameFlags: z.array(z.array(qualityFlagSchema).max(8)).max(1_500).optional(),
+  durationMs: z.number().int().min(2_000).max(30_000),
+  sampleRate: z.number().int().min(8_000).max(192_000),
+  capturedAt: z.string().datetime(),
+  deviceLabel: z.string().trim().max(120).nullable().optional(),
+  capture: discoveryCaptureSchema,
+});
+
+const discoveryFramesRefinement = (value: { frames: number[][]; frameFlags?: string[][] }, ctx: z.RefinementCtx) => {
+  if (value.frameFlags && value.frameFlags.length !== value.frames.length) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'frameFlags length must equal frames length',
+      path: ['frameFlags'],
+    });
+  }
+};
+
+export const discoveryEnrollmentSchema = z
+  .object({
+    objectId: z.string().min(8).max(80),
+    takes: z.array(discoveryTrialFramesSchema).min(2).max(4),
+  })
+  .superRefine((value, ctx) => {
+    for (let index = 0; index < value.takes.length; index += 1) {
+      discoveryFramesRefinement(value.takes[index]!, ctx);
+    }
+  });
+
+export const discoveryMatchSchema = discoveryTrialFramesSchema.superRefine(discoveryFramesRefinement);
+
+export const discoveryTrialSchema = discoveryTrialFramesSchema
+  .extend({
+    truthObjectId: z.string().min(8).max(80).nullable(),
+    condition: z.enum(DISCOVERY_CONDITIONS as unknown as [string, ...string[]]),
+  })
+  .superRefine(discoveryFramesRefinement);
+
+export type DiscoveryEnrollmentInput = z.infer<typeof discoveryEnrollmentSchema>;
+export type DiscoveryMatchInput = z.infer<typeof discoveryMatchSchema>;
+export type DiscoveryTrialInput = z.infer<typeof discoveryTrialSchema>;
