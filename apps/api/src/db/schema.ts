@@ -676,6 +676,11 @@ CREATE TABLE IF NOT EXISTS ambient_sessions (
 CREATE INDEX IF NOT EXISTS idx_ambient_sessions_buyer ON ambient_sessions(buyer_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ambient_sessions_provider ON ambient_sessions(provider_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ambient_sessions_state ON ambient_sessions(state);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_agreement ON ambient_sessions(agreement_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_order ON ambient_sessions(paypal_order_id);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_authorization ON ambient_sessions(paypal_authorization_id);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_capture ON ambient_sessions(paypal_capture_id);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_void ON ambient_sessions(paypal_void_id);
 
 CREATE TABLE IF NOT EXISTS ambient_observations (
   id TEXT PRIMARY KEY,
@@ -709,6 +714,8 @@ CREATE TABLE IF NOT EXISTS ambient_payment_operations (
   updated_at TEXT NOT NULL,
   UNIQUE (session_id, operation_type)
 );
+
+CREATE INDEX IF NOT EXISTS idx_ambient_payment_operations_provider ON ambient_payment_operations(provider_ref);
 
 CREATE TABLE IF NOT EXISTS ambient_proofs (
   id TEXT PRIMARY KEY,

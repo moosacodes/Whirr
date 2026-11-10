@@ -1,0 +1,56 @@
+{
+  "schema": "whirr.query-performance.v1",
+  "generatedAt": "2026-11-10T15:51:44.936Z",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "win32-x64",
+    "cpu": "Intel(R) Core(TM) i5-10400F CPU @ 2.90GHz",
+    "cpus": 12
+  },
+  "dataset": {
+    "ambientSessions": 1000,
+    "paymentOperations": 1000
+  },
+  "queries": [
+    {
+      "label": "latest session for agreement",
+      "sql": "SELECT id FROM ambient_sessions WHERE agreement_id = ? ORDER BY created_at DESC LIMIT 1",
+      "param": "amb_reference_window",
+      "iterations": 2000,
+      "p50Ms": 0.005699999999990268,
+      "p95Ms": 0.00929999999999609,
+      "maxMs": 0.7122000000000526,
+      "plan": [
+        "SEARCH ambient_sessions USING INDEX idx_ambient_sessions_agreement (agreement_id=?)"
+      ]
+    },
+    {
+      "label": "session by provider capture id",
+      "sql": "SELECT id FROM ambient_sessions WHERE paypal_capture_id = ? LIMIT 1",
+      "param": "CAPTURE-PERF-500",
+      "iterations": 2000,
+      "p50Ms": 0.005699999999990268,
+      "p95Ms": 0.010499999999979082,
+      "maxMs": 0.03870000000000573,
+      "plan": [
+        "SEARCH ambient_sessions USING INDEX idx_ambient_sessions_capture (paypal_capture_id=?)"
+      ]
+    },
+    {
+      "label": "payment operation by provider ref",
+      "sql": "SELECT session_id FROM ambient_payment_operations WHERE provider_ref = ? LIMIT 1",
+      "param": "CAPTURE-PERF-500",
+      "iterations": 2000,
+      "p50Ms": 0.005499999999983629,
+      "p95Ms": 0.00980000000004111,
+      "maxMs": 0.11320000000000618,
+      "plan": [
+        "SEARCH ambient_payment_operations USING INDEX idx_ambient_payment_operations_provider (provider_ref=?)"
+      ]
+    }
+  ],
+  "notes": [
+    "This measures prepared SQLite statements on a disposable copy of the local seeded database.",
+    "It does not measure HTTP, browser audio processing, concurrent clients, or production scale."
+  ]
+}
