@@ -168,7 +168,7 @@ export function SandboxBanner({
         <Icon name="shield" size={18} />
         <div>
           <strong>PayPal Sandbox only.</strong> Every amount is simulated; no real money can move. Webhooks:{' '}
-          {webhookConfigured ? 'registered and signature-verified.' : 'not configured — provider polling only.'}
+          {webhookConfigured ? 'registered and signature-verified.' : 'not configured; provider polling only.'}
         </div>
       </div>
     );
