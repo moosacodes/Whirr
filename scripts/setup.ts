@@ -4,6 +4,7 @@ import { trainReferenceModel } from './train-reference.ts';
 import { seedReference } from './seed.ts';
 import { writeEvaluation } from './evaluate-reference.ts';
 import { seedPromise } from './seed-promise.ts';
+import { seedAmbient } from './seed-ambient.ts';
 
 async function main(): Promise<void> {
   console.log('Whirr setup\n');
@@ -40,12 +41,18 @@ async function main(): Promise<void> {
   console.log(`    agreement ${promise.agreementId} · event model ${promise.eventModelId} (${promise.modelStatus})`);
   console.log('    provenance: SYNTHETIC_REFERENCE — not a physical appliance field trial');
 
+  console.log('5/5 Seeding the Ambient Quiet Window reference…');
+  const ambient = await seedAmbient();
+  console.log(`    agreement ${ambient.agreementId}`);
+  console.log('    one interrupted and one qualifying synthetic window · DEMO_NO_PAYMENT');
+
   console.log('\nReady.');
   console.log('  Read the operator key:  npm run key');
   console.log('  Start the app:          npm run dev');
   console.log(`  Reference service:      http://localhost:5173/s/${seeded.objectId}`);
   console.log('  Judge evidence:         http://localhost:5173/judge');
   console.log(`  Physical promise:       http://localhost:5173/promise/${promise.agreementId}`);
+  console.log(`  Ambient quiet window:   http://localhost:5173/ambient/judge`);
   if (!config.paypal.configured) {
     console.log('\nPayPal is not configured, so sessions are labelled demo metering and no payment is created.');
     console.log('Add Sandbox credentials to .env (see .env.example and docs/paypal-sandbox.md) to run the real provider flow.');
