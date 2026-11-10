@@ -1,0 +1,124 @@
+{
+  "schema": "whirr.ambient-release-evidence.v1",
+  "generatedAt": "2026-11-10",
+  "release": "7.0.0-rc.1",
+  "branch": "main",
+  "baseCommit": "45e92e8a92c3b83117f9fcbc7807e21a102a2bfd",
+  "status": "LOCAL_RELEASE_CANDIDATE_OPEN_GATES",
+  "provenance": "SYNTHETIC_REFERENCE",
+  "tests": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "errors": 0
+    },
+    "unitIntegration": {
+      "command": "npm test",
+      "status": "PASS",
+      "files": 23,
+      "passed": 133,
+      "failed": 0
+    },
+    "ambientFocused": {
+      "status": "PASS",
+      "unit": 11,
+      "integration": 7,
+      "passed": 18,
+      "failed": 0
+    },
+    "browser": {
+      "command": "npm run test:e2e",
+      "status": "PASS",
+      "passed": 57,
+      "failed": 0,
+      "viewports": [
+        "1440x900",
+        "834x1112",
+        "390x844"
+      ]
+    },
+    "build": {
+      "command": "npm run build",
+      "status": "PASS",
+      "mainJs": "297.25 kB",
+      "mainJsGzip": "94.43 kB"
+    },
+    "smoke": {
+      "command": "npm run smoke",
+      "status": "PASS"
+    }
+  },
+  "referenceProof": {
+    "agreementId": "ase_reference_qualified",
+    "provenance": "SYNTHETIC_REFERENCE",
+    "termsHash": "0f8d41e02b0c70a80f705e5b666e7b440d99ec8100f072c523c3b2c8726a43fd",
+    "proofId": "apr_f83736365f6d462297858f16f8cf5578",
+    "verifier": "packages/verify/src/ambient.ts",
+    "checksPassed": 14,
+    "standalonePassLines": 15,
+    "standaloneEnvelopeCheck": true,
+    "checksFailed": 0,
+    "tamperCasesRejected": true,
+    "claim": "The verifier recomputes the signed synthetic agreement and evidence. It does not prove physical truth, sensor authenticity or current PayPal state."
+  },
+  "browserFlow": {
+    "status": "LOCAL_BROWSER_VERIFIED",
+    "steps": [
+      "buyer creates a wish against the enrolled reference source",
+      "local provider accepts the exact immutable terms",
+      "buyer accepts the final terms",
+      "demo window opens with a labelled replay ladder"
+    ],
+    "providerIdentity": "LOCAL_OPERATOR_TEST_IDENTITY",
+    "externalProviderInvolved": false
+  },
+  "screenshots": [
+    "docs/v7/wish-1440.png",
+    "docs/v7/wish-390.png",
+    "docs/v7/judge-1440.png",
+    "docs/v7/window-1440.png",
+    "docs/v7/accord-390.png",
+    "docs/v7/accord-1440.png",
+    "docs/v7/ambient-1440.png",
+    "docs/v7/ambient-390.png"
+  ],
+  "physicalEvidence": {
+    "status": "OPEN_NOT_RUN",
+    "physicalObjectTested": false,
+    "genuineInterruptedObservation": false,
+    "genuineQualifyingObservation": false,
+    "claim": "No real appliance enrollment, live observation, interrupted physical window or qualifying physical window was performed."
+  },
+  "paypal": {
+    "status": "OPEN_NOT_RUN",
+    "environment": "sandbox",
+    "orderId": null,
+    "authorizationId": null,
+    "captureId": null,
+    "voidId": null,
+    "genuineWebhookVerified": false,
+    "historical4xCaptureReused": false,
+    "claim": "No genuine 7.0 Sandbox buyer authorization, capture, void or signed webhook exists. Provider behavior was tested only with contract fakes."
+  },
+  "gates": {
+    "A_real_source_enrollment": "OPEN",
+    "B_source_observability": "OPEN",
+    "C_physical_window_evaluation": "OPEN",
+    "D_agreement_consent": "PASS_LOCAL_SOFTWARE_SCOPE",
+    "E_correct_paypal_authorization": "OPEN",
+    "F_financial_failure_safety": "OPEN",
+    "G_financial_success": "OPEN",
+    "H_genuine_webhook": "OPEN",
+    "I_independent_proof": "PASS_SYNTHETIC_SCOPE",
+    "J_product_comprehension": "OPEN",
+    "K_public_submission": "OPEN"
+  },
+  "limitations": [
+    "Synthetic replay and the reference model are not physical field evidence.",
+    "A microphone observation cannot prove silence, power-off, identity, safety or legal compliance.",
+    "A signature proves integrity under the configured key, not the truth of the observed world.",
+    "Demo sessions cannot create a PayPal order or capture.",
+    "No public deployment, video, external comprehension test or Devpost submission exists.",
+    "No independent security or accessibility audit was performed."
+  ]
+}
