@@ -1,5 +1,6 @@
 import type { Currency, PaymentState, SessionState } from '../../../../packages/contracts/src/types.ts';
 import type { ModelArtifact, ModelProvenance, ModelStatus } from '../../../../packages/audio/src/classifier.ts';
+import type { DiscoveryCondition, DiscoveryResult } from '../../../../packages/audio/src/discovery.ts';
 
 export interface UserRow {
   id: string;
@@ -227,6 +228,39 @@ export interface PayPalResourceRow {
   raw_json: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface DiscoveryEnrollmentRow {
+  id: string;
+  object_id: string;
+  profile_json: string;
+  profile_hash: string;
+  status: 'READY' | 'WEAK';
+  created_at: string;
+}
+
+export interface DiscoveryTrialRow {
+  id: string;
+  object_id: string | null;
+  truth_object_id: string | null;
+  condition: DiscoveryCondition;
+  result: DiscoveryResult;
+  predicted_object_id: string | null;
+  score: number | null;
+  margin: number | null;
+  latency_ms: number;
+  quality_json: string;
+  capture_json: string;
+  evidence_hash: string;
+  created_at: string;
+}
+
+export interface DiscoveryReportRow {
+  id: string;
+  status: 'NOT_RUN' | 'INCOMPLETE' | 'PASS' | 'FAIL';
+  report_json: string;
+  evidence_hash: string;
+  created_at: string;
 }
 
 export function parseArtifact(row: ModelRow): ModelArtifact {
