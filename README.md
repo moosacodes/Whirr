@@ -61,6 +61,14 @@ npm run seed:ambient
 npm run dev
 ```
 
+In a second terminal, start the guided real-world operator workflow:
+
+```bash
+npm run operator:7 -- run --open
+```
+
+It records the physical-enrollment, Quiet Window, PayPal, webhook and demo evidence in `.whirr/operator-7/<runId>/` and keeps every canonical gate OPEN until review. See [`docs/operator-7.0.md`](docs/operator-7.0.md).
+
 Open:
 
 - Ambient overview: <http://localhost:5173/ambient>
@@ -263,6 +271,7 @@ docs/                      architecture, model card, safety, threat model, PayPa
 - [Engineering SDLC](docs/sdlc.md)
 - [7.0 product backlog](docs/backlog-7.0.md)
 - [Release checklist](docs/release-checklist.md)
+- [Guided operator workflow 7.0](docs/operator-7.0.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Whirr 7.0 product](docs/product-7.0.md)

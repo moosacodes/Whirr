@@ -29,6 +29,7 @@
     "gate:v3": "tsx scripts/gate-v3.ts",
     "gate:a:export": "tsx scripts/export-gate-a.ts",
     "proxy:webhook": "tsx scripts/webhook-proxy.ts",
+    "operator:7": "tsx scripts/operator-7.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests/unit tests/integration",
