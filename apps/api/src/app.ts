@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
@@ -73,8 +74,8 @@ export async function createApp(config: Config, options: CreateAppOptions = {}):
                 'res.headers["set-cookie"]',
               ],
               censor: '[redacted]',
-            },
-          },
+            },            },
+    genReqId: () => randomUUID(),
     trustProxy: config.trustProxy,
     bodyLimit: 12 * 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false } },
@@ -97,6 +98,7 @@ export async function createApp(config: Config, options: CreateAppOptions = {}):
   });
 
   app.addHook('onRequest', async (req, reply) => {
+    reply.header('X-Request-Id', req.id);
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     reply.header('X-Frame-Options', 'DENY');
