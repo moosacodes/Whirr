@@ -5,6 +5,21 @@ import type { FieldTestStateView, FieldValidationSummary } from './field-types.t
 
 export type { Currency, MeterState };
 export type {
+  DiscoveryCandidateView,
+  DiscoveryCaptureView,
+  DiscoveryEnrollmentSummary,
+  DiscoveryLabView,
+  DiscoveryMatchView,
+  DiscoveryObjectView,
+  DiscoveryProtocolView,
+  DiscoveryPublicView,
+  DiscoveryReportStatus,
+  DiscoveryReportView,
+  DiscoveryTermsView,
+  DiscoveryTrialResponse,
+  DiscoveryTrialView,
+} from './discovery-types.ts';
+export type {
   FieldGateView,
   FieldRecordingQuality,
   FieldTestReport,
