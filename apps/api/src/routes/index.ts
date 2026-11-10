@@ -130,6 +130,43 @@ import {
   eventTrainSchema,
 } from '../../../../packages/contracts/src/promise-schemas.ts';
 import {
+  acceptAmbientResult,
+  ambientAgreementView,
+  ambientCatalog,
+  ambientJudge,
+  ambientModelDetail,
+  ambientProof,
+  ambientSessionView,
+  appendAmbientObservations,
+  authorizeAmbientSession,
+  buyerDecideAmbientOffer,
+  captureAmbientSession,
+  compileAmbientWish,
+  createAmbientAgreement,
+  createAmbientOrder,
+  createAmbientSession,
+  listAmbientAgreements,
+  reconcileAmbientSession,
+  respondToAmbientOffer,
+  startAmbientObservation,
+  stopAmbientObservation,
+  verifyPublicAmbientProof,
+  voidAmbientSession,
+  withdrawAmbientAgreement,
+} from '../domain/ambient.ts';
+import {
+  ambientAcceptanceSchema,
+  ambientBuyerDecisionSchema,
+  ambientCaptureSchema,
+  ambientObservationBatchSchema,
+  ambientOfferSchema,
+  ambientRespondSchema,
+  ambientSessionCreateSchema,
+  ambientStopSchema,
+  ambientVoidSchema,
+  ambientWishSchema,
+} from '../../../../packages/contracts/src/ambient-schemas.ts';
+import {
   consentSchema,
   disputeResolveSchema,
   disputeSchema,
@@ -891,6 +928,215 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
       return result;
     },
   );
+
+  // -------------------------------------------------------------- ambient 7.0
+  app.get('/api/ambient', async (req) => {
+    limitRequest(ctx, req, 'ambient-catalog', 120, 60_000);
+    return ambientCatalog(ctx);
+  });
+
+  app.get('/api/ambient/judge', async (req) => {
+    limitRequest(ctx, req, 'ambient-judge', 60, 60_000);
+    return ambientJudge(ctx);
+  });
+
+  app.get('/api/ambient/judge/sessions/:id', async (req) => {
+    limitRequest(ctx, req, 'ambient-judge-session', 120, 60_000);
+    const { id } = req.params as { id: string };
+    const view = ambientSessionView(ctx, id);
+    if (view.agreementId !== 'amb_reference_window') throw errors.notFound('Ambient judge session not found.');
+    return view;
+  });
+
+  app.get('/api/ambient/proofs/:proofId', async (req) => {
+    limitRequest(ctx, req, 'ambient-proof', 120, 60_000);
+    const { proofId } = req.params as { proofId: string };
+    return verifyPublicAmbientProof(ctx, proofId);
+  });
+
+  app.get('/api/ambient/proofs/:proofId/verify', async (req) => {
+    limitRequest(ctx, req, 'ambient-proof-verify', 120, 60_000);
+    const { proofId } = req.params as { proofId: string };
+    return verifyPublicAmbientProof(ctx, proofId);
+  });
+
+  app.get('/api/ambient/agreements', async (req) => {
+    limitRequest(ctx, req, 'ambient-list', 120, 60_000);
+    return { agreements: listAmbientAgreements(ctx, actorFor(ctx, req)) };
+  });
+
+  app.get('/api/ambient/agreements/:id', async (req) => {
+    limitRequest(ctx, req, 'ambient-agreement', 240, 60_000);
+    const { id } = req.params as { id: string };
+    const actor = (() => {
+      try {
+        return actorFor(ctx, req);
+      } catch {
+        return undefined;
+      }
+    })();
+    return ambientAgreementView(ctx, id, actor);
+  });
+
+  app.get('/api/ambient/agreements/:id/model', async (req) => {
+    limitRequest(ctx, req, 'ambient-model', 240, 60_000);
+    const { id } = req.params as { id: string };
+    return ambientModelDetail(ctx, id);
+  });
+
+  app.post('/api/ambient/compile', async (req, reply) => {
+    limitRequest(ctx, req, 'ambient-compile', 30, 60_000);
+    const renter = ensureRenter(ctx, req, reply);
+    const body = parseBody(ambientWishSchema, req.body);
+    return compileAmbientWish(ctx, renter, {
+      objectId: body.objectId,
+      text: body.text,
+      durationSeconds: body.durationSeconds,
+      fixedPriceMinor: body.fixedPriceMinor,
+      currency: body.currency as import('../../../../packages/meter/src/currency.ts').Currency,
+    });
+  });
+
+  app.post('/api/ambient/agreements', async (req, reply) => {
+    limitRequest(ctx, req, 'ambient-agreement-create', 20, 60_000);
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(ambientOfferSchema, req.body);
+    reply.code(201);
+    return createAmbientAgreement(ctx, renter, {
+      terms: (req.body as { terms?: unknown }).terms,
+      termsHash: body.termsHash,
+      approved: body.approved,
+    });
+  });
+
+  app.post('/api/ambient/agreements/:id/withdraw', async (req) => {
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    return withdrawAmbientAgreement(ctx, renter, id);
+  });
+
+  app.post('/api/ambient/agreements/:id/decision', async (req) => {
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(ambientBuyerDecisionSchema, req.body);
+    return buyerDecideAmbientOffer(ctx, renter, id, body);
+  });
+
+  app.post('/api/ambient/agreements/:id/sessions', async (req, reply) => {
+    limitRequest(ctx, req, 'ambient-session-create', 20, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(ambientSessionCreateSchema, req.body);
+    reply.code(201);
+    return createAmbientSession(ctx, renter, id, body);
+  });
+
+  app.get('/api/ambient/sessions/:id', async (req) => {
+    limitRequest(ctx, req, 'ambient-session', 240, 60_000);
+    const { id } = req.params as { id: string };
+    let actor: Actor | undefined;
+    try {
+      actor = actorFor(ctx, req);
+    } catch {
+      actor = undefined;
+    }
+    const view = ambientSessionView(ctx, id, actor);
+    if (!actor && view.agreementId !== 'amb_reference_window') {
+      throw errors.unauthorized('Sign in as a participant to inspect this Ambient session.');
+    }
+    return view;
+  });
+
+  app.post('/api/ambient/sessions/:id/order', async (req) => {
+    limitRequest(ctx, req, 'ambient-order', 20, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    return createAmbientOrder(ctx, renter, id, requestOrigin(ctx, req));
+  });
+
+  app.post('/api/ambient/sessions/:id/authorize', async (req) => {
+    limitRequest(ctx, req, 'ambient-authorize', 20, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    return authorizeAmbientSession(ctx, renter, id);
+  });
+
+  app.post('/api/ambient/sessions/:id/start', async (req) => {
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    return startAmbientObservation(ctx, renter, id);
+  });
+
+  app.post('/api/ambient/sessions/:id/observations', async (req) => {
+    limitRequest(ctx, req, 'ambient-observations', 300, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(ambientObservationBatchSchema, req.body);
+    return appendAmbientObservations(ctx, renter, id, body as Parameters<typeof appendAmbientObservations>[3]);
+  });
+
+  app.post('/api/ambient/sessions/:id/stop', async (req) => {
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    parseBody(ambientStopSchema, req.body ?? {});
+    return stopAmbientObservation(ctx, renter, id);
+  });
+
+  app.post('/api/ambient/sessions/:id/acceptance', async (req) => {
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(ambientAcceptanceSchema, req.body);
+    return acceptAmbientResult(ctx, renter, id, body);
+  });
+
+  app.post('/api/ambient/sessions/:id/capture', async (req) => {
+    limitRequest(ctx, req, 'ambient-capture', 20, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(ambientCaptureSchema, req.body);
+    return captureAmbientSession(ctx, renter, id, body);
+  });
+
+  app.post('/api/ambient/sessions/:id/void', async (req) => {
+    limitRequest(ctx, req, 'ambient-void', 20, 60_000);
+    const { id } = req.params as { id: string };
+    const body = parseBody(ambientVoidSchema, req.body ?? {});
+    return voidAmbientSession(ctx, actorFor(ctx, req), id, body.reason);
+  });
+
+  app.post('/api/ambient/sessions/:id/reconcile', async (req) => {
+    limitRequest(ctx, req, 'ambient-reconcile', 30, 60_000);
+    const { id } = req.params as { id: string };
+    const actor = actorFor(ctx, req);
+    const session = ambientSessionView(ctx, id, actor);
+    if (!session.ownership.buyer && !session.ownership.provider) throw errors.unauthorized('Not a participant.');
+    return reconcileAmbientSession(ctx, id);
+  });
+
+  app.get('/api/ambient/sessions/:id/proof', async (req) => {
+    limitRequest(ctx, req, 'ambient-session-proof', 60, 60_000);
+    const { id } = req.params as { id: string };
+    return ambientProof(ctx, id, actorFor(ctx, req));
+  });
+
+  app.get('/api/operator/ambient/agreements', async (req) => {
+    const operator = requireOperator(ctx, req);
+    return { agreements: listAmbientAgreements(ctx, { type: 'operator', id: operator.id }) };
+  });
+
+  app.get('/api/operator/ambient/agreements/:id', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    return ambientAgreementView(ctx, id, { type: 'operator', id: operator.id });
+  });
+
+  app.post('/api/operator/ambient/agreements/:id/respond', async (req) => {
+    limitRequest(ctx, req, 'ambient-respond', 30, 60_000);
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    const body = parseBody(ambientRespondSchema, req.body);
+    return respondToAmbientOffer(ctx, operator, id, body);
+  });
 
   // ------------------------------------------------------- physical promises
   app.get('/api/promises', async (req) => {

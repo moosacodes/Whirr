@@ -447,6 +447,8 @@ export function extractAuthorization(order: PayPalOrder): {
   id: string;
   status: string;
   amount: { currency_code: string; value: string };
+  create_time?: string;
+  expiration_time?: string;
 } | null {
   for (const unit of order.purchase_units ?? []) {
     const authorization = unit.payments?.authorizations?.[0];

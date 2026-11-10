@@ -5,6 +5,10 @@ import {
   findPromiseExecutionForProviderIds,
   reconcilePromiseExecution,
 } from './promises.ts';
+import {
+  findAmbientSessionForProviderIds,
+  reconcileAmbientSession,
+} from './ambient.ts';
 import { appendAudit } from '../lib/audit.ts';
 import { errors, AppError } from '../lib/errors.ts';
 import { newId } from '../lib/ids.ts';
@@ -75,6 +79,10 @@ export function findSessionForEvent(ctx: AppContext, event: PayPalEventLike): st
 
 export function findPromiseExecutionForEvent(ctx: AppContext, event: PayPalEventLike): string | null {
   return findPromiseExecutionForProviderIds(ctx, providerIdsForEvent(event));
+}
+
+export function findAmbientSessionForEvent(ctx: AppContext, event: PayPalEventLike): string | null {
+  return findAmbientSessionForProviderIds(ctx, providerIdsForEvent(event));
 }
 
 export async function ingestWebhook(
@@ -291,6 +299,55 @@ export async function ingestWebhook(
     }
   }
 
+  const ambientSessionId = findAmbientSessionForEvent(ctx, parsed);
+  if (ambientSessionId) {
+    try {
+      const reconciled = await reconcileAmbientSession(ctx, ambientSessionId);
+      if (reconciled.result === 'RECONCILE_FAILED') {
+        enqueueOutbox(ctx, 'RECONCILE_AMBIENT', { ambientSessionId, webhookRowId: rowId }, 10_000);
+        ctx.store.run(
+          'UPDATE paypal_webhook_events SET result = ? WHERE id = ?',
+          'AMBIENT_RECONCILE_QUEUED',
+          rowId,
+        );
+        return {
+          received: true,
+          duplicate: false,
+          verified: true,
+          result: 'RECONCILE_QUEUED',
+          eventId: id,
+          eventType: type,
+        };
+      }
+      const result =
+        reconciled.result === 'RECONCILIATION_REQUIRED'
+          ? 'AMBIENT_RECONCILIATION_REQUIRED'
+          : 'AMBIENT_RECONCILED';
+      ctx.store.run(
+        'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
+        ctx.now().toISOString(),
+        result,
+        rowId,
+      );
+      return { received: true, duplicate: false, verified: true, result, eventId: id, eventType: type };
+    } catch (error) {
+      enqueueOutbox(ctx, 'RECONCILE_AMBIENT', { ambientSessionId, webhookRowId: rowId }, 10_000);
+      ctx.store.run(
+        'UPDATE paypal_webhook_events SET result = ? WHERE id = ?',
+        `AMBIENT_RECONCILE_QUEUED:${(error as Error).message.slice(0, 120)}`,
+        rowId,
+      );
+      return {
+        received: true,
+        duplicate: false,
+        verified: true,
+        result: 'RECONCILE_QUEUED',
+        eventId: id,
+        eventType: type,
+      };
+    }
+  }
+
   ctx.store.run(
     'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
     ctx.now().toISOString(),
@@ -320,6 +377,7 @@ export async function drainOutbox(ctx: AppContext, max = 20): Promise<number> {
       const payload = JSON.parse(row.payload_json) as {
         sessionId?: string;
         executionId?: string;
+        ambientSessionId?: string;
         webhookRowId?: string;
       };
       if (row.topic === 'RECONCILE_SESSION' && payload.sessionId) {
@@ -345,6 +403,22 @@ export async function drainOutbox(ctx: AppContext, max = 20): Promise<number> {
             reconciled.result === 'RECONCILIATION_REQUIRED'
               ? 'PROMISE_RECONCILIATION_REQUIRED_BY_OUTBOX'
               : 'PROMISE_RECONCILED_BY_OUTBOX',
+            payload.webhookRowId,
+          );
+        }
+      }
+      if (row.topic === 'RECONCILE_AMBIENT' && payload.ambientSessionId) {
+        const reconciled = await reconcileAmbientSession(ctx, payload.ambientSessionId);
+        if (reconciled.result === 'RECONCILE_FAILED') {
+          throw new Error('Ambient reconciliation did not reach the provider.');
+        }
+        if (payload.webhookRowId) {
+          ctx.store.run(
+            'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
+            ctx.now().toISOString(),
+            reconciled.result === 'RECONCILIATION_REQUIRED'
+              ? 'AMBIENT_RECONCILIATION_REQUIRED_BY_OUTBOX'
+              : 'AMBIENT_RECONCILED_BY_OUTBOX',
             payload.webhookRowId,
           );
         }
