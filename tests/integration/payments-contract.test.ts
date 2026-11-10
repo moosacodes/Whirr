@@ -234,6 +234,52 @@ async function createReviewedSession(overrides: { activeMs?: number; authorized?
   return accepted.json<SessionView>();
 }
 
+function preparePromiseExecution(input: {
+  source: 'pex_reference_qualified' | 'pex_reference_incomplete';
+  state: string;
+  paymentState: string;
+  captureId?: string | null;
+  authorizationId?: string | null;
+  orderId?: string | null;
+}): void {
+  const row = ctx.store.get<{ id: string }>('SELECT id FROM promise_executions WHERE id = ?', input.source);
+  expect(row).toBeTruthy();
+  ctx.store.run(
+    `UPDATE promise_executions
+     SET demo = 0, state = ?, payment_state = ?, paypal_order_id = ?, paypal_authorization_id = ?,
+         paypal_capture_id = ?, paypal_void_id = NULL, captured_minor = NULL, provider_status = NULL,
+         provider_reconciled_at = NULL, authorization_expires_at = ?
+     WHERE id = ?`,
+    input.state,
+    input.paymentState,
+    input.orderId ?? null,
+    input.authorizationId ?? null,
+    input.captureId ?? null,
+    new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    input.source,
+  );
+}
+
+async function deliverPayPalEvent(event: {
+  id: string;
+  event_type: string;
+  resource: Record<string, unknown>;
+}) {
+  return app.inject({
+    method: 'POST',
+    url: '/api/paypal/webhook',
+    headers: {
+      'content-type': 'application/json',
+      'paypal-transmission-id': `transmission-${event.id}`,
+      'paypal-auth-algo': 'SHA256withRSA',
+      'paypal-cert-url': 'https://api-m.sandbox.paypal.com/cert',
+      'paypal-transmission-sig': 'sig',
+      'paypal-transmission-time': '2026-11-01T00:00:00Z',
+    },
+    payload: JSON.stringify(event),
+  });
+}
+
 beforeAll(async () => {
   const seeded = path.resolve(process.cwd(), 'data/whirr.db');
   if (!existsSync(seeded)) throw new Error('Run `npm run setup` before the integration test.');
@@ -501,6 +547,126 @@ describe('PayPal provider contract', () => {
     const response = await call('POST', `/api/sessions/${session.id}/capture`, { cookie: renterCookie, body: {} });
     expect(response.statusCode).toBe(409);
     expect(response.json<{ error: { code: string } }>().error.code).toBe('PAYMENT_OPERATION_CONFLICT');
+  });
+
+  it('confirms a promise capture only when provider amount and stored evidence agree', async () => {
+    preparePromiseExecution({
+      source: 'pex_reference_qualified',
+      state: 'CAPTURE_REQUESTED',
+      paymentState: 'CAPTURE_REQUESTED',
+      captureId: 'CAP-PROMISE-OK',
+      authorizationId: 'AUTH-PROMISE-OK',
+    });
+    paypal.captures.set('CAP-PROMISE-OK', {
+      id: 'CAP-PROMISE-OK',
+      status: 'COMPLETED',
+      amount: { currency_code: 'USD', value: '2.00' },
+    });
+    const event = {
+      id: 'WH-PROMISE-CAPTURE-OK',
+      event_type: 'PAYMENT.CAPTURE.COMPLETED',
+      resource: {
+        id: 'CAP-PROMISE-OK',
+        amount: { currency_code: 'USD', value: '2.00' },
+        supplementary_data: { related_ids: { authorization_id: 'AUTH-PROMISE-OK' } },
+      },
+    };
+    const delivered = await deliverPayPalEvent(event);
+    expect(delivered.statusCode).toBe(200);
+    expect(delivered.json<{ result: string }>().result).toBe('PROMISE_RECONCILED');
+    const row = ctx.store.get<{
+      state: string;
+      payment_state: string;
+      captured_minor: number | null;
+      paypal_capture_id: string | null;
+    }>('SELECT state, payment_state, captured_minor, paypal_capture_id FROM promise_executions WHERE id = ?', 'pex_reference_qualified');
+    expect(row).toMatchObject({
+      state: 'CAPTURE_CONFIRMED',
+      payment_state: 'CAPTURE_COMPLETED',
+      captured_minor: 200,
+      paypal_capture_id: 'CAP-PROMISE-OK',
+    });
+
+    const replay = await deliverPayPalEvent(event);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json<{ duplicate: boolean }>().duplicate).toBe(true);
+  });
+
+  it('refuses to confirm a promise capture whose provider amount differs', async () => {
+    preparePromiseExecution({
+      source: 'pex_reference_qualified',
+      state: 'CAPTURE_REQUESTED',
+      paymentState: 'CAPTURE_REQUESTED',
+      captureId: 'CAP-PROMISE-MISMATCH',
+      authorizationId: 'AUTH-PROMISE-MISMATCH',
+    });
+    paypal.captures.set('CAP-PROMISE-MISMATCH', {
+      id: 'CAP-PROMISE-MISMATCH',
+      status: 'COMPLETED',
+      amount: { currency_code: 'USD', value: '0.01' },
+    });
+    const delivered = await deliverPayPalEvent({
+      id: 'WH-PROMISE-CAPTURE-MISMATCH',
+      event_type: 'PAYMENT.CAPTURE.COMPLETED',
+      resource: { id: 'CAP-PROMISE-MISMATCH', amount: { currency_code: 'USD', value: '0.01' } },
+    });
+    expect(delivered.statusCode).toBe(200);
+    expect(delivered.json<{ result: string }>().result).toBe('PROMISE_RECONCILIATION_REQUIRED');
+    const row = ctx.store.get<{ state: string; payment_state: string; captured_minor: number | null }>(
+      'SELECT state, payment_state, captured_minor FROM promise_executions WHERE id = ?',
+      'pex_reference_qualified',
+    );
+    expect(row).toMatchObject({ state: 'RECONCILIATION_REQUIRED', payment_state: 'UNRESOLVED', captured_minor: null });
+  });
+
+  it('never confirms a provider capture against nonqualifying promise evidence', async () => {
+    preparePromiseExecution({
+      source: 'pex_reference_incomplete',
+      state: 'CAPTURE_REQUESTED',
+      paymentState: 'CAPTURE_REQUESTED',
+      captureId: 'CAP-PROMISE-INCOMPLETE',
+      authorizationId: 'AUTH-PROMISE-INCOMPLETE',
+    });
+    paypal.captures.set('CAP-PROMISE-INCOMPLETE', {
+      id: 'CAP-PROMISE-INCOMPLETE',
+      status: 'COMPLETED',
+      amount: { currency_code: 'USD', value: '2.00' },
+    });
+    const delivered = await deliverPayPalEvent({
+      id: 'WH-PROMISE-CAPTURE-INCOMPLETE',
+      event_type: 'PAYMENT.CAPTURE.COMPLETED',
+      resource: { id: 'CAP-PROMISE-INCOMPLETE', amount: { currency_code: 'USD', value: '2.00' } },
+    });
+    expect(delivered.statusCode).toBe(200);
+    expect(delivered.json<{ result: string }>().result).toBe('PROMISE_RECONCILIATION_REQUIRED');
+    const row = ctx.store.get<{ state: string; payment_state: string; captured_minor: number | null }>(
+      'SELECT state, payment_state, captured_minor FROM promise_executions WHERE id = ?',
+      'pex_reference_incomplete',
+    );
+    expect(row).toMatchObject({ state: 'RECONCILIATION_REQUIRED', payment_state: 'UNRESOLVED', captured_minor: null });
+  });
+
+  it('reconciles a voided promise authorization without claiming a capture', async () => {
+    preparePromiseExecution({
+      source: 'pex_reference_qualified',
+      state: 'ELIGIBLE_FOR_CAPTURE',
+      paymentState: 'AUTHORIZED',
+      authorizationId: 'AUTH-PROMISE-VOID',
+    });
+    paypal.authorizationStatus = 'VOIDED';
+    const delivered = await deliverPayPalEvent({
+      id: 'WH-PROMISE-VOID',
+      event_type: 'PAYMENT.AUTHORIZATION.VOIDED',
+      resource: { id: 'AUTH-PROMISE-VOID' },
+    });
+    expect(delivered.statusCode).toBe(200);
+    expect(delivered.json<{ result: string }>().result).toBe('PROMISE_RECONCILED');
+    const row = ctx.store.get<{ state: string; payment_state: string; captured_minor: number | null }>(
+      'SELECT state, payment_state, captured_minor FROM promise_executions WHERE id = ?',
+      'pex_reference_qualified',
+    );
+    expect(row).toMatchObject({ state: 'VOID_CONFIRMED', payment_state: 'VOIDED', captured_minor: null });
+    paypal.authorizationStatus = 'CREATED';
   });
 
   it('returns a consistent rejection for an invalid webhook signature and accepts a signed retry', async () => {
