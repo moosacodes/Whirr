@@ -77,6 +77,12 @@ Tests mutate signed payloads and expect failure, including:
 
 Any mutation invalidates the signature; some consistency mutations can also fail independent replay even if a new signature were somehow produced by a compromised key.
 
+## Re-signed semantic mutation coverage
+
+`tests/integration/ambient.test.ts` re-signs mutated payloads with the local test signer so the signature remains valid, then expects the specific semantic check to fail. The current cases cover observation state, model version, agreement price, evidence root, acceptance ordering, payment amount, and agreement revision. It also checks that a changed signature fails the signature check while leaving the document otherwise intact.
+
+These are author-run tests against the local signer. Independent reproduction of the standalone verifier on a separate machine remains required by #8 and is not claimed here.
+
 ## Public redaction
 
 The public proof page shows:

@@ -13,6 +13,7 @@ import type {
   AmbientSessionView,
 } from '../../packages/contracts/src/types.ts';
 import type { CompiledAmbientAgreement } from '../../packages/ambient-engine/src/types.ts';
+import type { AmbientProofPayload } from '../../packages/protocol/src/index.ts';
 import { verifyAmbientProofDocument } from '../../packages/verify/src/ambient.ts';
 
 const TEST_KEY = 'ambient-operator-key-0123456789abcdef';
@@ -294,6 +295,84 @@ describe('Whirr Ambient lifecycle', () => {
     expect(proof.verification.evaluationMatches).toBe(true);
     expect(proof.verification.consentOrderValid).toBe(true);
     expect(proof.verification.checks.every((check) => check.pass)).toBe(true);
+
+    const signed = proof.document as { payload: AmbientProofPayload };
+    const resign = async (mutate: (payload: AmbientProofPayload) => void) => {
+      const payload = JSON.parse(JSON.stringify(signed.payload)) as AmbientProofPayload;
+      mutate(payload);
+      return ctx.signer.sign('ambient-proof', payload);
+    };
+    const semanticMutations: Array<[
+      string,
+      (payload: AmbientProofPayload) => void,
+      string,
+    ]> = [
+      [
+        'observation state',
+        (payload) => {
+          payload.observations[1]!.sourceState = 'ACTIVE';
+        },
+        'observations_hash',
+      ],
+      [
+        'model version',
+        (payload) => {
+          payload.model.version = 'tampered-model';
+        },
+        'model_binding',
+      ],
+      [
+        'agreement price',
+        (payload) => {
+          payload.agreement.terms.financial.fixedPriceMinor -= 1;
+        },
+        'agreement_hash',
+      ],
+      [
+        'evidence root',
+        (payload) => {
+          payload.evidenceRoot = '0'.repeat(64);
+        },
+        'evidence_root',
+      ],
+      [
+        'acceptance ordering',
+        (payload) => {
+          payload.consent.humanAcceptance = {
+            accepted: true,
+            acceptedAt: '2000-01-01T00:00:00.000Z',
+          };
+        },
+        'consent_order',
+      ],
+      [
+        'payment amount',
+        (payload) => {
+          payload.payment.capturedMinor = 1;
+        },
+        'payment_consistent',
+      ],
+      [
+        'agreement revision',
+        (payload) => {
+          payload.agreement.revision += 1;
+        },
+        'model_binding',
+      ],
+    ];
+    for (const [name, mutate, expectedCheck] of semanticMutations) {
+      const verification = await verifyAmbientProofDocument(await resign(mutate));
+      expect(verification.valid, name).toBe(false);
+      expect(verification.signatureValid, name).toBe(true);
+      expect(verification.checks.find((check) => check.id === expectedCheck)?.pass, name).toBe(false);
+    }
+
+    const badSignature = JSON.parse(JSON.stringify(proof.document)) as { signature: string };
+    badSignature.signature = 'A'.repeat(86);
+    const signatureCheck = await verifyAmbientProofDocument(badSignature);
+    expect(signatureCheck.valid).toBe(false);
+    expect(signatureCheck.signatureValid).toBe(false);
+
     expect(proofResponse.headers['cache-control']).toBe('no-store');
     expect(proofResponse.headers['x-content-type-options']).toBe('nosniff');
     expect(String(proofResponse.headers['content-security-policy'])).toContain("default-src 'self'");
