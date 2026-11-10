@@ -80,3 +80,11 @@ npm run eval:reference
 ```
 
 Then open `/judge` and `/demo/offline` in the app. Both label the fixture as synthetic and replay.
+
+## Whirr 5.0 discovery experiment
+
+There is **no 5.0 physical evaluation** in this checkout. `docs/evidence/discovery.json` is `NOT_RUN` with no enrollments, trials, confusion matrix, accuracy, false-match count or latency. The synthetic reference model and its 4.x metrics are not evidence for discovery.
+
+The pre-declared discovery protocol is separate: two genuinely different objects, at least two live enrollment takes each, then held-out target, unknown, distance, noise and replay trials. Gates are target accuracy ≥ 90%, unknown rejection ≥ 90%, false-match rate ≤ 5%, replay cross-object match rate ≤ 5%, distance/noise accuracy ≥ 80%, median latency ≤ 250 ms and mean usable-frame ratio ≥ 60%. The server recomputes the actual confusion matrix; `AMBIGUOUS` and `UNKNOWN` are not counted as correct target discoveries. See [`discovery-5.0.md`](discovery-5.0.md).
+
+Do not copy a 4.x metric, a synthetic fixture result or a UI state into the 5.0 evidence record.
