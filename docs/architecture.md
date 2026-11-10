@@ -229,3 +229,15 @@ Webhook: `POST /api/paypal/webhook` (raw body, no CSRF header, signature verifie
 ## 13. Scaling path (not implemented)
 
 A production design would separate the API from a durable job runner, use PostgreSQL with row-level ownership and transactional locks per object, put webhook ingestion behind a dedicated minimal receiver, store raw evidence in an append-only object store with retention policy, and add independent telemetry. None of that is claimed here, and none is required for the local reproducible demo.
+
+## 14. Whirr 5.0 discovery experiment (isolated)
+
+The 5.0 experiment lives on its own feature branch and adds a read-only discovery path beside the 4.x product. It does not change the operational-state model, field report, terms, session, payment, receipt or proof code.
+
+- `packages/audio/src/discovery.ts` builds an amplitude-invariant eight-band profile plus coarse spectral ratios, selects deterministic medoids from enrollment takes, and scores cosine similarity. It returns `MATCH` only when both the score and the margin over the second object pass frozen thresholds; otherwise `AMBIGUOUS` or `UNKNOWN`.
+- `apps/api/src/domain/discovery.ts` owns enrollment, held-out trials, report generation, operator lab views and the public read-only match. It accepts feature frames and a client-claimed capture record; it never stores raw audio. A match creates no session, no terms, no payment operation and no PayPal call.
+- Schema v5 adds `discovery_enrollments`, `discovery_trials` and `discovery_reports`. Enrollment replacement or a new trial invalidates the old report so stale evidence cannot remain visible.
+- `POST /api/discovery/match` returns the object hypothesis, score, margin, quality, latency, existing published terms and an optional existing `/s/:objectId` link. The existing field-validation guard still runs when a human follows the link and creates a session.
+- The public `/invisible-checkout` page implements Listen → Discover → Confirm → Use → Settle; Use and Settle are explicitly the existing 4.x surfaces. `/studio/discovery` is the operator-only enrollment and evidence lab.
+
+The prior-art, pre-declared gates, truthfulness limits and NOT_RUN evidence record are in [`discovery-5.0.md`](discovery-5.0.md) and [`evidence/discovery.json`](evidence/discovery.json).
