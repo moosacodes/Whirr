@@ -32,8 +32,11 @@ test.describe('core accessibility smoke', () => {
 
   test('the skip link is the first keyboard target and reaches the main landmark', async ({ page }) => {
     await page.goto('/ambient');
-    await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: /Skip to content/i });
+    // Wait for the lazy app shell before sending the first key. A cold Vite
+    // transform can otherwise mount the skip link after Tab has already fired.
+    await expect(skip).toBeAttached();
+    await page.keyboard.press('Tab');
     await expect(skip).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/#main$/);
