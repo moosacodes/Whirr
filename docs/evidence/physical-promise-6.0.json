@@ -1,0 +1,42 @@
+{
+  "schema": "whirr.physical-promise-evidence.v1",
+  "generatedAt": "2026-11-10T00:26:00.000Z",
+  "status": "OPEN_NOT_RUN",
+  "physicalObjectTested": false,
+  "syntheticReferenceUsed": true,
+  "provenance": "SYNTHETIC_REFERENCE",
+  "fieldEvaluation": {
+    "status": "OPEN_NOT_RUN",
+    "reason": "No physical appliance recordings, held-out cycles, interruption trial, background trial or distance trial have been performed in this checkout.",
+    "claim": "No field accuracy, reliability or false-capture rate is claimed."
+  },
+  "paypal": {
+    "status": "OPEN_NOT_RUN",
+    "environment": "sandbox",
+    "orderId": null,
+    "authorizationId": null,
+    "captureId": null,
+    "voidId": null,
+    "webhookVerified": false,
+    "reason": "No human buyer approved a 6.0 Sandbox checkout and no provider capture or webhook was performed."
+  },
+  "seededEvidence": {
+    "kind": "DEMO_SYNTHETIC_REPLAY",
+    "agreementId": "prm_reference_fan",
+    "executionIds": [
+      "pex_reference_incomplete",
+      "pex_reference_qualified"
+    ],
+    "proofIds": [
+      "ppr_6db07980edb74e6da9d2b1e4a39f5564",
+      "ppr_91f4d444ed224ff98761e1e35fc59841"
+    ],
+    "paymentMode": "DEMO_NO_PAYMENT"
+  },
+  "limitations": [
+    "Synthetic model metrics are not field measurements.",
+    "A signed proof binds browser-reported observations but cannot prove microphone honesty.",
+    "Eligibility is not a provider capture and a Sandbox capture is not real money.",
+    "A recorded completion sequence does not prove product quality or manufacturing success."
+  ]
+}
