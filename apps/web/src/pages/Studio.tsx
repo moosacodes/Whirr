@@ -117,10 +117,13 @@ export function Studio() {
         title="Objects, taught by ear."
         lede="Every object here is metered by sound alone. Train on a few takes, publish terms, and share one link. The reference fan is synthetic and labelled as such."
         actions={
-          <Button onClick={() => setShowCreate((value) => !value)} variant={showCreate ? 'secondary' : 'primary'}>
-            <Icon name={showCreate ? 'pause' : 'arrow'} size={16} />
-            {showCreate ? 'Close new object' : 'New object'}
-          </Button>
+          <>
+            <Link className="btn btn--secondary" to="/studio/discovery">Discovery lab</Link>
+            <Button onClick={() => setShowCreate((value) => !value)} variant={showCreate ? 'secondary' : 'primary'}>
+              <Icon name={showCreate ? 'pause' : 'arrow'} size={16} />
+              {showCreate ? 'Close new object' : 'New object'}
+            </Button>
+          </>
         }
       />
 
