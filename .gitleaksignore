@@ -5,3 +5,4 @@ ec341842cef938f00daeb8631f51ef4cd60399fe:tests/integration/promises.test.ts:gene
 4d4333d5725a122fcc624fe9f76865cbad4dead4:tests/integration/ambient.test.ts:generic-api-key:18
 ef34f2b94d6f47f7e47f7400a51715b51fdcc489:tests/integration/api.test.ts:generic-api-key:11
 ef34f2b94d6f47f7e47f7400a51715b51fdcc489:tests/integration/protocol-v2.test.ts:generic-api-key:13
+# Validate with a full-history workflow dispatch on main after merge.
