@@ -316,6 +316,7 @@ export function Judge() {
         lede="These gates are computed from the database, the filesystem and the provider configuration right now. A missing credential, recording or webhook is shown as OPEN, never painted green."
         actions={
           <>
+            <LinkButton to="/ambient/judge" variant="money">Whirr 7.0 Ambient</LinkButton>
             <LinkButton to="/promise" variant="primary">Whirr 6.0 physical promises</LinkButton>
             <LinkButton to="/invisible-checkout" variant="secondary">Whirr 5.0 experiment</LinkButton>
             <LinkButton to="/verify" variant="secondary">Open offline verifier</LinkButton>
@@ -434,6 +435,19 @@ export function Judge() {
         </div>
 
         <aside className="stack">
+          <section className="card card--dark stack">
+            <span className="eyebrow" style={{ color: 'rgba(245,238,228,.55)' }}>Whirr 7.0</span>
+            <h2 className="h3">Buy a condition, not a product.</h2>
+            <p className="small" style={{ color: 'rgba(245,238,228,.7)' }}>
+              Ambient lets a buyer request an observable pause, a provider voluntarily accept, and a deterministic
+              evaluator decide whether the agreed continuous window actually occurred.{' '}
+            </p>
+            <LinkButton to="/ambient/judge" variant="secondary">Open Ambient judge mode</LinkButton>
+            <p className="tiny" style={{ color: 'rgba(245,238,228,.45)' }}>
+              Seeded histories are synthetic and labelled. Genuine Sandbox capture stays open until a human completes it.
+            </p>
+          </section>
+
           <section className="card card--dark stack">
             <span className="eyebrow" style={{ color: 'rgba(245,238,228,.55)' }}>The claim</span>
             <h2 className="h2">An ordinary object can be a metered service.</h2>

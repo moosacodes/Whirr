@@ -13,6 +13,14 @@ const GateA = lazy(() => import('./pages/GateA.tsx').then((module) => ({ default
 const CalibrationLab = lazy(() => import('./pages/CalibrationLab.tsx').then((module) => ({ default: module.CalibrationLab })));
 const DiscoveryStudio = lazy(() => import('./pages/DiscoveryStudio.tsx').then((module) => ({ default: module.DiscoveryStudio })));
 const InvisibleCheckout = lazy(() => import('./pages/InvisibleCheckout.tsx').then((module) => ({ default: module.InvisibleCheckout })));
+const Ambient = lazy(() => import('./pages/Ambient.tsx').then((module) => ({ default: module.Ambient })));
+const AmbientWish = lazy(() => import('./pages/AmbientWish.tsx').then((module) => ({ default: module.AmbientWish })));
+const AmbientExchange = lazy(() => import('./pages/AmbientExchange.tsx').then((module) => ({ default: module.AmbientExchange })));
+const AmbientWindow = lazy(() => import('./pages/AmbientWindow.tsx').then((module) => ({ default: module.AmbientWindow })));
+const AmbientAccord = lazy(() => import('./pages/AmbientAccord.tsx').then((module) => ({ default: module.AmbientAccord })));
+const AmbientProofPage = lazy(() => import('./pages/AmbientProofPage.tsx').then((module) => ({ default: module.AmbientProofPage })));
+const AmbientJudge = lazy(() => import('./pages/AmbientJudge.tsx').then((module) => ({ default: module.AmbientJudge })));
+const AmbientOperator = lazy(() => import('./pages/AmbientOperator.tsx').then((module) => ({ default: module.AmbientOperator })));
 const Promises = lazy(() => import('./pages/Promises.tsx').then((module) => ({ default: module.Promises })));
 const PromiseDetail = lazy(() => import('./pages/PromiseDetail.tsx').then((module) => ({ default: module.PromiseDetail })));
 const PromiseRun = lazy(() => import('./pages/PromiseRun.tsx').then((module) => ({ default: module.PromiseRun })));
@@ -52,6 +60,13 @@ export function App() {
               <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/judge" element={<Judge />} />
+              <Route path="/ambient" element={<Ambient />} />
+              <Route path="/ambient/judge" element={<AmbientJudge />} />
+              <Route path="/ambient/wish" element={<AmbientWish />} />
+              <Route path="/ambient/exchange/:agreementId" element={<AmbientExchange />} />
+              <Route path="/ambient/window/:sessionId" element={<AmbientWindow />} />
+              <Route path="/ambient/accord/:sessionId" element={<AmbientAccord />} />
+              <Route path="/ambient/proof/:proofId" element={<AmbientProofPage />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/proof/:id" element={<Proof />} />
               <Route path="/shelf" element={<Shelf />} />
@@ -75,6 +90,14 @@ export function App() {
                 element={
                   <RequireOperator>
                     <OperatorConsole />
+                  </RequireOperator>
+                }
+              />
+              <Route
+                path="/operator/ambient"
+                element={
+                  <RequireOperator>
+                    <AmbientOperator />
                   </RequireOperator>
                 }
               />
