@@ -24,6 +24,7 @@ let app: FastifyInstance;
 let ctx: AppContext;
 let renterCookie: string;
 let operatorCookie: string;
+let testConfig: Config;
 
 function cookieOf(response: { headers: Record<string, unknown> }): string {
   const raw = response.headers['set-cookie'];
@@ -132,6 +133,7 @@ beforeAll(async () => {
       webhookConfigured: false,
     },
   });
+  testConfig = config;
   const created = await createApp(config, { logger: false });
   app = created.app;
   ctx = created.ctx;
@@ -302,6 +304,19 @@ describe('Whirr Ambient lifecycle', () => {
     expect(publicProof.statusCode).toBe(200);
     expect(publicProof.json<AmbientProofView>().verification.valid).toBe(true);
 
+    const restarted = await createApp(testConfig, { logger: false });
+    try {
+      const afterRestart = await restarted.app.inject({
+        method: 'GET',
+        url: `/api/ambient/sessions/${session.id}/proof`,
+        headers: { cookie: renterCookie },
+      });
+      expect(afterRestart.statusCode).toBe(200);
+      expect(afterRestart.json<AmbientProofView>().verification.valid).toBe(true);
+    } finally {
+      await restarted.app.close();
+    }
+
     const document = JSON.parse(JSON.stringify(proof.publicDocument)) as {
       payload: { observations: Array<{ sourceState: string }> };
     };
@@ -309,6 +324,101 @@ describe('Whirr Ambient lifecycle', () => {
     const tampered = await verifyAmbientProofDocument(document);
     expect(tampered.valid).toBe(false);
     expect(tampered.signatureValid).toBe(false);
+  });
+
+  it('returns the existing session when creation is retried', async () => {
+    const agreement = await accepted();
+    const first = await demoSession(agreement.id);
+    const retry = await call('POST', `/api/ambient/agreements/${agreement.id}/sessions`, {
+      cookie: renterCookie,
+      body: { demo: true, observationMode: 'REPLAY' },
+    });
+    expect(retry.statusCode).toBe(201);
+    expect(retry.json<AmbientSessionView>().id).toBe(first.id);
+    const count = ctx.store.get<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM ambient_sessions WHERE agreement_id = ?',
+      agreement.id,
+    );
+    expect(count?.count).toBe(1);
+  });
+
+  it('makes acceptance retries idempotent without duplicating the acceptance record', async () => {
+    const agreement = await accepted();
+    const session = await demoSession(agreement.id);
+    const stopped = await call('POST', `/api/ambient/sessions/${session.id}/stop`, {
+      cookie: renterCookie,
+      body: { reason: 'WINDOW_QUALIFIED' },
+    });
+    expect(stopped.statusCode).toBe(200);
+    expect(stopped.json<AmbientSessionView>().state).toBe('QUALIFIED_AWAITING_ACCEPTANCE');
+
+    const body = {
+      accepted: true,
+      termsHash: agreement.termsHash,
+      note: 'Retry-safe acceptance.',
+    };
+    const first = await call('POST', `/api/ambient/sessions/${session.id}/acceptance`, {
+      cookie: renterCookie,
+      body,
+    });
+    expect(first.statusCode).toBe(200);
+    const firstView = first.json<AmbientSessionView>();
+    expect(firstView.state).toBe('DEMO_COMPLETE');
+    expect(firstView.acceptance?.acceptedAt).toBeTruthy();
+
+    const retry = await call('POST', `/api/ambient/sessions/${session.id}/acceptance`, {
+      cookie: renterCookie,
+      body,
+    });
+    expect(retry.statusCode).toBe(200);
+    const retried = retry.json<AmbientSessionView>();
+    expect(retried.state).toBe('DEMO_COMPLETE');
+    expect(retried.acceptance?.acceptedAt).toBe(firstView.acceptance?.acceptedAt);
+    const audits = ctx.store.get<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM audit_events WHERE subject_id = ? AND action = 'ambient.result_accepted'",
+      session.id,
+    );
+    expect(audits?.count).toBe(1);
+  });
+
+  it('rolls back a partial observation batch and preserves the observing meter', async () => {
+    const agreement = await accepted();
+    const session = await demoSession(agreement.id, 'LIVE');
+    const started = await call('POST', `/api/ambient/sessions/${session.id}/start`, {
+      cookie: renterCookie,
+      body: {},
+    });
+    expect(started.statusCode).toBe(200);
+
+    const invalid = await call('POST', `/api/ambient/sessions/${session.id}/observations`, {
+      cookie: renterCookie,
+      body: {
+        clientSeq: 1,
+        intervals: [
+          { seq: 1, startMs: 0, endMs: 1_000, sourceState: 'ACTIVE', confidence: 0.9, qualityFlags: [] },
+          { seq: 2, startMs: 100_000, endMs: 101_000, sourceState: 'INACTIVE', confidence: 0.9, qualityFlags: [] },
+        ],
+      },
+    });
+    expect(invalid.statusCode).toBe(409);
+
+    const afterFailure = await call('GET', `/api/ambient/sessions/${session.id}`, {
+      cookie: renterCookie,
+    });
+    const view = afterFailure.json<AmbientSessionView>();
+    expect(view.state).toBe('OBSERVING');
+    expect(view.observations).toHaveLength(0);
+    expect(view.meterClockMs).toBe(0);
+
+    const valid = await call('POST', `/api/ambient/sessions/${session.id}/observations`, {
+      cookie: renterCookie,
+      body: {
+        clientSeq: 1,
+        intervals: [{ seq: 1, startMs: 0, endMs: 1_000, sourceState: 'ACTIVE', confidence: 0.9, qualityFlags: [] }],
+      },
+    });
+    expect(valid.statusCode).toBe(200);
+    expect(valid.json<AmbientSessionView>().observations).toHaveLength(1);
   });
 
   it('withholds qualification on an interruption and cannot capture the failed demo', async () => {
