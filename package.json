@@ -1,8 +1,8 @@
 {
   "name": "whirr",
-  "version": "6.0.0-rc.1",
+  "version": "7.0.0-rc.1",
   "private": true,
-  "description": "Whirr 6.0 — The Physical Promise Engine. Teach an ordinary object an observable operating sequence, compile a fixed-price agreement, and settle only against approved evidence with PayPal Sandbox.",
+  "description": "Whirr 7.0 — The Negotiated World. Request an observable change in a shared physical environment, reach a voluntary agreement, and settle only against deterministic evidence and buyer consent in PayPal Sandbox.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -20,6 +20,7 @@
     "eval:reference": "tsx scripts/evaluate-reference.ts",
     "seed": "tsx scripts/seed.ts",
     "seed:promise": "tsx scripts/seed-promise.ts",
+    "seed:ambient": "tsx scripts/seed-ambient.ts",
     "key": "tsx scripts/print-key.ts",
     "demo:offline": "tsx scripts/offline-demo.ts",
     "proof:verify": "tsx scripts/verify-proof.ts",
