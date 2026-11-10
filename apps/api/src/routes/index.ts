@@ -328,13 +328,69 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   });
 
   // ---------------------------------------------------------------- health
-  app.get('/api/health', async () => ({
+  app.get('/api/health', async (req) => ({
     status: 'ok',
     service: 'whirr',
+    requestId: req.id,
     uptimeSeconds: Math.round(process.uptime()),
     paypal: { configured: ctx.config.paypal.configured, env: 'sandbox', webhookConfigured: ctx.config.paypal.webhookConfigured },
     demoMode: ctx.config.demoMode,
   }));
+
+  app.get('/api/ready', async (req, reply) => {
+    const paypal = {
+      status: ctx.config.paypal.configured ? 'configured' : 'not_configured',
+      webhookConfigured: ctx.config.paypal.webhookConfigured,
+    };
+    try {
+      ctx.store.get<{ ok: number }>('SELECT 1 AS ok');
+      const signerRow = ctx.store.get<{ key_id: string }>(
+        'SELECT key_id FROM signing_keys WHERE key_id = ? AND retired_at IS NULL',
+        ctx.signer.keyId,
+      );
+      const outbox = ctx.store.get<{ count: number; oldest: string | null }>(
+        'SELECT COUNT(*) AS count, MIN(next_attempt_at) AS oldest FROM outbox WHERE processed_at IS NULL',
+      );
+      if (!signerRow) {
+        reply.code(503);
+        return {
+          status: 'unavailable',
+          service: 'whirr',
+          requestId: req.id,
+          checks: {
+            database: { status: 'ok' },
+            signer: { status: 'unavailable', algorithm: ctx.signer.algorithm },
+            paypal,
+            outbox: { status: 'ok', pending: outbox?.count ?? 0, oldestPendingAt: outbox?.oldest ?? null },
+          },
+        };
+      }
+      return {
+        status: 'ok',
+        service: 'whirr',
+        requestId: req.id,
+        checks: {
+          database: { status: 'ok' },
+          signer: { status: 'ok', algorithm: ctx.signer.algorithm },
+          paypal,
+          outbox: { status: 'ok', pending: outbox?.count ?? 0, oldestPendingAt: outbox?.oldest ?? null },
+        },
+      };
+    } catch {
+      reply.code(503);
+      return {
+        status: 'unavailable',
+        service: 'whirr',
+        requestId: req.id,
+        checks: {
+          database: { status: 'unavailable' },
+          signer: { status: 'unknown' },
+          paypal,
+          outbox: { status: 'unknown' },
+        },
+      };
+    }
+  });
 
   // --------------------------------------------------------------- public
   app.get('/api/service/:objectId', async (req) => {

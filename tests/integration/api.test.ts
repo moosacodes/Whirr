@@ -118,6 +118,38 @@ describe('security plumbing', () => {
     expect(artifact.json<{ artifact: { status: string } }>().artifact.status).toBe('READY');
   });
 
+  it('returns a request id and safe readiness details without credentials', async () => {
+    const health = await call('GET', '/api/health');
+    expect(health.statusCode).toBe(200);
+    expect(health.headers['x-request-id']).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    expect(health.json<{ requestId: string }>().requestId).toBe(health.headers['x-request-id']);
+
+    const ready = await call('GET', '/api/ready');
+    expect(ready.statusCode).toBe(200);
+    const body = ready.json<{
+      status: string;
+      checks: {
+        database: { status: string };
+        signer: { status: string };
+        paypal: { status: string; webhookConfigured: boolean };
+        outbox: { status: string; pending: number };
+      };
+    }>();
+    expect(body.status).toBe('ok');
+    expect(body.checks.database.status).toBe('ok');
+    expect(body.checks.signer.status).toBe('ok');
+    expect(body.checks.paypal.status).toBe('not_configured');
+    expect(body.checks.paypal.webhookConfigured).toBe(false);
+    expect(body.checks.outbox.status).toBe('ok');
+    expect(typeof body.checks.outbox.pending).toBe('number');
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain(TEST_SECRET);
+    expect(serialized).not.toContain('clientSecret');
+    expect(serialized).not.toContain('operatorKey');
+  });
+
   it('publishes an acoustic passport without authentication and does not invent one for unknown objects', async () => {
     const response = await call('GET', '/api/passport/obj_reference_fan');
     expect(response.statusCode).toBe(200);
