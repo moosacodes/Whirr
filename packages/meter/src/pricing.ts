@@ -73,7 +73,6 @@ export function quoteBreakdown(
   const cappedMinor = Math.min(capMinor, roundedMinor);
   const credit = Math.min(creditMinor, cappedMinor);
   const finalMinor = Math.max(0, cappedMinor - credit);
-  const minutes = (billableMs / 60_000).toFixed(3);
   return {
     billableMs,
     minorPerMinute,

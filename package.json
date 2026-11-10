@@ -28,6 +28,7 @@
     "gate:v3": "tsx scripts/gate-v3.ts",
     "gate:a:export": "tsx scripts/export-gate-a.ts",
     "proxy:webhook": "tsx scripts/webhook-proxy.ts",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests/unit tests/integration",
     "test:unit": "vitest run tests/unit",
@@ -52,6 +53,7 @@
     "zod": "^4.0.10"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@playwright/test": "^1.54.0",
     "@types/node": "^24.2.0",
     "@types/qrcode": "^1.5.5",
@@ -59,9 +61,13 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^9.2.0",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "fast-check": "^4.2.0",
+    "globals": "17.14.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
+    "typescript-eslint": "8.72.2",
     "vite": "^7.0.6",
     "vitest": "^4.1.12"
   }

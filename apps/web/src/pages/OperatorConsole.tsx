@@ -16,7 +16,6 @@ import {
   TextInput,
   usePageTitle,
 } from '../components/ui.tsx';
-import { Icon } from '../components/visuals.tsx';
 import { SESSION_STATE_COPY, dateTime, duration, money, titleCase } from '../lib/format.ts';
 
 export function OperatorConsole() {

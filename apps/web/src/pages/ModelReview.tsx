@@ -4,7 +4,6 @@ import { api, errorMessage } from '../lib/api.ts';
 import type { OwnerObjectView } from '../../../../packages/contracts/src/types.ts';
 import type { ModelArtifact } from '../../../../packages/audio/src/classifier.ts';
 import {
-  Button,
   EmptyState,
   LinkButton,
   Loading,

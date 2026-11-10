@@ -1,0 +1,98 @@
+name: Workstream
+description: Propose or update a prioritized deliverable with explicit evidence boundaries.
+title: '[P?] '
+labels: ['type:task']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for product, engineering, evidence, and release work. Do not
+        include secrets, personal data, raw recordings, or claims that have not
+        been verified.
+
+  - type: input
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What becomes true for a user or the release when this closes?
+      placeholder: A concise, verifiable outcome.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 - blocks a truthful release or judge path
+        - P1 - required for production-quality evidence
+        - P2 - deferred platform exploration
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - sdlc
+        - sensing
+        - payments
+        - security
+        - reliability
+        - ux
+        - commercial
+        - proof
+        - observability
+        - performance
+        - release
+        - platform
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included, and what is explicitly out of scope?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, testable statements. Add checklist items.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test and evidence requirements
+      description: Which automated, manual, physical, provider, or external checks are required?
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and blockers
+      description: Link issues or name the external action that is required.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Evidence boundaries
+      options:
+        - label: This issue will not claim physical, payment, external-review, deployment, or submission evidence that has not been verified.
+          required: true
+        - label: This issue contains no secrets, credentials, raw audio, or personal data.
+          required: true
+        - label: I have linked the affected release gate or documented why none applies.
+          required: true

@@ -10,8 +10,6 @@ import { RateLimiter } from '../apps/api/src/lib/rate-limit.ts';
 import { ambientProof } from '../apps/api/src/domain/ambient.ts';
 import type {
   AmbientAgreementRow,
-  AmbientOfferRow,
-  AmbientSessionRow,
   EventModelRow,
   ObjectRow,
   UserRow,

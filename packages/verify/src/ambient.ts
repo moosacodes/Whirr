@@ -117,9 +117,8 @@ export async function verifyAmbientProofDocument(
       : 'Agreement terms are missing or malformed.',
   );
 
-  let recomputedAgreementHash = '';
   if (termsValid) {
-    recomputedAgreementHash = hashAmbientTerms(terms);
+    const recomputedAgreementHash = hashAmbientTerms(terms);
     result.agreementHashValid = recomputedAgreementHash === payload.agreement.hash;
     add(
       checks,

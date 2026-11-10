@@ -21,12 +21,11 @@ import {
   Notice,
   PageHeader,
   Select,
-  Stat,
   TextArea,
   TextInput,
   usePageTitle,
 } from '../components/ui.tsx';
-import { Icon, ObjectGlyph, Waveform } from '../components/visuals.tsx';
+import { Icon, Waveform } from '../components/visuals.tsx';
 import { duration, percent } from '../lib/format.ts';
 
 type DemoLabel = 'idle' | 'active' | 'negative' | 'transition';

@@ -1,0 +1,8 @@
+# Default owner for review routing.
+# Code-owner review is not required while this repository has one maintainer.
+# See docs/sdlc.md: an independent reviewer is never fabricated.
+* @moosacodes
+
+/.github/ @moosacodes
+/docs/security-audit.md @moosacodes
+/SECURITY.md @moosacodes

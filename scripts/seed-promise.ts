@@ -10,9 +10,8 @@ import { RateLimiter } from '../apps/api/src/lib/rate-limit.ts';
 import { generateReferenceData } from './generate-fixtures.ts';
 import { REFERENCE_CREATED_AT, REFERENCE_OBJECT_ID } from './reference-config.ts';
 import { compilePhysicalAgreement, evaluatePromise, type PromiseObservation } from '../packages/promise/src/index.ts';
-import { trainEventModel, type EventDemonstration, type EventModelArtifact } from '../packages/audio/src/event-model.ts';
+import { trainEventModel, type EventDemonstration } from '../packages/audio/src/event-model.ts';
 import { FEATURE_SPEC_VERSION } from '../packages/audio/src/spec.ts';
-import type { EventModelRow, PromiseExecutionRow, PromiseObservationRow } from '../apps/api/src/domain/rows.ts';
 
 const EVENT_MODEL_ID = 'evm_promise_reference';
 const AGREEMENT_ID = 'prm_reference_fan';

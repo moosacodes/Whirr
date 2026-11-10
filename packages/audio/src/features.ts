@@ -141,14 +141,13 @@ export function analyseWindow(
 
   const dominantFrequency = (dominantBin * BIN_HZ) / nyquist;
   let harmonicEnergy = 0;
-  let fundamentalEnergy = 0;
   for (const multiple of [2, 3]) {
     const bin = dominantBin * multiple;
     if (bin < magnitudes.length) {
       harmonicEnergy += magnitudes[bin]!;
     }
   }
-  fundamentalEnergy = magnitudes[dominantBin]!;
+  const fundamentalEnergy = magnitudes[dominantBin]!;
   const harmonicRatio =
     fundamentalEnergy > EPS ? Math.min(1, harmonicEnergy / (fundamentalEnergy * 2)) : 0;
 

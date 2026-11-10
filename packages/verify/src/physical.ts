@@ -13,10 +13,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isHash(value: unknown): value is string {
-  return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
-}
-
 function check(
   checks: PhysicalProofVerification['checks'],
   id: string,
@@ -108,7 +104,7 @@ export async function verifyPhysicalProofDocument(
     );
   }
 
-  let recomputedModelHash = '';
+  let recomputedModelHash: string;
   if (termsValid && payload.model?.artifact) {
     try {
       recomputedModelHash = await canonicalHashOfEventModel(payload.model.artifact);

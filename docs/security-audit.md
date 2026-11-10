@@ -34,6 +34,18 @@
 
 ## 2. Verification performed
 
+### Toolchain note — 10 November 2026
+
+The repository now includes ESLint 10 and TypeScript ESLint for the CI lint gate.
+`npm audit --omit=dev` reports **0 production vulnerabilities**, and the CI gate
+fails on any high or critical advisory. The full development tree reports 10
+moderate advisories in the TypeScript ESLint parser chain (`minimatch` input
+amplification). There is no compatible fixed TypeScript ESLint release for the
+project's TypeScript 5.9 parser at this revision; npm's suggested remedy is a
+downgrade that conflicts with the pinned compiler. This is a development-tool
+availability risk, not a production dependency finding, and it does not close any
+security gate or justify an independent-review claim.
+
 - `npm run typecheck` — pass.
 - `npm test` — **73/73 pass** at the 3.0.1 audit date, including the 11-case PayPal provider-contract harness, webhook ordering/replay, signed proof tampering, protocol migration and payment idempotency.
 - `npm run build` — pass.

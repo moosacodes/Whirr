@@ -48,7 +48,7 @@ function readFixture(ctx: AppContext): { durationMs: number | null; error: strin
 
 export function judgeChecks(ctx: AppContext): JudgeCheck[] {
   const checks: JudgeCheck[] = [];
-  let dbOk = false;
+  let dbOk: boolean;
   try {
     ctx.store.get<{ ok: number }>('SELECT 1 AS ok');
     dbOk = true;

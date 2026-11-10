@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext, Actor } from '../context.ts';
 import type { DisputeRow, SessionRow, UserRow, WebhookEventRow } from '../domain/rows.ts';
 import { parseArtifact } from '../domain/rows.ts';
@@ -50,7 +50,6 @@ import {
   listAllSessions,
   openDispute,
   pauseSession,
-  requireSession,
   requireSessionForActor,
   resolveDispute,
   resumeSession,
@@ -73,7 +72,7 @@ import {
 import { receiptForSession, redactReceipt, receiptJsonDownload } from '../domain/receipts.ts';
 import { passportView } from '../domain/passport.ts';
 import { ensureReceiptProof, proofById } from '../domain/proofs.ts';
-import { ensureProofBundle, proofBundleForSession, publicProofBundleById } from '../domain/bundles.ts';
+import { ensureProofBundle, publicProofBundleById } from '../domain/bundles.ts';
 import { createHold, releaseHold } from '../domain/holds.ts';
 import { listShelf, requireShelfObject } from '../domain/shelf.ts';
 import { drainOutbox, ingestWebhook } from '../domain/webhooks.ts';

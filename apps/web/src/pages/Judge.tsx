@@ -24,7 +24,6 @@ import {
 import {
   Icon,
   MeterStateBadge,
-  ObjectGlyph,
   Timeline,
   TimelineLegend,
   Waveform,
