@@ -25,6 +25,7 @@
     "demo:offline": "tsx scripts/offline-demo.ts",
     "proof:verify": "tsx scripts/verify-proof.ts",
     "bench": "tsx scripts/benchmark.ts",
+    "bench:query": "tsx scripts/benchmark-query.ts",
     "gate:v3": "tsx scripts/gate-v3.ts",
     "gate:a:export": "tsx scripts/export-gate-a.ts",
     "proxy:webhook": "tsx scripts/webhook-proxy.ts",

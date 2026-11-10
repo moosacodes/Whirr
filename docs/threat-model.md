@@ -77,7 +77,7 @@ Whirr is a supervised acoustic metering prototype. This threat model states what
 | Consent metadata disclosure | IP/device re-identification | Keyed HMAC references using the cookie secret, not raw IP/user agent or unsalted hashes | A host with the secret and database can still test candidate values. |
 | Malicious PayPal approval/certificate URL | Phishing or verifier SSRF | HTTPS `*.sandbox.paypal.com` allowlist for approval links and webhook certificate URLs; unsupported algorithms rejected | A compromised PayPal Sandbox domain remains trusted. |
 | Vulnerable dependency | Code execution/data exposure | Locked versions, `npm audit` 0 findings after upgrading `@fastify/static` and Vitest | New advisories can appear after the audit date. |
-| IDOR | Read/modify another renter's session | Ownership check returns 404; operator is the only cross-renter role | Operator is global by design. |
+| IDOR | Read/modify another renter's session, agreement, or model artifact | Session, agreement, and model routes require a matching participant; foreign and anonymous private reads return 404. The seeded synthetic reference remains intentionally public. | Operator is global by design; a compromised host can still read the SQLite database. |
 | Operator key brute force | Admin takeover | 10 attempts / 5 min, timing-safe comparison, 32-byte random key by default | Key file permissions depend on OS. |
 | XSS | Token theft / actions | React escaping, no `dangerouslySetInnerHTML`, strict CSP without inline script | Inline styles are allowed; compromised dependency could still run. |
 | SQL injection | Data breach | Parameterised SQL throughout | Low. |

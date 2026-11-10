@@ -130,7 +130,7 @@ import {
 } from '../../../../packages/contracts/src/promise-schemas.ts';
 import {
   acceptAmbientResult,
-  ambientAgreementView,
+  ambientAgreementForActor,
   ambientCatalog,
   ambientJudge,
   ambientModelDetail,
@@ -209,6 +209,14 @@ function actorFor(ctx: AppContext, req: FastifyRequest): Actor {
   const renter = getRenter(ctx, req);
   if (renter) return { type: 'renter', id: renter.id };
   throw errors.unauthorized('Authentication required');
+}
+
+function optionalActorFor(ctx: AppContext, req: FastifyRequest): Actor | undefined {
+  try {
+    return actorFor(ctx, req);
+  } catch {
+    return undefined;
+  }
 }
 
 function sessionActor(ctx: AppContext, req: FastifyRequest, id: string): { actor: Actor; session: SessionRow } {
@@ -320,13 +328,69 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   });
 
   // ---------------------------------------------------------------- health
-  app.get('/api/health', async () => ({
+  app.get('/api/health', async (req) => ({
     status: 'ok',
     service: 'whirr',
+    requestId: req.id,
     uptimeSeconds: Math.round(process.uptime()),
     paypal: { configured: ctx.config.paypal.configured, env: 'sandbox', webhookConfigured: ctx.config.paypal.webhookConfigured },
     demoMode: ctx.config.demoMode,
   }));
+
+  app.get('/api/ready', async (req, reply) => {
+    const paypal = {
+      status: ctx.config.paypal.configured ? 'configured' : 'not_configured',
+      webhookConfigured: ctx.config.paypal.webhookConfigured,
+    };
+    try {
+      ctx.store.get<{ ok: number }>('SELECT 1 AS ok');
+      const signerRow = ctx.store.get<{ key_id: string }>(
+        'SELECT key_id FROM signing_keys WHERE key_id = ? AND retired_at IS NULL',
+        ctx.signer.keyId,
+      );
+      const outbox = ctx.store.get<{ count: number; oldest: string | null }>(
+        'SELECT COUNT(*) AS count, MIN(next_attempt_at) AS oldest FROM outbox WHERE processed_at IS NULL',
+      );
+      if (!signerRow) {
+        reply.code(503);
+        return {
+          status: 'unavailable',
+          service: 'whirr',
+          requestId: req.id,
+          checks: {
+            database: { status: 'ok' },
+            signer: { status: 'unavailable', algorithm: ctx.signer.algorithm },
+            paypal,
+            outbox: { status: 'ok', pending: outbox?.count ?? 0, oldestPendingAt: outbox?.oldest ?? null },
+          },
+        };
+      }
+      return {
+        status: 'ok',
+        service: 'whirr',
+        requestId: req.id,
+        checks: {
+          database: { status: 'ok' },
+          signer: { status: 'ok', algorithm: ctx.signer.algorithm },
+          paypal,
+          outbox: { status: 'ok', pending: outbox?.count ?? 0, oldestPendingAt: outbox?.oldest ?? null },
+        },
+      };
+    } catch {
+      reply.code(503);
+      return {
+        status: 'unavailable',
+        service: 'whirr',
+        requestId: req.id,
+        checks: {
+          database: { status: 'unavailable' },
+          signer: { status: 'unknown' },
+          paypal,
+          outbox: { status: 'unknown' },
+        },
+      };
+    }
+  });
 
   // --------------------------------------------------------------- public
   app.get('/api/service/:objectId', async (req) => {
@@ -967,20 +1031,13 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   app.get('/api/ambient/agreements/:id', async (req) => {
     limitRequest(ctx, req, 'ambient-agreement', 240, 60_000);
     const { id } = req.params as { id: string };
-    const actor = (() => {
-      try {
-        return actorFor(ctx, req);
-      } catch {
-        return undefined;
-      }
-    })();
-    return ambientAgreementView(ctx, id, actor);
+    return ambientAgreementForActor(ctx, id, optionalActorFor(ctx, req));
   });
 
   app.get('/api/ambient/agreements/:id/model', async (req) => {
     limitRequest(ctx, req, 'ambient-model', 240, 60_000);
     const { id } = req.params as { id: string };
-    return ambientModelDetail(ctx, id);
+    return ambientModelDetail(ctx, id, optionalActorFor(ctx, req));
   });
 
   app.post('/api/ambient/compile', async (req, reply) => {
@@ -1009,12 +1066,14 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   });
 
   app.post('/api/ambient/agreements/:id/withdraw', async (req) => {
+    limitRequest(ctx, req, 'ambient-withdraw', 20, 60_000);
     const { id } = req.params as { id: string };
     const renter = requireRenterUser(ctx, req);
     return withdrawAmbientAgreement(ctx, renter, id);
   });
 
   app.post('/api/ambient/agreements/:id/decision', async (req) => {
+    limitRequest(ctx, req, 'ambient-decision', 30, 60_000);
     const { id } = req.params as { id: string };
     const renter = requireRenterUser(ctx, req);
     const body = parseBody(ambientBuyerDecisionSchema, req.body);
@@ -1033,12 +1092,7 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   app.get('/api/ambient/sessions/:id', async (req) => {
     limitRequest(ctx, req, 'ambient-session', 240, 60_000);
     const { id } = req.params as { id: string };
-    let actor: Actor | undefined;
-    try {
-      actor = actorFor(ctx, req);
-    } catch {
-      actor = undefined;
-    }
+    const actor = optionalActorFor(ctx, req);
     const view = ambientSessionView(ctx, id, actor);
     if (!actor && view.agreementId !== 'amb_reference_window') {
       throw errors.unauthorized('Sign in as a participant to inspect this Ambient session.');
@@ -1061,6 +1115,7 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   });
 
   app.post('/api/ambient/sessions/:id/start', async (req) => {
+    limitRequest(ctx, req, 'ambient-start', 30, 60_000);
     const { id } = req.params as { id: string };
     const renter = requireRenterUser(ctx, req);
     return startAmbientObservation(ctx, renter, id);
@@ -1075,6 +1130,7 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   });
 
   app.post('/api/ambient/sessions/:id/stop', async (req) => {
+    limitRequest(ctx, req, 'ambient-stop', 30, 60_000);
     const { id } = req.params as { id: string };
     const renter = requireRenterUser(ctx, req);
     parseBody(ambientStopSchema, req.body ?? {});
@@ -1082,6 +1138,7 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   });
 
   app.post('/api/ambient/sessions/:id/acceptance', async (req) => {
+    limitRequest(ctx, req, 'ambient-acceptance', 30, 60_000);
     const { id } = req.params as { id: string };
     const renter = requireRenterUser(ctx, req);
     const body = parseBody(ambientAcceptanceSchema, req.body);
@@ -1126,7 +1183,7 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
   app.get('/api/operator/ambient/agreements/:id', async (req) => {
     const operator = requireOperator(ctx, req);
     const { id } = req.params as { id: string };
-    return ambientAgreementView(ctx, id, { type: 'operator', id: operator.id });
+    return ambientAgreementForActor(ctx, id, { type: 'operator', id: operator.id });
   });
 
   app.post('/api/operator/ambient/agreements/:id/respond', async (req) => {

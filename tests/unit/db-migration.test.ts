@@ -50,6 +50,29 @@ describe('schema migration', () => {
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'discovery_enrollments'")?.name).toBe('discovery_enrollments');
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'discovery_trials'")?.name).toBe('discovery_trials');
     expect(store.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'discovery_reports'")?.name).toBe('discovery_reports');
+    const sessionIndexes = store
+      .all<{ name: string }>("PRAGMA index_list('ambient_sessions')")
+      .map((index) => index.name);
+    expect(sessionIndexes).toEqual(
+      expect.arrayContaining([
+        'idx_ambient_sessions_agreement',
+        'idx_ambient_sessions_order',
+        'idx_ambient_sessions_authorization',
+        'idx_ambient_sessions_capture',
+        'idx_ambient_sessions_void',
+      ]),
+    );
+    expect(
+      store.all<{ name: string }>("PRAGMA index_list('ambient_payment_operations')").map((index) => index.name),
+    ).toContain('idx_ambient_payment_operations_provider');
+    for (const [sql, param, index] of [
+      ['SELECT id FROM ambient_sessions WHERE agreement_id = ? ORDER BY created_at DESC LIMIT 1', 'amb_reference_window', 'idx_ambient_sessions_agreement'],
+      ['SELECT id FROM ambient_sessions WHERE paypal_capture_id = ? LIMIT 1', 'CAPTURE-PERF', 'idx_ambient_sessions_capture'],
+      ['SELECT session_id FROM ambient_payment_operations WHERE provider_ref = ? LIMIT 1', 'CAPTURE-PERF', 'idx_ambient_payment_operations_provider'],
+    ] as const) {
+      const plan = store.all<{ detail: string }>(`EXPLAIN QUERY PLAN ${sql}`, param);
+      expect(plan.some((row) => row.detail.includes(index)), `${index} plan: ${plan.map((row) => row.detail).join(' | ')}`).toBe(true);
+    }
     store.close();
   });
 });

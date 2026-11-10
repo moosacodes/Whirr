@@ -13,6 +13,7 @@ import type {
   AmbientSessionView,
 } from '../../packages/contracts/src/types.ts';
 import type { CompiledAmbientAgreement } from '../../packages/ambient-engine/src/types.ts';
+import type { AmbientProofPayload } from '../../packages/protocol/src/index.ts';
 import { verifyAmbientProofDocument } from '../../packages/verify/src/ambient.ts';
 
 const TEST_KEY = 'ambient-operator-key-0123456789abcdef';
@@ -24,6 +25,7 @@ let app: FastifyInstance;
 let ctx: AppContext;
 let renterCookie: string;
 let operatorCookie: string;
+let testConfig: Config;
 
 function cookieOf(response: { headers: Record<string, unknown> }): string {
   const raw = response.headers['set-cookie'];
@@ -132,6 +134,7 @@ beforeAll(async () => {
       webhookConfigured: false,
     },
   });
+  testConfig = config;
   const created = await createApp(config, { logger: false });
   app = created.app;
   ctx = created.ctx;
@@ -293,9 +296,105 @@ describe('Whirr Ambient lifecycle', () => {
     expect(proof.verification.consentOrderValid).toBe(true);
     expect(proof.verification.checks.every((check) => check.pass)).toBe(true);
 
+    const signed = proof.document as { payload: AmbientProofPayload };
+    const resign = async (mutate: (payload: AmbientProofPayload) => void) => {
+      const payload = JSON.parse(JSON.stringify(signed.payload)) as AmbientProofPayload;
+      mutate(payload);
+      return ctx.signer.sign('ambient-proof', payload);
+    };
+    const semanticMutations: Array<[
+      string,
+      (payload: AmbientProofPayload) => void,
+      string,
+    ]> = [
+      [
+        'observation state',
+        (payload) => {
+          payload.observations[1]!.sourceState = 'ACTIVE';
+        },
+        'observations_hash',
+      ],
+      [
+        'model version',
+        (payload) => {
+          payload.model.version = 'tampered-model';
+        },
+        'model_binding',
+      ],
+      [
+        'agreement price',
+        (payload) => {
+          payload.agreement.terms.financial.fixedPriceMinor -= 1;
+        },
+        'agreement_hash',
+      ],
+      [
+        'evidence root',
+        (payload) => {
+          payload.evidenceRoot = '0'.repeat(64);
+        },
+        'evidence_root',
+      ],
+      [
+        'acceptance ordering',
+        (payload) => {
+          payload.consent.humanAcceptance = {
+            accepted: true,
+            acceptedAt: '2000-01-01T00:00:00.000Z',
+          };
+        },
+        'consent_order',
+      ],
+      [
+        'payment amount',
+        (payload) => {
+          payload.payment.capturedMinor = 1;
+        },
+        'payment_consistent',
+      ],
+      [
+        'agreement revision',
+        (payload) => {
+          payload.agreement.revision += 1;
+        },
+        'model_binding',
+      ],
+    ];
+    for (const [name, mutate, expectedCheck] of semanticMutations) {
+      const verification = await verifyAmbientProofDocument(await resign(mutate));
+      expect(verification.valid, name).toBe(false);
+      expect(verification.signatureValid, name).toBe(true);
+      expect(verification.checks.find((check) => check.id === expectedCheck)?.pass, name).toBe(false);
+    }
+
+    const badSignature = JSON.parse(JSON.stringify(proof.document)) as { signature: string };
+    badSignature.signature = 'A'.repeat(86);
+    const signatureCheck = await verifyAmbientProofDocument(badSignature);
+    expect(signatureCheck.valid).toBe(false);
+    expect(signatureCheck.signatureValid).toBe(false);
+
+    expect(proofResponse.headers['cache-control']).toBe('no-store');
+    expect(proofResponse.headers['x-content-type-options']).toBe('nosniff');
+    expect(String(proofResponse.headers['content-security-policy'])).toContain("default-src 'self'");
+    const serializedPublic = JSON.stringify(proof.publicDocument);
+    expect(serializedPublic).not.toMatch(/"(?:frames|features|rawAudio|audioBase64)"/i);
+
     const publicProof = await call('GET', `/api/ambient/proofs/${proof.id}`);
     expect(publicProof.statusCode).toBe(200);
     expect(publicProof.json<AmbientProofView>().verification.valid).toBe(true);
+
+    const restarted = await createApp(testConfig, { logger: false });
+    try {
+      const afterRestart = await restarted.app.inject({
+        method: 'GET',
+        url: `/api/ambient/sessions/${session.id}/proof`,
+        headers: { cookie: renterCookie },
+      });
+      expect(afterRestart.statusCode).toBe(200);
+      expect(afterRestart.json<AmbientProofView>().verification.valid).toBe(true);
+    } finally {
+      await restarted.app.close();
+    }
 
     const document = JSON.parse(JSON.stringify(proof.publicDocument)) as {
       payload: { observations: Array<{ sourceState: string }> };
@@ -304,6 +403,101 @@ describe('Whirr Ambient lifecycle', () => {
     const tampered = await verifyAmbientProofDocument(document);
     expect(tampered.valid).toBe(false);
     expect(tampered.signatureValid).toBe(false);
+  });
+
+  it('returns the existing session when creation is retried', async () => {
+    const agreement = await accepted();
+    const first = await demoSession(agreement.id);
+    const retry = await call('POST', `/api/ambient/agreements/${agreement.id}/sessions`, {
+      cookie: renterCookie,
+      body: { demo: true, observationMode: 'REPLAY' },
+    });
+    expect(retry.statusCode).toBe(201);
+    expect(retry.json<AmbientSessionView>().id).toBe(first.id);
+    const count = ctx.store.get<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM ambient_sessions WHERE agreement_id = ?',
+      agreement.id,
+    );
+    expect(count?.count).toBe(1);
+  });
+
+  it('makes acceptance retries idempotent without duplicating the acceptance record', async () => {
+    const agreement = await accepted();
+    const session = await demoSession(agreement.id);
+    const stopped = await call('POST', `/api/ambient/sessions/${session.id}/stop`, {
+      cookie: renterCookie,
+      body: { reason: 'WINDOW_QUALIFIED' },
+    });
+    expect(stopped.statusCode).toBe(200);
+    expect(stopped.json<AmbientSessionView>().state).toBe('QUALIFIED_AWAITING_ACCEPTANCE');
+
+    const body = {
+      accepted: true,
+      termsHash: agreement.termsHash,
+      note: 'Retry-safe acceptance.',
+    };
+    const first = await call('POST', `/api/ambient/sessions/${session.id}/acceptance`, {
+      cookie: renterCookie,
+      body,
+    });
+    expect(first.statusCode).toBe(200);
+    const firstView = first.json<AmbientSessionView>();
+    expect(firstView.state).toBe('DEMO_COMPLETE');
+    expect(firstView.acceptance?.acceptedAt).toBeTruthy();
+
+    const retry = await call('POST', `/api/ambient/sessions/${session.id}/acceptance`, {
+      cookie: renterCookie,
+      body,
+    });
+    expect(retry.statusCode).toBe(200);
+    const retried = retry.json<AmbientSessionView>();
+    expect(retried.state).toBe('DEMO_COMPLETE');
+    expect(retried.acceptance?.acceptedAt).toBe(firstView.acceptance?.acceptedAt);
+    const audits = ctx.store.get<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM audit_events WHERE subject_id = ? AND action = 'ambient.result_accepted'",
+      session.id,
+    );
+    expect(audits?.count).toBe(1);
+  });
+
+  it('rolls back a partial observation batch and preserves the observing meter', async () => {
+    const agreement = await accepted();
+    const session = await demoSession(agreement.id, 'LIVE');
+    const started = await call('POST', `/api/ambient/sessions/${session.id}/start`, {
+      cookie: renterCookie,
+      body: {},
+    });
+    expect(started.statusCode).toBe(200);
+
+    const invalid = await call('POST', `/api/ambient/sessions/${session.id}/observations`, {
+      cookie: renterCookie,
+      body: {
+        clientSeq: 1,
+        intervals: [
+          { seq: 1, startMs: 0, endMs: 1_000, sourceState: 'ACTIVE', confidence: 0.9, qualityFlags: [] },
+          { seq: 2, startMs: 100_000, endMs: 101_000, sourceState: 'INACTIVE', confidence: 0.9, qualityFlags: [] },
+        ],
+      },
+    });
+    expect(invalid.statusCode).toBe(409);
+
+    const afterFailure = await call('GET', `/api/ambient/sessions/${session.id}`, {
+      cookie: renterCookie,
+    });
+    const view = afterFailure.json<AmbientSessionView>();
+    expect(view.state).toBe('OBSERVING');
+    expect(view.observations).toHaveLength(0);
+    expect(view.meterClockMs).toBe(0);
+
+    const valid = await call('POST', `/api/ambient/sessions/${session.id}/observations`, {
+      cookie: renterCookie,
+      body: {
+        clientSeq: 1,
+        intervals: [{ seq: 1, startMs: 0, endMs: 1_000, sourceState: 'ACTIVE', confidence: 0.9, qualityFlags: [] }],
+      },
+    });
+    expect(valid.statusCode).toBe(200);
+    expect(valid.json<AmbientSessionView>().observations).toHaveLength(1);
   });
 
   it('withholds qualification on an interruption and cannot capture the failed demo', async () => {
@@ -361,5 +555,118 @@ describe('Whirr Ambient lifecycle', () => {
       cookie: foreignCookie,
     });
     expect(foreign.statusCode).toBe(404);
+  });
+
+  it('scopes private agreement terms and model artifacts to participants', async () => {
+    const agreement = await offered();
+    const secondRenter = await call('POST', '/api/auth/renter', { body: {} });
+    const foreignCookie = cookieOf(secondRenter);
+
+    const anonymous = await call('GET', `/api/ambient/agreements/${agreement.id}`);
+    expect(anonymous.statusCode).toBe(404);
+    const foreign = await call('GET', `/api/ambient/agreements/${agreement.id}`, {
+      cookie: foreignCookie,
+    });
+    expect(foreign.statusCode).toBe(404);
+    const buyer = await call('GET', `/api/ambient/agreements/${agreement.id}`, {
+      cookie: renterCookie,
+    });
+    expect(buyer.statusCode).toBe(200);
+    expect(buyer.json<AmbientAgreementView>().roles.buyer).toBe(true);
+    const provider = await call('GET', `/api/operator/ambient/agreements/${agreement.id}`, {
+      cookie: operatorCookie,
+    });
+    expect(provider.statusCode).toBe(200);
+    expect(provider.json<AmbientAgreementView>().roles.provider).toBe(true);
+
+    const anonymousModel = await call('GET', `/api/ambient/agreements/${agreement.id}/model`);
+    expect(anonymousModel.statusCode).toBe(404);
+    const foreignModel = await call('GET', `/api/ambient/agreements/${agreement.id}/model`, {
+      cookie: foreignCookie,
+    });
+    expect(foreignModel.statusCode).toBe(404);
+    const buyerModel = await call('GET', `/api/ambient/agreements/${agreement.id}/model`, {
+      cookie: renterCookie,
+    });
+    expect(buyerModel.statusCode).toBe(200);
+    expect(buyerModel.json<{ artifact: unknown }>().artifact).toBeDefined();
+
+    const publicAgreement = await call('GET', '/api/ambient/agreements/amb_reference_window');
+    expect(publicAgreement.statusCode).toBe(200);
+    const publicModel = await call('GET', '/api/ambient/agreements/amb_reference_window/model');
+    expect(publicModel.statusCode).toBe(200);
+  });
+
+  it('enforces buyer/provider separation and rejects cross-renter session access', async () => {
+    const agreement = await accepted();
+    const secondRenter = await call('POST', '/api/auth/renter', { body: {} });
+    const foreignCookie = cookieOf(secondRenter);
+
+    const operatorDecision = await call('POST', `/api/ambient/agreements/${agreement.id}/decision`, {
+      cookie: operatorCookie,
+      body: { action: 'ACCEPT', termsHash: agreement.termsHash },
+    });
+    expect(operatorDecision.statusCode).toBe(401);
+    const renterResponse = await call('POST', `/api/operator/ambient/agreements/${agreement.id}/respond`, {
+      cookie: renterCookie,
+      body: { action: 'ACCEPT', termsHash: agreement.termsHash },
+    });
+    expect(renterResponse.statusCode).toBe(401);
+
+    const session = await demoSession(agreement.id);
+    const foreignStop = await call('POST', `/api/ambient/sessions/${session.id}/stop`, {
+      cookie: foreignCookie,
+      body: { reason: 'INTERRUPTED' },
+    });
+    expect(foreignStop.statusCode).toBe(404);
+    const foreignAcceptance = await call('POST', `/api/ambient/sessions/${session.id}/acceptance`, {
+      cookie: foreignCookie,
+      body: { accepted: true, termsHash: agreement.termsHash },
+    });
+    expect(foreignAcceptance.statusCode).toBe(404);
+    const operatorCapture = await call('POST', `/api/ambient/sessions/${session.id}/capture`, {
+      cookie: operatorCookie,
+      body: { confirmed: true, termsHash: agreement.termsHash },
+    });
+    expect(operatorCapture.statusCode).toBe(401);
+
+    const anonymousSession = await call('GET', `/api/ambient/sessions/${session.id}`);
+    expect(anonymousSession.statusCode).toBe(401);
+    const buyerView = await call('GET', `/api/ambient/sessions/${session.id}`, {
+      cookie: renterCookie,
+    });
+    expect(buyerView.statusCode).toBe(200);
+    expect(buyerView.headers['cache-control']).toBe('no-store');
+    expect(buyerView.headers['x-content-type-options']).toBe('nosniff');
+    expect(String(buyerView.headers['content-security-policy'])).toContain("default-src 'self'");
+  });
+
+  it('rejects Ambient mutations without CSRF or from a foreign origin', async () => {
+    const body = {
+      objectId: OBJECT_ID,
+      text: 'I need a 30 second quiet window without the reference desk fan running. I will pay $2.00.',
+      durationSeconds: 30,
+      fixedPriceMinor: 200,
+      currency: 'USD',
+    };
+    const missingCsrf = await app.inject({
+      method: 'POST',
+      url: '/api/ambient/compile',
+      headers: { cookie: renterCookie, 'content-type': 'application/json' },
+      payload: body,
+    });
+    expect(missingCsrf.statusCode).toBe(403);
+    const foreignOrigin = await app.inject({
+      method: 'POST',
+      url: '/api/ambient/compile',
+      headers: {
+        cookie: renterCookie,
+        'x-whirr-csrf': '1',
+        origin: 'https://evil.example',
+        'content-type': 'application/json',
+      },
+      payload: body,
+    });
+    expect(foreignOrigin.statusCode).toBe(403);
   });
 });

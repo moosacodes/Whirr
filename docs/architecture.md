@@ -205,7 +205,7 @@ Notable constraints and invariants:
 
 Public/read:
 
-`GET /api/health`, `GET /api/auth/session`, `GET /api/service/:objectId`, `GET /api/passport/:objectId`, `GET /api/judge/status`, `GET /api/judge/checks`, `GET /api/sessions/:id/model`.
+`GET /api/health`, `GET /api/ready`, `GET /api/auth/session`, `GET /api/service/:objectId`, `GET /api/passport/:objectId`, `GET /api/judge/status`, `GET /api/judge/checks`, `GET /api/sessions/:id/model`. Every response carries a server-generated `X-Request-Id` for safe log correlation.
 
 Operator:
 
