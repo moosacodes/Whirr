@@ -96,6 +96,40 @@ import {
 } from '../domain/discovery.ts';
 import { normaliseOrigin } from '../config.ts';
 import {
+  appendPromiseObservations,
+  authorizePromiseExecution,
+  capturePromiseExecution,
+  compilePromise,
+  createPromiseExecution,
+  createPromiseOrder,
+  executionView,
+  listPromiseExecutions,
+  promiseCatalog,
+  promiseJudge,
+  operatorEventModelDetail,
+  promiseLab,
+  promiseProof,
+  publicAgreement,
+  publicAgreementModel,
+  publicPromiseProof,
+  publishPromise,
+  saveEventDemonstration,
+  startPromiseObservation,
+  stopPromiseObservation,
+  trainPromiseEventModel,
+  verifyPublicPromiseProof,
+  voidPromiseExecution,
+} from '../domain/promises.ts';
+import {
+  promiseCompileSchema,
+  promiseDemoUploadSchema,
+  promiseExecutionCreateSchema,
+  promiseObservationBatchSchema,
+  promisePublishSchema,
+  promiseStopSchema,
+  eventTrainSchema,
+} from '../../../../packages/contracts/src/promise-schemas.ts';
+import {
   consentSchema,
   disputeResolveSchema,
   disputeSchema,
@@ -857,6 +891,154 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
       return result;
     },
   );
+
+  // ------------------------------------------------------- physical promises
+  app.get('/api/promises', async (req) => {
+    limitRequest(ctx, req, 'promise-catalog', 120, 60_000);
+    return promiseCatalog(ctx);
+  });
+
+  app.get('/api/promises/judge', async (req) => {
+    limitRequest(ctx, req, 'promise-judge', 60, 60_000);
+    return promiseJudge(ctx);
+  });
+
+  app.get('/api/promises/proofs/:proofId', async (req) => {
+    limitRequest(ctx, req, 'promise-proof', 120, 60_000);
+    const { proofId } = req.params as { proofId: string };
+    return publicPromiseProof(ctx, proofId);
+  });
+
+  app.get('/api/promises/proofs/:proofId/verify', async (req) => {
+    limitRequest(ctx, req, 'promise-proof-verify', 120, 60_000);
+    const { proofId } = req.params as { proofId: string };
+    return verifyPublicPromiseProof(ctx, proofId);
+  });
+
+  app.get('/api/promises/executions/:executionId', async (req) => {
+    limitRequest(ctx, req, 'promise-execution', 240, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    return executionView(ctx, executionId, actorFor(ctx, req));
+  });
+
+  app.get('/api/promises/executions/:executionId/proof', async (req) => {
+    limitRequest(ctx, req, 'promise-execution-proof', 60, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    return promiseProof(ctx, executionId, actorFor(ctx, req));
+  });
+
+  app.get('/api/promises/executions', async (req) => {
+    limitRequest(ctx, req, 'promise-execution-list', 120, 60_000);
+    return { executions: listPromiseExecutions(ctx, actorFor(ctx, req)) };
+  });
+
+  app.get('/api/promises/:id', async (req) => {
+    limitRequest(ctx, req, 'promise-public', 240, 60_000);
+    const { id } = req.params as { id: string };
+    return publicAgreement(ctx, id);
+  });
+
+  app.get('/api/promises/:id/model', async (req) => {
+    limitRequest(ctx, req, 'promise-model', 240, 60_000);
+    const { id } = req.params as { id: string };
+    return publicAgreementModel(ctx, id);
+  });
+
+  app.post('/api/promises/:id/executions', async (req, reply) => {
+    limitRequest(ctx, req, 'promise-execution-create', 30, 60_000);
+    const { id } = req.params as { id: string };
+    const renter = ensureRenter(ctx, req, reply);
+    const body = parseBody(promiseExecutionCreateSchema, req.body);
+    reply.code(201);
+    return createPromiseExecution(ctx, renter, id, body);
+  });
+
+  app.post('/api/promises/executions/:executionId/order', async (req) => {
+    limitRequest(ctx, req, 'promise-order', 20, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    const renter = requireRenterUser(ctx, req);
+    return createPromiseOrder(ctx, renter, executionId, requestOrigin(ctx, req));
+  });
+
+  app.post('/api/promises/executions/:executionId/authorize', async (req) => {
+    limitRequest(ctx, req, 'promise-authorize', 20, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    const renter = requireRenterUser(ctx, req);
+    return authorizePromiseExecution(ctx, renter, executionId);
+  });
+
+  app.post('/api/promises/executions/:executionId/start', async (req) => {
+    const { executionId } = req.params as { executionId: string };
+    const renter = requireRenterUser(ctx, req);
+    return startPromiseObservation(ctx, renter, executionId);
+  });
+
+  app.post('/api/promises/executions/:executionId/observations', async (req) => {
+    limitRequest(ctx, req, 'promise-observations', 300, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    const renter = requireRenterUser(ctx, req);
+    const body = parseBody(promiseObservationBatchSchema, req.body);
+    return appendPromiseObservations(ctx, renter, executionId, body as { clientSeq: number; intervals: import('../../../../packages/promise/src/types.ts').PromiseObservation[] });
+  });
+
+  app.post('/api/promises/executions/:executionId/stop', async (req) => {
+    const { executionId } = req.params as { executionId: string };
+    const renter = requireRenterUser(ctx, req);
+    parseBody(promiseStopSchema, req.body ?? {});
+    return stopPromiseObservation(ctx, renter, executionId);
+  });
+
+  app.post('/api/promises/executions/:executionId/capture', async (req) => {
+    limitRequest(ctx, req, 'promise-capture', 20, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    return capturePromiseExecution(ctx, actorFor(ctx, req), executionId);
+  });
+
+  app.post('/api/promises/executions/:executionId/void', async (req) => {
+    limitRequest(ctx, req, 'promise-void', 20, 60_000);
+    const { executionId } = req.params as { executionId: string };
+    return voidPromiseExecution(ctx, actorFor(ctx, req), executionId);
+  });
+
+  app.get('/api/operator/promises/lab', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const query = req.query as { objectId?: string };
+    return promiseLab(ctx, operator.id, query.objectId);
+  });
+
+  app.get('/api/operator/promises/model/:modelId', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const { modelId } = req.params as { modelId: string };
+    return operatorEventModelDetail(ctx, operator.id, modelId);
+  });
+
+  app.post('/api/operator/objects/:id/promise-demos', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    const body = parseBody(promiseDemoUploadSchema, req.body);
+    reply.code(201);
+    return saveEventDemonstration(ctx, operator, id, body as Parameters<typeof saveEventDemonstration>[3]);
+  });
+
+  app.post('/api/operator/objects/:id/promise-train', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    const body = parseBody(eventTrainSchema, { objectId: id, version: (req.body as { version?: string } | undefined)?.version });
+    return trainPromiseEventModel(ctx, operator, id, body.version);
+  });
+
+  app.post('/api/operator/promises/compile', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const body = parseBody(promiseCompileSchema, req.body);
+    return compilePromise(ctx, operator, body);
+  });
+
+  app.post('/api/operator/promises/publish', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    const body = parseBody(promisePublishSchema, req.body);
+    reply.code(201);
+    return publishPromise(ctx, operator, body);
+  });
 
   // --------------------------------------------------------------- fallback
   app.get('/api/judge/checks', async (req) => {
