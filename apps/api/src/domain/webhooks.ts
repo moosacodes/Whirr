@@ -1,6 +1,10 @@
 import type { AppContext } from '../context.ts';
 import type { WebhookEventRow } from './rows.ts';
 import { reconcileSession } from './payments.ts';
+import {
+  findPromiseExecutionForProviderIds,
+  reconcilePromiseExecution,
+} from './promises.ts';
 import { appendAudit } from '../lib/audit.ts';
 import { errors, AppError } from '../lib/errors.ts';
 import { newId } from '../lib/ids.ts';
@@ -38,7 +42,7 @@ function validateEvent(event: PayPalEventLike): { id: string; type: string } {
   return { id: event.id, type: event.event_type };
 }
 
-export function findSessionForEvent(ctx: AppContext, event: PayPalEventLike): string | null {
+function providerIdsForEvent(event: PayPalEventLike): string[] {
   const candidates = new Set<string>();
   const resource = event.resource ?? {};
   if (typeof resource.id === 'string') candidates.add(resource.id);
@@ -47,7 +51,11 @@ export function findSessionForEvent(ctx: AppContext, event: PayPalEventLike): st
     const value = related[key];
     if (typeof value === 'string') candidates.add(value);
   }
-  for (const providerId of candidates) {
+  return [...candidates];
+}
+
+export function findSessionForEvent(ctx: AppContext, event: PayPalEventLike): string | null {
+  for (const providerId of providerIdsForEvent(event)) {
     const session = ctx.store.get<{ id: string }>(
       `SELECT id FROM sessions WHERE paypal_order_id = ? OR paypal_authorization_id = ? OR paypal_capture_id = ?
        LIMIT 1`,
@@ -63,6 +71,10 @@ export function findSessionForEvent(ctx: AppContext, event: PayPalEventLike): st
     if (resourceRow?.session_id) return resourceRow.session_id;
   }
   return null;
+}
+
+export function findPromiseExecutionForEvent(ctx: AppContext, event: PayPalEventLike): string | null {
+  return findPromiseExecutionForProviderIds(ctx, providerIdsForEvent(event));
 }
 
 export async function ingestWebhook(
@@ -199,34 +211,93 @@ export async function ingestWebhook(
   }, ctx.now());
 
   const sessionId = findSessionForEvent(ctx, parsed);
-  if (!sessionId) {
-    ctx.store.run(
-      'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
-      ctx.now().toISOString(),
-      'UNLINKED_EVENT',
-      rowId,
-    );
-    return { received: true, duplicate: false, verified: true, result: 'UNLINKED_EVENT', eventId: id, eventType: type };
+  if (sessionId) {
+    try {
+      await reconcileSession(ctx, sessionId);
+      ctx.store.run(
+        'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
+        ctx.now().toISOString(),
+        'RECONCILED',
+        rowId,
+      );
+      return { received: true, duplicate: false, verified: true, result: 'RECONCILED', eventId: id, eventType: type };
+    } catch (error) {
+      enqueueOutbox(ctx, 'RECONCILE_SESSION', { sessionId, webhookRowId: rowId }, 10_000);
+      ctx.store.run(
+        'UPDATE paypal_webhook_events SET result = ? WHERE id = ?',
+        `RECONCILE_QUEUED:${(error as Error).message.slice(0, 120)}`,
+        rowId,
+      );
+      return { received: true, duplicate: false, verified: true, result: 'RECONCILE_QUEUED', eventId: id, eventType: type };
+    }
   }
 
-  try {
-    await reconcileSession(ctx, sessionId);
-    ctx.store.run(
-      'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
-      ctx.now().toISOString(),
-      'RECONCILED',
-      rowId,
-    );
-    return { received: true, duplicate: false, verified: true, result: 'RECONCILED', eventId: id, eventType: type };
-  } catch (error) {
-    enqueueOutbox(ctx, 'RECONCILE_SESSION', { sessionId, webhookRowId: rowId }, 10_000);
-    ctx.store.run(
-      'UPDATE paypal_webhook_events SET result = ? WHERE id = ?',
-      `RECONCILE_QUEUED:${(error as Error).message.slice(0, 120)}`,
-      rowId,
-    );
-    return { received: true, duplicate: false, verified: true, result: 'RECONCILE_QUEUED', eventId: id, eventType: type };
+  const promiseExecutionId = findPromiseExecutionForEvent(ctx, parsed);
+  if (promiseExecutionId) {
+    try {
+      const reconciled = await reconcilePromiseExecution(ctx, promiseExecutionId);
+      if (reconciled.result === 'RECONCILE_FAILED') {
+        enqueueOutbox(
+          ctx,
+          'RECONCILE_PROMISE',
+          { executionId: promiseExecutionId, webhookRowId: rowId },
+          10_000,
+        );
+        ctx.store.run(
+          'UPDATE paypal_webhook_events SET result = ? WHERE id = ?',
+          'PROMISE_RECONCILE_QUEUED',
+          rowId,
+        );
+        return {
+          received: true,
+          duplicate: false,
+          verified: true,
+          result: 'RECONCILE_QUEUED',
+          eventId: id,
+          eventType: type,
+        };
+      }
+      const result =
+        reconciled.result === 'RECONCILIATION_REQUIRED'
+          ? 'PROMISE_RECONCILIATION_REQUIRED'
+          : 'PROMISE_RECONCILED';
+      ctx.store.run(
+        'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
+        ctx.now().toISOString(),
+        result,
+        rowId,
+      );
+      return { received: true, duplicate: false, verified: true, result, eventId: id, eventType: type };
+    } catch (error) {
+      enqueueOutbox(
+        ctx,
+        'RECONCILE_PROMISE',
+        { executionId: promiseExecutionId, webhookRowId: rowId },
+        10_000,
+      );
+      ctx.store.run(
+        'UPDATE paypal_webhook_events SET result = ? WHERE id = ?',
+        `PROMISE_RECONCILE_QUEUED:${(error as Error).message.slice(0, 120)}`,
+        rowId,
+      );
+      return {
+        received: true,
+        duplicate: false,
+        verified: true,
+        result: 'RECONCILE_QUEUED',
+        eventId: id,
+        eventType: type,
+      };
+    }
   }
+
+  ctx.store.run(
+    'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
+    ctx.now().toISOString(),
+    'UNLINKED_EVENT',
+    rowId,
+  );
+  return { received: true, duplicate: false, verified: true, result: 'UNLINKED_EVENT', eventId: id, eventType: type };
 }
 
 export async function drainOutbox(ctx: AppContext, max = 20): Promise<number> {
@@ -246,7 +317,11 @@ export async function drainOutbox(ctx: AppContext, max = 20): Promise<number> {
   let processed = 0;
   for (const row of rows) {
     try {
-      const payload = JSON.parse(row.payload_json) as { sessionId?: string; webhookRowId?: string };
+      const payload = JSON.parse(row.payload_json) as {
+        sessionId?: string;
+        executionId?: string;
+        webhookRowId?: string;
+      };
       if (row.topic === 'RECONCILE_SESSION' && payload.sessionId) {
         await reconcileSession(ctx, payload.sessionId);
         if (payload.webhookRowId) {
@@ -254,6 +329,22 @@ export async function drainOutbox(ctx: AppContext, max = 20): Promise<number> {
             'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
             ctx.now().toISOString(),
             'RECONCILED_BY_OUTBOX',
+            payload.webhookRowId,
+          );
+        }
+      }
+      if (row.topic === 'RECONCILE_PROMISE' && payload.executionId) {
+        const reconciled = await reconcilePromiseExecution(ctx, payload.executionId);
+        if (reconciled.result === 'RECONCILE_FAILED') {
+          throw new Error('Promise reconciliation did not reach the provider.');
+        }
+        if (payload.webhookRowId) {
+          ctx.store.run(
+            'UPDATE paypal_webhook_events SET processed_at = ?, result = ? WHERE id = ?',
+            ctx.now().toISOString(),
+            reconciled.result === 'RECONCILIATION_REQUIRED'
+              ? 'PROMISE_RECONCILIATION_REQUIRED_BY_OUTBOX'
+              : 'PROMISE_RECONCILED_BY_OUTBOX',
             payload.webhookRowId,
           );
         }
