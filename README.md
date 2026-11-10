@@ -10,6 +10,8 @@ The product bet is a category, not a dashboard: **acoustic pay-per-use for physi
 
 > **Whirr 5.0 — INVISIBLE CHECKOUT (experimental, not validated):** a separate feature branch asks whether an ordinary object can become discoverable through sound. It adds live two-object discovery enrollment, read-only `MATCH`/`AMBIGUOUS`/`UNKNOWN`, held-out trials with a pre-declared confusion protocol, and a public Listen → Discover → Confirm → Use → Settle surface. **No physical objects have been enrolled and no discovery metrics exist.** The evidence record is `NOT_RUN`, Gate I is OPEN, and the 4.x field gates, payments and historical Sandbox proof are unchanged. See [`docs/discovery-5.0.md`](docs/discovery-5.0.md) and [`docs/evidence/discovery.json`](docs/evidence/discovery.json). Do not publish or deploy this branch as validated evidence.
 
+> **Whirr 6.0 - THE PHYSICAL PROMISE ENGINE (release candidate):** teach an ordinary object an observable operating sequence, compile a fixed-price physical agreement, and settle only against the exact approved evidence. The slice includes a local teachable event model with per-demonstration prototypes and open-set refusal, a deterministic agreement compiler, a server-side temporal evaluator, buyer consent, PayPal Sandbox order/authorization/capture/void integration, a live execution room, and a signed `whirr.physical-proof.v1` verifier. The seeded reference is **SYNTHETIC** and is never presented as a field trial. **No physical appliance was tested and no genuine 6.0 Sandbox capture or webhook occurred in this checkout.** Gates A, E, H, and the new physical/PayPal 6.0 checks remain OPEN. See [`docs/product-6.0.md`](docs/product-6.0.md), [`docs/field-evaluation-6.0.md`](docs/field-evaluation-6.0.md), [`docs/release-notes-6.0.md`](docs/release-notes-6.0.md), and [`docs/go-no-go.md`](docs/go-no-go.md).
+
 ---
 
 ## What is genuinely built
@@ -34,6 +36,10 @@ The product bet is a category, not a dashboard: **acoustic pay-per-use for physi
 | Publication guard | A live-calibrated model needs a `FIELD_PASS` report for its exact model id before terms or Listening Room sessions are allowed; the synthetic reference demo stays separate |
 | Product surfaces | Landing, Bench, Judge Mode, Object Studio, Capture Lab, Model Review, guided Gate A trials, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
 | 5.0 discovery experiment | Separate two-object acoustic enrollment, deterministic profile matcher, `MATCH`/`AMBIGUOUS`/`UNKNOWN`, held-out trial protocol, actual confusion matrix when run, and a read-only handoff to the existing checkout |
+| 6.0 physical promises | Demonstration capture, local event training, typed agreement compilation, owner publication, buyer consent, live sequence observation, deterministic eligibility, failure/review outcomes |
+| 6.0 teachable event model | Per-demonstration cosine prototypes, open-set refusal, leave-one-take-out metrics, READY/LIMITED/REJECTED gate, synthetic provenance kept explicit |
+| 6.0 settlement | PayPal Sandbox order, buyer approval, provider-checked authorization, re-evaluated capture eligibility, void, stable request ids, provider result recorded separately from local eligibility |
+| 6.0 portable proof | Signed `whirr.physical-proof.v1` with agreement, model, observation, evidence, evaluation, approvals, payment and trust-domain separation; public recomputation |
 | Safety | Operator key authentication, signed cookies, CSRF/origin checks, rate limits, CSP, ownership checks, body limits, no live PayPal host permitted |
 
 The bundled reference model is trained on procedurally synthesised fan audio. Its measured metrics demonstrate the pipeline; they are **not** evidence of accuracy on a physical fan.
@@ -53,6 +59,9 @@ npm run dev         # API on 127.0.0.1:8787, web on localhost:5173
 Open:
 
 - Whirr Bench: <http://localhost:5173> and <http://localhost:5173/shelf>
+- Physical Promise Engine: <http://localhost:5173/promise>
+- Teaching Room (operator): <http://localhost:5173/studio/promises>
+- Promise proof inspector: <http://localhost:5173/promise/proof/ppr_91f4d444ed224ff98761e1e35fc59841>
 - Judge evidence: <http://localhost:5173/judge>
 - Offline verifier and Tamper Lab: <http://localhost:5173/verify>
 - Standalone verifier (no application imports): <http://localhost:5173/verify-offline.html>
