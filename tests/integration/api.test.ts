@@ -7,6 +7,7 @@ import { createApp } from '../../apps/api/src/app.ts';
 import { loadConfig, type Config } from '../../apps/api/src/config.ts';
 import type { AppContext } from '../../apps/api/src/context.ts';
 import type { SessionView } from '../../packages/contracts/src/types.ts';
+import { FEATURE_COUNT, FEATURE_NAMES } from '../../packages/audio/src/spec.ts';
 
 const TEST_KEY = 'test-operator-key-0123456789abcdef';
 const TEST_SECRET = 'test-cookie-secret-0123456789abcdef0123456789abcdef';
@@ -75,6 +76,9 @@ beforeAll(async () => {
   // the seeded object, model and terms remain available.
   ctx.store.run('DELETE FROM sessions');
   ctx.store.run('DELETE FROM paypal_webhook_events');
+  ctx.store.run('DELETE FROM discovery_enrollments');
+  ctx.store.run('DELETE FROM discovery_trials');
+  ctx.store.run('DELETE FROM discovery_reports');
 
   const renter = await call('POST', '/api/auth/renter', { body: {} });
   expect(renter.statusCode).toBe(200);
@@ -302,5 +306,145 @@ describe('complete demo-mode metering and settlement', () => {
     const secondCookie = cookieOf(secondRenter);
     const response = await call('GET', `/api/sessions/${sessionId}`, { cookie: secondCookie });
     expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('5.0 discovery experiment', () => {
+  const bandStart = FEATURE_NAMES.indexOf('band_50_120');
+  const discoveryFrame = (bands: number[], index: number): number[] => {
+    const values = new Array(FEATURE_COUNT).fill(0);
+    for (let band = 0; band < 8; band += 1) values[bandStart + band] = bands[band]! + (index % 3) * 0.01;
+    const centroid = FEATURE_NAMES.indexOf('spectral_centroid');
+    const spread = FEATURE_NAMES.indexOf('spectral_spread');
+    const rolloff = FEATURE_NAMES.indexOf('spectral_rolloff');
+    const flatness = FEATURE_NAMES.indexOf('spectral_flatness');
+    const dominant = FEATURE_NAMES.indexOf('dominant_frequency');
+    const harmonic = FEATURE_NAMES.indexOf('harmonic_ratio');
+    const zcr = FEATURE_NAMES.indexOf('zero_cross_rate');
+    const crest = FEATURE_NAMES.indexOf('crest_factor');
+    const lowHigh = FEATURE_NAMES.indexOf('low_high_ratio');
+    values[centroid] = 0.12;
+    values[spread] = 0.25;
+    values[rolloff] = 0.3;
+    values[flatness] = 0.08;
+    values[dominant] = 0.09;
+    values[harmonic] = 0.7;
+    values[zcr] = 0.04;
+    values[crest] = 6;
+    values[lowHigh] = 10;
+    return values;
+  };
+  const fanBands = [-1.0, -2.0, -3.2, -4.4, -5.1, -6.2, -7.4, -8.2];
+  const drillBands = [-7.9, -7.0, -5.8, -4.8, -3.4, -2.3, -1.7, -2.7];
+  const liveCapture = {
+    schema: 'whirr.capture-claim.v1' as const,
+    provenance: 'CLIENT_CLAIMED_LIVE_MICROPHONE' as const,
+    claimedAt: new Date().toISOString(),
+    deviceLabel: null,
+    sampleRate: 48_000,
+    permission: 'GRANTED' as const,
+    frameCount: 30,
+    note: 'Automated protocol fixture; not physical evidence.',
+  };
+  const frames = Array.from({ length: 30 }, () => new Array(21).fill(0));
+  const sample = {
+    frames,
+    frameFlags: frames.map(() => []),
+    durationMs: 3_000,
+    sampleRate: 48_000,
+    capturedAt: liveCapture.claimedAt,
+    capture: liveCapture,
+  };
+
+  it('returns UNKNOWN and creates no session or payment when no enrollment exists', async () => {
+    const beforeSessions = ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM sessions')!.count;
+    const beforePayments = ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM payment_operations')!.count;
+    const response = await call('POST', '/api/discovery/match', { body: sample });
+    expect(response.statusCode).toBe(200);
+    const result = response.json<{ result: string; checkoutUrl: string | null; terms: unknown; checkoutAvailable: boolean }>();
+    expect(result.result).toBe('UNKNOWN');
+    expect(result.checkoutUrl).toBeNull();
+    expect(result.terms).toBeNull();
+    expect(result.checkoutAvailable).toBe(false);
+    expect(ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM sessions')!.count).toBe(beforeSessions);
+    expect(ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM payment_operations')!.count).toBe(beforePayments);
+  });
+
+  it('refuses held-out trials until two objects are enrolled, and leaves the 4.x routes intact', async () => {
+    const publicView = await call('GET', '/api/discovery');
+    expect(publicView.statusCode).toBe(200);
+    expect(publicView.json<{ reportStatus: string }>().reportStatus).toBe('NOT_RUN');
+
+    const trial = await call('POST', '/api/operator/discovery/trials', {
+      cookie: operatorCookie,
+      body: { ...sample, truthObjectId: 'obj_reference_fan', condition: 'BASELINE' },
+    });
+    expect(trial.statusCode).toBe(409);
+    expect(trial.json<{ error: { code: string } }>().error.code).toBe('DISCOVERY_NOT_ENROLLED');
+
+    const service = await call('GET', '/api/service/obj_reference_fan');
+    expect(service.statusCode).toBe(200);
+  });
+
+  it('enrolls two fixture objects and generates an incomplete report without money movement', async () => {
+    const createdObject = await call('POST', '/api/operator/objects', {
+      cookie: operatorCookie,
+      body: { name: 'Discovery fixture drill', category: 'power_tool', glyph: 'drill', description: 'Fixture-only discovery test object.' },
+    });
+    expect(createdObject.statusCode).toBe(201);
+    const secondId = createdObject.json<{ object: { id: string } }>().object.id;
+    const takeFor = (bands: number[], offset: number) => {
+      const frames = Array.from({ length: 36 }, (_, index) => discoveryFrame(bands, index + offset));
+      return {
+        frames,
+        frameFlags: frames.map(() => []),
+        durationMs: 4_000,
+        sampleRate: 48_000,
+        capturedAt: new Date().toISOString(),
+        deviceLabel: null,
+        capture: { ...liveCapture, claimedAt: new Date().toISOString(), frameCount: frames.length },
+      };
+    };
+    const fanEnrollment = await call('POST', '/api/operator/objects/obj_reference_fan/discovery/enrollment', {
+      cookie: operatorCookie,
+      body: { objectId: 'obj_reference_fan', takes: [takeFor(fanBands, 0), takeFor(fanBands, 7)] },
+    });
+    expect(fanEnrollment.statusCode).toBe(201);
+    const drillEnrollment = await call('POST', `/api/operator/objects/${secondId}/discovery/enrollment`, {
+      cookie: operatorCookie,
+      body: { objectId: secondId, takes: [takeFor(drillBands, 0), takeFor(drillBands, 7)] },
+    });
+    expect(drillEnrollment.statusCode).toBe(201);
+    const lab = await call('GET', '/api/operator/discovery', { cookie: operatorCookie });
+    expect(lab.statusCode).toBe(200);
+    expect(lab.json<{ enrollments: unknown[]; reportStatus: string }>().enrollments).toHaveLength(2);
+    expect(lab.json<{ reportStatus: string }>().reportStatus).toBe('NOT_RUN');
+
+    const beforeSessions = ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM sessions')!.count;
+    const beforePayments = ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM payment_operations')!.count;
+    const match = await call('POST', '/api/discovery/match', { body: takeFor(fanBands, 11) });
+    expect(match.statusCode).toBe(200);
+    const matchResult = match.json<{ result: string; terms: unknown; checkoutUrl: string | null }>();
+    expect(matchResult.result).toBe('MATCH');
+    expect(matchResult.terms).not.toBeNull();
+    expect(matchResult.checkoutUrl).toContain('/s/obj_reference_fan');
+    expect(ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM sessions')!.count).toBe(beforeSessions);
+    expect(ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM payment_operations')!.count).toBe(beforePayments);
+
+    const trial = await call('POST', '/api/operator/discovery/trials', {
+      cookie: operatorCookie,
+      body: { ...takeFor(fanBands, 14), truthObjectId: 'obj_reference_fan', condition: 'BASELINE' },
+    });
+    expect(trial.statusCode).toBe(201);
+    expect(trial.json<{ trial: { result: string }; lab: { reportStatus: string } }>().lab.reportStatus).toBe('INCOMPLETE');
+
+    const report = await call('POST', '/api/operator/discovery/report', { cookie: operatorCookie, body: {} });
+    expect(report.statusCode).toBe(201);
+    const reportView = report.json<{ report: { status: string; trials: unknown[]; gates: Array<{ status: string }> } }>().report;
+    expect(reportView.status).toBe('INCOMPLETE');
+    expect(reportView.trials).toHaveLength(1);
+    expect(reportView.gates.some((gate) => gate.status === 'OPEN')).toBe(true);
+    expect(ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM sessions')!.count).toBe(beforeSessions);
+    expect(ctx.store.get<{ count: number }>('SELECT COUNT(*) AS count FROM payment_operations')!.count).toBe(beforePayments);
   });
 });
