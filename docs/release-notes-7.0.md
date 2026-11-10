@@ -1,0 +1,77 @@
+# Whirr 7.0 release notes — Ambient
+
+**Version:** 7.0.0-rc.1
+**Branch:** `main`
+**Base:** 6.0 `main` at `45e92e8a92c3b83117f9fcbc7807e21a102a2bfd`
+**Status:** local release candidate; not a field-validated product
+
+## Added
+
+### Product
+
+- Buyer-initiated **Wish** flow with enrolled-source selection, duration, fixed price, and deterministic interpretation.
+- **Published source catalog:** active objects with a current READY event model and published service or owner-approved Physical Promise can become Wish sources; unpublished or model-less objects are refused.
+- Structured **Exchange** with provider accept/reject/counter, immutable revisions, exact buyer approval, and participant-scoped views.
+- **Window** with a signal-driven qualifying ring, interval ledger, replay controls, live microphone path, explicit uncertainty, and buyer acceptance.
+- **Accord** with exact terms, observation timeline, trust domains, provider state, and signed proof verification.
+- Buyer/provider **operator desk** and credential-free **Judge Mode** with labelled interrupted and qualified replays.
+- Validated demo replay for newly negotiated agreements, with no payment capability.
+
+### Engine
+
+- `packages/ambient-engine` with bounded `ENROLLED_SOURCE_INACTIVE` semantics, deterministic compiler, baseline/continuity/reset evaluator, canonical terms and evidence hashes.
+- Explicit refusal of complete-silence, sound-level certification, power, temperature, safety, whole-room, and unconditional claims.
+- Integer minor-unit fixed pricing and no elapsed-time fallback.
+- Counteroffer compiler path that uses explicit negotiated price/duration rather than reparsing the old wish.
+
+### Evidence and payment
+
+- New signed `whirr.ambient-proof.v1` inside the existing ECDSA P-256 envelope.
+- Independent verifier for agreement hash, model binding, observations, temporal replay, evidence root, consent ordering, human acceptance, payment consistency, trust domains, and raw-audio absence.
+- Schema version 7 additive Ambient tables.
+- PayPal Sandbox order, authorization, capture, void, durable operations, and read-only webhook reconciliation.
+- Demo sessions can never create an order or capture.
+- Seed script for a coherent synthetic agreement, failed replay, qualified replay, buyer acceptance, and signed proof.
+
+## Preserved
+
+- 4.x Bench, calibration lab, payment implementation, receipts, proof v3 verifier, discovery experiment, and historical evidence.
+- 5.0 discovery tables/workflow.
+- 6.0 physical promise engine and `whirr.physical-proof.v1`.
+- Existing schema migrations. Version 7 adds tables; it does not rewrite historical rows.
+- PayPal Sandbox-only configuration and webhook-only ingress design.
+- Historical 4.x USD 0.07 Sandbox capture. It is **not** 7.0 evidence.
+
+## Verification at this revision
+
+Verified in the final local release-candidate run on 10 November 2026:
+
+- `npm run typecheck`: pass, 0 errors.
+- `npm test`: **133/133 pass across 23 files**, including the Ambient-focused **18/18** (11 unit, 7 integration), the published-source catalog test, and the demo replay-ladder test.
+- `npm run test:e2e`: **57/57 pass** at 1440×900, 834×1112 and 390×844. The suite covers the four Ambient surfaces, Judge Mode, the public proof, and authenticated operator/evidence pages without page-level overflow or runtime errors.
+- `npm run build`: pass; main JS **297.25 kB / 94.43 kB gzip**.
+- `npm run smoke`: pass.
+- Seeded proof `apr_f83736365f6d462297858f16f8cf5578`: independent verifier **14/14 Ambient checks pass**; the standalone CLI prints **15 PASS** lines including signed-envelope validation. Agreement `ase_reference_qualified`; terms hash `0f8d41e02b0c70a80f705e5b666e7b440d99ec8100f072c523c3b2c8726a43fd`. Provenance is `SYNTHETIC_REFERENCE`.
+- New demo session: a labelled two-interval replay ladder is generated and can be evaluated; demo sessions cannot create an order or capture.
+- Tamper cases: altered terms, observations, acceptance and payment fields are rejected by the verifier.
+- Browser negotiation: local buyer wish, provider exact-terms acceptance, buyer final-terms acceptance and demo-window opening were exercised. The provider was a local test identity.
+- Screenshots: eight true-viewport captures in `docs/v7/` (five at 1440×900, three at 390×844), all visually inspected. A Judge summary-card identifier overflow was fixed with wrapping and the capture was retaken; the Wish and overview captures were refreshed for the published-source catalog. No page-level horizontal overflow was observed. No independent accessibility audit was performed.
+
+These results close no physical, provider, webhook, comprehension or submission gate. `docs/go-no-go.md` carries the gate-by-gate record.
+
+## Open gates
+
+- No genuine physical source enrollment or field trial for 7.0.
+- No genuine interrupted/qualifying physical pair.
+- No genuine 7.0 Sandbox buyer authorization, capture, void, or signed webhook.
+- No public deployment, video, external comprehension test, or Devpost submission.
+- No independent security audit or accessibility audit.
+- No second-device corroboration.
+
+## Upgrade notes
+
+Run `npm run setup` on a fresh checkout or `npm run seed:ambient` to create the schema-7 Ambient reference. Existing databases migrate additively. Seeded proofs are synthetic and must remain labelled. Do not treat the demo proof as provider settlement.
+
+## Rollback
+
+The branch is isolated. The 6.0 base remains available. Existing 4.x/5.0/6.0 routes and proof verifiers continue to work. No destructive migration is required.
