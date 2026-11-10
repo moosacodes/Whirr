@@ -8,6 +8,8 @@ The product bet is a category, not a dashboard: **acoustic pay-per-use for physi
 
 > **Release candidate 4.1.0-rc.1 (9 November 2026):** the Whirr Bench experience is preserved and a guided Real-World Calibration Lab now records an appliance from the actual microphone, trains a device-specific model from live takes, and evaluates it on held-out three-cycle, noise, distance and replay trials. A live-calibrated model cannot be published without a passing, inspectable field report. No physical field test has been performed in this checkout, so Gate H remains OPEN; Gate A, E, F and G also remain OPEN. See [`docs/field-test.md`](docs/field-test.md), [`docs/go-no-go.md`](docs/go-no-go.md) and the [`4.1.0-rc.1 release notes`](docs/release-notes-4.1.0-rc.1.md).
 
+> **Whirr 5.0 — INVISIBLE CHECKOUT (experimental, not validated):** a separate feature branch asks whether an ordinary object can become discoverable through sound. It adds live two-object discovery enrollment, read-only `MATCH`/`AMBIGUOUS`/`UNKNOWN`, held-out trials with a pre-declared confusion protocol, and a public Listen → Discover → Confirm → Use → Settle surface. **No physical objects have been enrolled and no discovery metrics exist.** The evidence record is `NOT_RUN`, Gate I is OPEN, and the 4.x field gates, payments and historical Sandbox proof are unchanged. See [`docs/discovery-5.0.md`](docs/discovery-5.0.md) and [`docs/evidence/discovery.json`](docs/evidence/discovery.json). Do not publish or deploy this branch as validated evidence.
+
 ---
 
 ## What is genuinely built
@@ -31,6 +33,7 @@ The product bet is a category, not a dashboard: **acoustic pay-per-use for physi
 | Field evidence | Public inspectable report with model/dataset hashes, anonymised recording metadata, every pre-declared gate, methodology, measured precision/recall/false-billable/billing error and explicit limitations |
 | Publication guard | A live-calibrated model needs a `FIELD_PASS` report for its exact model id before terms or Listening Room sessions are allowed; the synthetic reference demo stays separate |
 | Product surfaces | Landing, Bench, Judge Mode, Object Studio, Capture Lab, Model Review, guided Gate A trials, Acoustic Passport, Pricing Composer, Service Card/QR, Renter Consent, Live Session, Review & Settlement, Receipt, Operator Console, Offline Demo |
+| 5.0 discovery experiment | Separate two-object acoustic enrollment, deterministic profile matcher, `MATCH`/`AMBIGUOUS`/`UNKNOWN`, held-out trial protocol, actual confusion matrix when run, and a read-only handoff to the existing checkout |
 | Safety | Operator key authentication, signed cookies, CSRF/origin checks, rate limits, CSP, ownership checks, body limits, no live PayPal host permitted |
 
 The bundled reference model is trained on procedurally synthesised fan audio. Its measured metrics demonstrate the pipeline; they are **not** evidence of accuracy on a physical fan.
@@ -53,6 +56,8 @@ Open:
 - Judge evidence: <http://localhost:5173/judge>
 - Offline verifier and Tamper Lab: <http://localhost:5173/verify>
 - Standalone verifier (no application imports): <http://localhost:5173/verify-offline.html>
+- Invisible checkout experiment: <http://localhost:5173/invisible-checkout> (public, read-only match)
+- Discovery studio (operator): <http://localhost:5173/studio/discovery>
 - Seeded service card: <http://localhost:5173/s/obj_reference_fan>
 - Seeded acoustic passport: <http://localhost:5173/passport/obj_reference_fan>
 - Guided Gate A trials (operator): <http://localhost:5173/studio/objects/obj_reference_fan/gate-a>
@@ -194,6 +199,8 @@ docs/                      architecture, model card, safety, threat model, PayPa
 
 ## Documentation
 
+- [Whirr 5.0 Invisible Checkout experiment](docs/discovery-5.0.md)
+- [Whirr 5.0 discovery evidence — NOT RUN](docs/evidence/discovery.json)
 - [Architecture](docs/architecture.md)
 - [Model card](docs/model-card.md)
 - [Safety](docs/safety.md)
