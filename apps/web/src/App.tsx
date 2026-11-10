@@ -13,6 +13,12 @@ const GateA = lazy(() => import('./pages/GateA.tsx').then((module) => ({ default
 const CalibrationLab = lazy(() => import('./pages/CalibrationLab.tsx').then((module) => ({ default: module.CalibrationLab })));
 const DiscoveryStudio = lazy(() => import('./pages/DiscoveryStudio.tsx').then((module) => ({ default: module.DiscoveryStudio })));
 const InvisibleCheckout = lazy(() => import('./pages/InvisibleCheckout.tsx').then((module) => ({ default: module.InvisibleCheckout })));
+const Promises = lazy(() => import('./pages/Promises.tsx').then((module) => ({ default: module.Promises })));
+const PromiseDetail = lazy(() => import('./pages/PromiseDetail.tsx').then((module) => ({ default: module.PromiseDetail })));
+const PromiseRun = lazy(() => import('./pages/PromiseRun.tsx').then((module) => ({ default: module.PromiseRun })));
+const PromiseProofPage = lazy(() => import('./pages/PromiseProofPage.tsx').then((module) => ({ default: module.PromiseProofPage })));
+const PromiseModel = lazy(() => import('./pages/PromiseModel.tsx').then((module) => ({ default: module.PromiseModel })));
+const TeachingRoom = lazy(() => import('./pages/TeachingRoom.tsx').then((module) => ({ default: module.TeachingRoom })));
 const FieldReportPage = lazy(() => import('./pages/FieldReport.tsx').then((module) => ({ default: module.FieldReportPage })));
 const Pricing = lazy(() => import('./pages/Pricing.tsx').then((module) => ({ default: module.Pricing })));
 const ServiceCardPage = lazy(() => import('./pages/ServiceCardPage.tsx').then((module) => ({ default: module.ServiceCardPage })));
@@ -50,6 +56,11 @@ export function App() {
               <Route path="/proof/:id" element={<Proof />} />
               <Route path="/shelf" element={<Shelf />} />
               <Route path="/invisible-checkout" element={<InvisibleCheckout />} />
+              <Route path="/promise" element={<Promises />} />
+              <Route path="/promise/proof/:proofId" element={<PromiseProofPage />} />
+              <Route path="/promise/run/:executionId" element={<PromiseRun />} />
+              <Route path="/promise/:agreementId/model" element={<PromiseModel />} />
+              <Route path="/promise/:agreementId" element={<PromiseDetail />} />
               <Route path="/demo/offline" element={<OfflineDemo />} />
               <Route path="/operator/login" element={<OperatorLogin />} />
               <Route path="/s/:objectId" element={<RenterService />} />
@@ -104,6 +115,14 @@ export function App() {
                 element={
                   <RequireOperator>
                     <CalibrationLab />
+                  </RequireOperator>
+                }
+              />
+              <Route
+                path="/studio/promises"
+                element={
+                  <RequireOperator>
+                    <TeachingRoom />
                   </RequireOperator>
                 }
               />
