@@ -85,6 +85,15 @@ import {
   submitFieldReport,
   submitFieldTrial,
 } from '../domain/field-test.ts';
+import {
+  discardDiscoveryTrial,
+  discoveryLab,
+  enrollDiscovery,
+  generateDiscoveryReport,
+  matchDiscoveryInput,
+  publicDiscovery,
+  recordDiscoveryTrial,
+} from '../domain/discovery.ts';
 import { normaliseOrigin } from '../config.ts';
 import {
   consentSchema,
@@ -105,6 +114,9 @@ import {
   takeUploadSchema,
   termsPublishSchema,
   fieldTrialUploadSchema,
+  discoveryEnrollmentSchema,
+  discoveryMatchSchema,
+  discoveryTrialSchema,
 } from '../../../../packages/contracts/src/schemas.ts';
 import type {
   AuthSessionView,
@@ -446,6 +458,61 @@ export function registerRoutes(app: FastifyInstance, ctx: AppContext): void {
     const result = submitFieldReport(ctx, operator, id);
     reply.code(201);
     return result;
+  });
+
+  // -------------------------------------------------------- 5.0 discovery
+  app.get('/api/operator/discovery', async (req) => {
+    const operator = requireOperator(ctx, req);
+    return discoveryLab(ctx, operator);
+  });
+
+  app.post('/api/operator/objects/:id/discovery/enrollment', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    const { id } = req.params as { id: string };
+    limitRequest(ctx, req, 'discovery-enrollment', 20, 60_000);
+    const body = parseBody(discoveryEnrollmentSchema, req.body);
+    if (body.objectId !== id) throw errors.badRequest('The enrollment body objectId must match the route object.');
+    reply.code(201);
+    return enrollDiscovery(ctx, operator, id, body);
+  });
+
+  app.post('/api/operator/discovery/trials', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    limitRequest(ctx, req, 'discovery-trial', 60, 60_000);
+    const body = parseBody(discoveryTrialSchema, req.body);
+    reply.code(201);
+    return recordDiscoveryTrial(ctx, operator, body);
+  });
+
+  app.delete('/api/operator/discovery/trials/:trialId', async (req) => {
+    const operator = requireOperator(ctx, req);
+    const { trialId } = req.params as { trialId: string };
+    return discardDiscoveryTrial(ctx, operator, trialId);
+  });
+
+  app.post('/api/operator/discovery/report', async (req, reply) => {
+    const operator = requireOperator(ctx, req);
+    limitRequest(ctx, req, 'discovery-report', 10, 60_000);
+    reply.code(201);
+    return generateDiscoveryReport(ctx, operator);
+  });
+
+  app.get('/api/discovery', async (req) => {
+    limitRequest(ctx, req, 'discovery-public', 60, 60_000);
+    return publicDiscovery(ctx);
+  });
+
+  app.post('/api/discovery/match', async (req) => {
+    limitRequest(ctx, req, 'discovery-match', 30, 60_000);
+    const body = parseBody(discoveryMatchSchema, req.body);
+    return matchDiscoveryInput(ctx, body);
+  });
+
+  app.get('/api/discovery/report', async (req) => {
+    limitRequest(ctx, req, 'discovery-report-public', 60, 60_000);
+    const view = publicDiscovery(ctx);
+    if (!view.report) throw errors.notFound('No discovery report has been generated yet.');
+    return view.report;
   });
 
   app.get('/api/field-reports/:id', async (req) => {
