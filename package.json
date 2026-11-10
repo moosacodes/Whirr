@@ -1,8 +1,8 @@
 {
   "name": "whirr",
-  "version": "4.1.0-rc.1",
+  "version": "6.0.0-rc.1",
   "private": true,
-  "description": "Whirr Bench — acoustic pay-per-use for shared workshops. Running minutes only, a PayPal Sandbox cap before use, and an offline-verifiable proof.",
+  "description": "Whirr 6.0 — The Physical Promise Engine. Teach an ordinary object an observable operating sequence, compile a fixed-price agreement, and settle only against approved evidence with PayPal Sandbox.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -19,6 +19,7 @@
     "train:reference": "tsx scripts/train-reference.ts",
     "eval:reference": "tsx scripts/evaluate-reference.ts",
     "seed": "tsx scripts/seed.ts",
+    "seed:promise": "tsx scripts/seed-promise.ts",
     "key": "tsx scripts/print-key.ts",
     "demo:offline": "tsx scripts/offline-demo.ts",
     "proof:verify": "tsx scripts/verify-proof.ts",
