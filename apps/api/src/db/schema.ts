@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -592,4 +592,132 @@ CREATE TABLE IF NOT EXISTS promise_proofs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_promise_proofs_created ON promise_proofs(created_at);
+
+-- Whirr 7.0: buyer-initiated physical cooperation. Additive only.
+CREATE TABLE IF NOT EXISTS ambient_agreements (
+  id TEXT PRIMARY KEY,
+  buyer_id TEXT NOT NULL REFERENCES users(id),
+  provider_id TEXT NOT NULL REFERENCES users(id),
+  object_id TEXT NOT NULL REFERENCES objects(id),
+  event_model_id TEXT NOT NULL REFERENCES event_models(id),
+  status TEXT NOT NULL,
+  current_revision INTEGER NOT NULL DEFAULT 1,
+  terms_json TEXT NOT NULL,
+  terms_hash TEXT NOT NULL,
+  offer_expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  buyer_accepted_at TEXT,
+  provider_accepted_at TEXT,
+  rejected_at TEXT,
+  rejected_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_ambient_agreements_buyer ON ambient_agreements(buyer_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ambient_agreements_provider ON ambient_agreements(provider_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ambient_agreements_status ON ambient_agreements(status);
+
+CREATE TABLE IF NOT EXISTS ambient_offers (
+  id TEXT PRIMARY KEY,
+  agreement_id TEXT NOT NULL REFERENCES ambient_agreements(id) ON DELETE CASCADE,
+  revision INTEGER NOT NULL CHECK (revision >= 1),
+  terms_json TEXT NOT NULL,
+  terms_hash TEXT NOT NULL,
+  proposed_by TEXT NOT NULL CHECK (proposed_by IN ('BUYER', 'PROVIDER')),
+  price_minor INTEGER NOT NULL CHECK (price_minor > 0),
+  duration_ms INTEGER NOT NULL CHECK (duration_ms > 0),
+  status TEXT NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL,
+  decided_at TEXT,
+  UNIQUE (agreement_id, revision)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ambient_offers_agreement ON ambient_offers(agreement_id, revision);
+
+CREATE TABLE IF NOT EXISTS ambient_sessions (
+  id TEXT PRIMARY KEY,
+  agreement_id TEXT NOT NULL REFERENCES ambient_agreements(id),
+  agreement_revision INTEGER NOT NULL,
+  agreement_hash TEXT NOT NULL,
+  object_id TEXT NOT NULL REFERENCES objects(id),
+  buyer_id TEXT NOT NULL REFERENCES users(id),
+  provider_id TEXT NOT NULL REFERENCES users(id),
+  terms_snapshot_json TEXT NOT NULL,
+  state TEXT NOT NULL,
+  payment_state TEXT NOT NULL DEFAULT 'NONE',
+  demo INTEGER NOT NULL DEFAULT 0 CHECK (demo IN (0, 1)),
+  observation_mode TEXT NOT NULL DEFAULT 'LIVE' CHECK (observation_mode IN ('LIVE', 'REPLAY')),
+  created_at TEXT NOT NULL,
+  accepted_at TEXT NOT NULL,
+  authorized_at TEXT,
+  observation_started_at TEXT,
+  observation_stopped_at TEXT,
+  authorization_expires_at TEXT,
+  paypal_order_id TEXT,
+  paypal_approve_url TEXT,
+  paypal_authorization_id TEXT,
+  paypal_capture_id TEXT,
+  paypal_void_id TEXT,
+  provider_status TEXT,
+  provider_reconciled_at TEXT,
+  captured_minor INTEGER,
+  outcome TEXT,
+  eligible_for_capture INTEGER NOT NULL DEFAULT 0,
+  evaluation_json TEXT,
+  evaluation_hash TEXT,
+  evidence_root TEXT,
+  acceptance_json TEXT,
+  failure_reason TEXT,
+  last_client_seq INTEGER NOT NULL DEFAULT 0,
+  last_observed_ms INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_buyer ON ambient_sessions(buyer_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_provider ON ambient_sessions(provider_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ambient_sessions_state ON ambient_sessions(state);
+
+CREATE TABLE IF NOT EXISTS ambient_observations (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES ambient_sessions(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL,
+  start_ms INTEGER NOT NULL CHECK (start_ms >= 0),
+  end_ms INTEGER NOT NULL CHECK (end_ms > start_ms),
+  source_state TEXT NOT NULL CHECK (source_state IN ('ACTIVE', 'INACTIVE', 'UNKNOWN', 'DISCONNECTED')),
+  confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+  event_match REAL,
+  quality_flags_json TEXT NOT NULL,
+  received_at TEXT NOT NULL,
+  UNIQUE (session_id, seq)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ambient_observations_session ON ambient_observations(session_id, start_ms);
+
+CREATE TABLE IF NOT EXISTS ambient_payment_operations (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES ambient_sessions(id) ON DELETE CASCADE,
+  operation_type TEXT NOT NULL CHECK (operation_type IN ('CREATE_ORDER', 'AUTHORIZE', 'CAPTURE', 'VOID')),
+  request_id TEXT NOT NULL,
+  state TEXT NOT NULL,
+  amount_minor INTEGER,
+  currency TEXT,
+  request_hash TEXT NOT NULL,
+  provider_ref TEXT,
+  response_json TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (session_id, operation_type)
+);
+
+CREATE TABLE IF NOT EXISTS ambient_proofs (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL UNIQUE REFERENCES ambient_sessions(id) ON DELETE CASCADE,
+  payload_hash TEXT NOT NULL,
+  document_json TEXT NOT NULL,
+  public_document_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ambient_proofs_created ON ambient_proofs(created_at);
 `;

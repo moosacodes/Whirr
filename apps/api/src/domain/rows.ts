@@ -2,6 +2,13 @@ import type { Currency, PaymentState, SessionState } from '../../../../packages/
 import type { ModelArtifact, ModelProvenance, ModelStatus } from '../../../../packages/audio/src/classifier.ts';
 import type { DiscoveryCondition, DiscoveryResult } from '../../../../packages/audio/src/discovery.ts';
 import type { PromiseExecutionState, PromiseOutcome } from '../../../../packages/promise/src/types.ts';
+import type {
+  AmbientAgreementStatus,
+  AmbientOfferStatus,
+  AmbientOutcome,
+  AmbientSessionState,
+  SourceState,
+} from '../../../../packages/ambient-engine/src/types.ts';
 
 export interface UserRow {
   id: string;
@@ -395,6 +402,116 @@ export interface PromisePaymentOperationRow {
 export interface PromiseProofRow {
   id: string;
   execution_id: string;
+  payload_hash: string;
+  document_json: string;
+  public_document_json: string;
+  created_at: string;
+}
+
+export interface AmbientAgreementRow {
+  id: string;
+  buyer_id: string;
+  provider_id: string;
+  object_id: string;
+  event_model_id: string;
+  status: AmbientAgreementStatus;
+  current_revision: number;
+  terms_json: string;
+  terms_hash: string;
+  offer_expires_at: string;
+  created_at: string;
+  updated_at: string;
+  buyer_accepted_at: string | null;
+  provider_accepted_at: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+}
+
+export interface AmbientOfferRow {
+  id: string;
+  agreement_id: string;
+  revision: number;
+  terms_json: string;
+  terms_hash: string;
+  proposed_by: 'BUYER' | 'PROVIDER';
+  price_minor: number;
+  duration_ms: number;
+  status: AmbientOfferStatus;
+  note: string | null;
+  created_at: string;
+  decided_at: string | null;
+}
+
+export interface AmbientSessionRow {
+  id: string;
+  agreement_id: string;
+  agreement_revision: number;
+  agreement_hash: string;
+  object_id: string;
+  buyer_id: string;
+  provider_id: string;
+  terms_snapshot_json: string;
+  state: AmbientSessionState;
+  payment_state: string;
+  demo: number;
+  observation_mode: 'LIVE' | 'REPLAY';
+  created_at: string;
+  accepted_at: string;
+  authorized_at: string | null;
+  observation_started_at: string | null;
+  observation_stopped_at: string | null;
+  authorization_expires_at: string | null;
+  paypal_order_id: string | null;
+  paypal_approve_url: string | null;
+  paypal_authorization_id: string | null;
+  paypal_capture_id: string | null;
+  paypal_void_id: string | null;
+  provider_status: string | null;
+  provider_reconciled_at: string | null;
+  captured_minor: number | null;
+  outcome: AmbientOutcome | null;
+  eligible_for_capture: number;
+  evaluation_json: string | null;
+  evaluation_hash: string | null;
+  evidence_root: string | null;
+  acceptance_json: string | null;
+  failure_reason: string | null;
+  last_client_seq: number;
+  last_observed_ms: number;
+}
+
+export interface AmbientObservationRow {
+  id: string;
+  session_id: string;
+  seq: number;
+  start_ms: number;
+  end_ms: number;
+  source_state: SourceState;
+  confidence: number;
+  event_match: number | null;
+  quality_flags_json: string;
+  received_at: string;
+}
+
+export interface AmbientPaymentOperationRow {
+  id: string;
+  session_id: string;
+  operation_type: 'CREATE_ORDER' | 'AUTHORIZE' | 'CAPTURE' | 'VOID';
+  request_id: string;
+  state: string;
+  amount_minor: number | null;
+  currency: string | null;
+  request_hash: string;
+  provider_ref: string | null;
+  response_json: string | null;
+  attempts: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AmbientProofRow {
+  id: string;
+  session_id: string;
   payload_hash: string;
   document_json: string;
   public_document_json: string;
