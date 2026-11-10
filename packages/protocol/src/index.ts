@@ -52,7 +52,7 @@ export function recomputeQuoteMinor(input: QuoteRecomputeInput): QuoteRecomputeR
   };
 }
 
-export type SignedDocumentType = 'passport' | 'receipt-proof' | 'proof-bundle';
+export type SignedDocumentType = 'passport' | 'receipt-proof' | 'proof-bundle' | 'physical-proof';
 
 /** One sibling on the path from an interval leaf to the Merkle root. */
 export interface MerkleProofStep {
@@ -326,7 +326,12 @@ export async function verifyEnvelope<T>(value: unknown): Promise<EnvelopeVerific
   const envelope = value as Partial<SignedEnvelope<T>>;
   if (envelope.schema !== SIGNED_SCHEMA) result.errors.push('Unsupported signed-document schema.');
   if (envelope.algorithm !== SIGNING_ALGORITHM) result.errors.push('Unsupported signing algorithm.');
-  if (envelope.type !== 'passport' && envelope.type !== 'receipt-proof' && envelope.type !== 'proof-bundle') {
+  if (
+    envelope.type !== 'passport' &&
+    envelope.type !== 'receipt-proof' &&
+    envelope.type !== 'proof-bundle' &&
+    envelope.type !== 'physical-proof'
+  ) {
     result.errors.push('Unsupported document type.');
   }
   if (typeof envelope.keyId !== 'string' || typeof envelope.publicKey !== 'string') {
@@ -365,3 +370,6 @@ export async function verifyEnvelope<T>(value: unknown): Promise<EnvelopeVerific
 export function decodeJsonUtf8(bytes: Uint8Array): unknown {
   return JSON.parse(decoder.decode(bytes)) as unknown;
 }
+
+export * from './physical-proof.ts';
+export { sha256HexSync } from './sha256-sync.ts';
