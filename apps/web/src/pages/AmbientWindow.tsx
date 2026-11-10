@@ -20,6 +20,7 @@ import {
   usePageTitle,
 } from '../components/ui.tsx';
 import { Icon, Waveform } from '../components/visuals.tsx';
+import { AmbientFrame } from '../components/ambient-experience.tsx';
 import { duration, money, percent } from '../lib/format.ts';
 
 interface AmbientModelDetail extends AmbientModelSummaryView {
@@ -522,14 +523,18 @@ export function AmbientWindow() {
   const progressDegrees = Math.max(0, Math.min(360, derived.progress * 360));
 
   return (
-    <div className="page ambient-page ambient-window-page">
+    <AmbientFrame
+      current="window"
+      note={running ? 'LIVE / ON-DEVICE' : isReplay ? 'REPLAY / SYNTHETIC' : session.demo ? 'DEMO / LIVE' : 'SANDBOX / WITNESS'}
+    >
+      <div className="page ambient-page ambient-window-page">
       <div className="container stack stack--lg">
         <PageHeader
-          eyebrow={`The Window · ${
+          eyebrow={`The Window · 03 / Continuity · ${
             session.demo ? (isReplay ? 'SYNTHETIC REPLAY' : 'DEMO / LIVE') : 'PAYPAL SANDBOX'
           }`}
           title={session.target.objectName}
-          lede="Continuity is the contract. The qualifying interval grows only while the bound model reports the enrolled source undetected and the evidence stays observable."
+          lede="The agreement is now a live condition. The interval grows only while the bound model reports the enrolled source undetected and the evidence stays observable."
           breadcrumbs={<><Link to="/ambient">Ambient</Link> <span aria-hidden="true">/</span> {session.serviceName}</>}
           actions={
             <span className={`chip ${running ? 'chip--ok' : isReplay ? 'chip--warn' : 'chip--accent'}`}>
@@ -557,7 +562,7 @@ export function AmbientWindow() {
         )}
 
         <div className="window-layout">
-          <section className="window-instrument">
+          <section className="window-instrument" data-state={derived.state.toLowerCase()} data-qualified={derived.qualified ? 'true' : 'false'}>
             <div className="window-instrument__head">
               <div>
                 <span className="eyebrow eyebrow--light">The qualifying interval</span>
@@ -568,6 +573,12 @@ export function AmbientWindow() {
 
             <div className="window-scope">
               <div className="window-scope__grid" aria-hidden="true" />
+              <div className={`window-scope__rings${running ? ' is-live' : ''}`} aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="window-scope__ticks" aria-hidden="true" />
               <div
                 className={`window-orbit ${derived.qualified ? 'is-qualified' : ''}`}
                 style={{
@@ -773,20 +784,25 @@ export function AmbientWindow() {
               </section>
             )}
 
-            <section className="window-limit-card">
-              <h2 className="h3">The boundary</h2>
-              <ul className="window-limits">
-                {session.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}
-              </ul>
-            </section>
           </aside>
         </div>
+
+        <section className="window-boundary">
+          <div className="window-boundary__intro">
+            <span className="eyebrow">The boundary</span>
+            <h2 className="h3">What this instrument does not prove.</h2>
+          </div>
+          <ul className="window-limits">
+            {session.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}
+          </ul>
+        </section>
 
         <div className="row row--between">
           <Link to="/ambient" className="link">← Ambient overview</Link>
           <Link to={`/ambient/exchange/${session.agreementId}`} className="link">Read the exact terms →</Link>
         </div>
       </div>
-    </div>
+      </div>
+    </AmbientFrame>
   );
 }

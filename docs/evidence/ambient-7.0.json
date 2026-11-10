@@ -73,14 +73,26 @@
     "externalProviderInvolved": false
   },
   "screenshots": [
-    "docs/v7/wish-1440.png",
-    "docs/v7/wish-390.png",
-    "docs/v7/judge-1440.png",
-    "docs/v7/window-1440.png",
-    "docs/v7/accord-390.png",
-    "docs/v7/accord-1440.png",
     "docs/v7/ambient-1440.png",
-    "docs/v7/ambient-390.png"
+    "docs/v7/ambient-834.png",
+    "docs/v7/ambient-390.png",
+    "docs/v7/wish-1440.png",
+    "docs/v7/wish-834.png",
+    "docs/v7/wish-390.png",
+    "docs/v7/evidence-1440.png",
+    "docs/v7/evidence-834.png",
+    "docs/v7/evidence-390.png",
+    "docs/v7/exchange-1440.png",
+    "docs/v7/exchange-834.png",
+    "docs/v7/exchange-390.png",
+    "docs/v7/window-1440.png",
+    "docs/v7/window-834.png",
+    "docs/v7/window-390.png",
+    "docs/v7/accord-1440.png",
+    "docs/v7/accord-834.png",
+    "docs/v7/accord-390.png",
+    "docs/v7/window-interrupted-1440.png",
+    "docs/v7/accord-interrupted-1440.png"
   ],
   "physicalEvidence": {
     "status": "OPEN_NOT_RUN",

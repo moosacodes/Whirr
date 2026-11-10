@@ -18,6 +18,7 @@ import {
   usePageTitle,
 } from '../components/ui.tsx';
 import { Icon, ObjectGlyph } from '../components/visuals.tsx';
+import { AmbientFrame } from '../components/ambient-experience.tsx';
 import { duration, money } from '../lib/format.ts';
 
 async function asBuyer<T>(call: () => Promise<T>): Promise<T> {
@@ -149,12 +150,13 @@ export function AmbientExchange() {
   const canRespond = view.flags.canRespond;
   const accepted = view.status === 'ACCEPTED';
   return (
-    <div className="page ambient-page">
+    <AmbientFrame current="exchange" note="02 / TERMS">
+      <div className="page ambient-page">
       <div className="container stack stack--lg">
         <PageHeader
-          eyebrow="The Exchange · Whirr Ambient"
-          title={view.serviceName}
-          lede="A bounded, structured exchange. No autonomous agents negotiate for either person; every change to the terms creates a new immutable revision."
+          eyebrow="The Exchange · 02 / Terms"
+          title="Make the terms exact."
+          lede={`A bounded negotiation for ${view.serviceName}. No autonomous agents negotiate for either person; every change creates a new immutable revision.`}
           breadcrumbs={<><Link to="/ambient">Ambient</Link> <span aria-hidden="true">/</span> Exchange</>}
           actions={
             <span className={`chip ${accepted ? 'chip--ok' : view.flags.awaitingBuyer ? 'chip--warn' : 'chip--accent'}`}>
@@ -353,6 +355,7 @@ export function AmbientExchange() {
           merchant when it is not.
         </Notice>
       </div>
-    </div>
+      </div>
+    </AmbientFrame>
   );
 }

@@ -32,24 +32,29 @@ export function SiteHeader() {
         <nav className="nav" aria-label="Main navigation">
           <NavLink to="/ambient" end>Ambient</NavLink>
           <NavLink to="/ambient/wish">Wish</NavLink>
-          <NavLink to="/ambient/judge">Quiet Window</NavLink>
-          <NavLink to="/promise">Promises</NavLink>
-          <NavLink to="/shelf">Bench</NavLink>
-          <NavLink to="/invisible-checkout">Invisible checkout</NavLink>
+          <NavLink to="/ambient/judge">Evidence</NavLink>
           <NavLink to="/verify">Verify</NavLink>
-          <NavLink to="/judge">Judge mode</NavLink>
-          {session?.operator ? (
-            <>
-              <NavLink to="/studio">Studio</NavLink>
-              <NavLink to="/studio/promises">Teaching room</NavLink>
-              <NavLink to="/studio/discovery">Discovery lab</NavLink>
-              <NavLink to="/operator">Operator</NavLink>
-              <NavLink to="/operator/ambient">Ambient desk</NavLink>
-            </>
-          ) : (
-            <NavLink to="/operator/login">Operator</NavLink>
-          )}
+          {session?.operator ? <NavLink to="/studio">Studio</NavLink> : null}
         </nav>
+        <details className="nav-more">
+          <summary>More</summary>
+          <div className="nav-more__panel">
+            <NavLink to="/promise">Promises</NavLink>
+            <NavLink to="/shelf">Bench</NavLink>
+            <NavLink to="/invisible-checkout">Invisible checkout</NavLink>
+            <NavLink to="/judge">Judge mode</NavLink>
+            {session?.operator ? (
+              <>
+                <NavLink to="/studio/promises">Teaching room</NavLink>
+                <NavLink to="/studio/discovery">Discovery lab</NavLink>
+                <NavLink to="/operator">Operator</NavLink>
+                <NavLink to="/operator/ambient">Ambient desk</NavLink>
+              </>
+            ) : (
+              <NavLink to="/operator/login">Operator sign in</NavLink>
+            )}
+          </div>
+        </details>
         <div className="site-header__right">
           {session?.paypal.configured ? (
             <span className="chip chip--ok">
@@ -89,10 +94,7 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div className="site-footer__inner">
-        <span>
-          Whirr 7.0 · Ambient. Buyer-initiated physical cooperation, Sandbox only, no real money.
-        </span>
+      <div className="site-footer__inner">      <span>Whirr 7.0 · The negotiated world. Ambient cooperation, Sandbox only, no real money.</span>
         <span className="row" style={{ gap: '0.5rem' }}>
           <Icon name="shield" size={14} />
           PayPal Sandbox only

@@ -3,6 +3,7 @@ import type { AmbientJudgeView, AmbientSessionSummary } from '../../../../packag
 import { api, errorMessage } from '../lib/api.ts';
 import { LinkButton, Loading, Notice, PageHeader, Stat, usePageTitle } from '../components/ui.tsx';
 import { Icon } from '../components/visuals.tsx';
+import { AmbientFrame } from '../components/ambient-experience.tsx';
 import { dateTime, money } from '../lib/format.ts';
 
 function SessionCard({ session, title, copy }: { session: AmbientSessionSummary | null; title: string; copy: string }) {
@@ -65,15 +66,17 @@ export function AmbientJudge() {
 
   if (!judge.available) {
     return (
-      <div className="page ambient-page container">
-        <PageHeader
-          eyebrow="Whirr Ambient · Judge mode"
-          title="The Quiet Window is not seeded."
-          lede="The judge path needs the synthetic reference model and the two histories. No live claim is being made."
-          actions={<LinkButton to="/ambient" variant="secondary">Ambient overview</LinkButton>}
-        />
-        <Notice tone="warn">{judge.limitations.join(' ')}</Notice>
-      </div>
+      <AmbientFrame current="evidence" note="JUDGE / NOT SEEDED">
+        <div className="page ambient-page container">
+          <PageHeader
+            eyebrow="Evidence · Judge mode"
+            title="The Quiet Window is not seeded."
+            lede="The judge path needs the synthetic reference model and the two histories. No live claim is being made."
+            actions={<LinkButton to="/ambient" variant="secondary">Ambient overview</LinkButton>}
+          />
+          <Notice tone="warn">{judge.limitations.join(' ')}</Notice>
+        </div>
+      </AmbientFrame>
     );
   }
 
@@ -81,12 +84,13 @@ export function AmbientJudge() {
   const qualified = judge.sessions.find((session) => session.id === judge.seed.qualifiedSessionId) ?? null;
   const physicalFieldTrial = judge.evidence.physicalFieldTrial as string;
   return (
-    <div className="page ambient-page">
+    <AmbientFrame current="evidence" note="JUDGE / EXTERNAL GATES OPEN">
+      <div className="page ambient-page">
       <div className="container stack stack--lg">
         <PageHeader
-          eyebrow="Whirr Ambient · Judge mode"
+          eyebrow="Evidence · Judge mode"
           title="Failure, success, and the gap between them."
-          lede="A credential-free comparison of the same agreement against an interrupted series and a continuous one. The histories are synthetic and labelled; they demonstrate the contract and the verifier, not a physical machine trial."
+          lede="The same agreement against an interrupted series and a continuous one. The histories are synthetic and labelled; they demonstrate the contract and the verifier, not a physical machine trial."
           actions={
             <>
               <LinkButton to="/ambient/wish" variant="primary">Try the Wish</LinkButton>
@@ -173,6 +177,7 @@ export function AmbientJudge() {
           <LinkButton to="/ambient" variant="ghost">Back to Ambient</LinkButton>
         </div>
       </div>
-    </div>
+      </div>
+    </AmbientFrame>
   );
 }

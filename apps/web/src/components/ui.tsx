@@ -285,7 +285,7 @@ export function usePageTitle(title: string): void {
   useEffect(() => {
     document.title = `${title} · Whirr`;
     return () => {
-      document.title = 'Whirr — make anything rentable';
+      document.title = 'Whirr — the negotiated world';
     };
   }, [title]);
 }
