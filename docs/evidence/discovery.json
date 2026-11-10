@@ -1,0 +1,86 @@
+{
+  "schema": "whirr.discovery-evidence.v1",
+  "experiment": "Whirr 5.0 INVISIBLE CHECKOUT",
+  "status": "NOT_RUN",
+  "assessmentDate": "2026-11-09",
+  "physicalObjectRecordings": false,
+  "physicalReport": null,
+  "provenance": {
+    "code": "local experimental branch",
+    "microphoneEvidence": "NONE",
+    "syntheticFixturesUsedAsEvidence": false,
+    "note": "No real microphone recordings of two physical objects have been made in this checkout. No metric below is invented or borrowed from the 4.x synthetic reference model."
+  },
+  "protocol": {
+    "schema": "whirr.discovery-protocol.v1",
+    "minEnrollments": 2,
+    "trainingTakesPerObject": 2,
+    "minTakeFrames": 30,
+    "minMatchFrames": 30,
+    "minScore": 0.9,
+    "minMargin": 0.035,
+    "maxMedianLatencyMs": 250,
+    "minTargetTrials": 12,
+    "minTargetTrialsPerObject": 6,
+    "minUnknownTrials": 6,
+    "minReplayTrials": 3,
+    "minDistanceTrials": 3,
+    "minNoiseTrials": 3,
+    "targetAccuracy": 0.9,
+    "unknownRejection": 0.9,
+    "falseMatchRate": 0.05,
+    "replayCrossMatchRate": 0.05,
+    "distanceAccuracy": 0.8,
+    "noiseAccuracy": 0.8,
+    "minUsableRatio": 0.6
+  },
+  "enrollments": [],
+  "trials": [],
+  "metrics": null,
+  "confusion": null,
+  "conditions": [],
+  "gates": [
+    {
+      "id": "TWO_OBJECTS",
+      "status": "OPEN",
+      "detail": "Two genuinely different physical objects have not been enrolled with live microphone takes."
+    },
+    {
+      "id": "TARGET_ACCURACY",
+      "status": "OPEN",
+      "detail": "No held-out target trials exist."
+    },
+    {
+      "id": "UNKNOWN_REJECTION",
+      "status": "OPEN",
+      "detail": "No unknown-object trials exist."
+    },
+    {
+      "id": "FALSE_MATCH",
+      "status": "OPEN",
+      "detail": "No false-match count can be reported without held-out unknown trials."
+    },
+    {
+      "id": "DISTANCE_AND_NOISE",
+      "status": "OPEN",
+      "detail": "No 1 m, 2 m, room-noise or competing-appliance trials exist."
+    },
+    {
+      "id": "REPLAY",
+      "status": "OPEN",
+      "detail": "No replay trials exist. The prototype has no liveness detector."
+    },
+    {
+      "id": "LATENCY_AND_QUALITY",
+      "status": "OPEN",
+      "detail": "No physical trial set exists from which to report latency or usable-frame ratio."
+    }
+  ],
+  "limitations": [
+    "This is an experiment, not an authentication system, proof of ownership or tamper-proof usage meter.",
+    "A client can claim live microphone provenance; the local server validates structure and quality, not physical presence.",
+    "Playback, identical appliances, distance, orientation, room reverberation and competing noise can change similarity.",
+    "The existing 4.x field gates and PayPal Sandbox evidence are unchanged and remain the only validated product path.",
+    "No public claim, deployment, release or submission should be made from this NOT_RUN record."
+  ]
+}
