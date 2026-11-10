@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { AmbientCatalogView, AmbientJudgeView } from '../../../../packages/contracts/src/types.ts';
 import { api, errorMessage } from '../lib/api.ts';
 import { EmptyState, LinkButton, Loading, Notice, usePageTitle } from '../components/ui.tsx';
+import { AmbientFrame } from '../components/ambient-experience.tsx';
 import { Icon, ObjectGlyph } from '../components/visuals.tsx';
 import { duration, money, percent } from '../lib/format.ts';
 
@@ -23,7 +24,8 @@ export function Ambient() {
 
   const featured = catalog?.items[0];
   return (
-    <div className="page ambient-page">
+    <AmbientFrame current="overview" note="EVIDENCE / NOT A CLAIM">
+      <div className="page ambient-page">
       <section className="ambient-hero">
         <div className="ambient-hero__grain" aria-hidden="true" />
         <div className="container ambient-hero__inner">
@@ -34,12 +36,11 @@ export function Ambient() {
               <br />
               what exists.
               <br />
-              <em>Buy what could change.</em>
+              <span className="ambient-hero__accent">Buy what could change.</span>
             </h1>
             <p className="lede">
-              Ask for a condition in the world. Make an exact, bounded offer to the person who controls the
-              activity. Observe whether the enrolled source actually stayed inactive. Let PayPal Sandbox carry the
-              agreed compensation only after the evidence and a human acceptance.
+              Ask for a condition in the world. Make a bounded offer to the person who controls it. Let the observed
+              evidence decide what happened, and let PayPal Sandbox carry the agreed value only after a human accepts it.
             </p>
             <div className="row ambient-hero__actions">
               <LinkButton to="/ambient/wish" variant="money">
@@ -80,7 +81,7 @@ export function Ambient() {
             <section className="ambient-surfaces" aria-labelledby="ambient-surfaces-title">
               <div className="section-head">
                 <div>
-                  <span className="eyebrow">Four surfaces, one agreement</span>
+                  <span className="eyebrow">Four movements, one agreement</span>
                   <h2 id="ambient-surfaces-title" className="display display--sm">
                     A request becomes a record.
                   </h2>
@@ -250,6 +251,7 @@ export function Ambient() {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </AmbientFrame>
   );
 }

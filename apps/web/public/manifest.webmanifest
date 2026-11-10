@@ -1,7 +1,7 @@
 {
-  "name": "Whirr — make anything rentable",
+  "name": "Whirr — the negotiated world",
   "short_name": "Whirr",
-  "description": "Usage-metered access to ordinary objects, sensed by a microphone. PayPal Sandbox only.",
+  "description": "Request an observable change in a shared physical environment, agree exact terms, and settle against witnessed evidence. PayPal Sandbox only.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#14110f",

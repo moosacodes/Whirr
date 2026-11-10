@@ -5,6 +5,7 @@ import './styles/base.css';
 import './styles/discovery.css';
 import './styles/promise.css';
 import './styles/ambient.css';
+import './styles/experience.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';

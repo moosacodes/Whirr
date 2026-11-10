@@ -13,6 +13,7 @@ import {
   usePageTitle,
 } from '../components/ui.tsx';
 import { Icon, ObjectGlyph } from '../components/visuals.tsx';
+import { AmbientFrame } from '../components/ambient-experience.tsx';
 import { dateTime, duration, money } from '../lib/format.ts';
 
 export function AmbientAccord() {
@@ -54,12 +55,13 @@ export function AmbientAccord() {
           : session.paymentState.replaceAll('_', ' ');
 
   return (
+    <AmbientFrame current="accord" note="04 / RECORD">
         <div className="page ambient-page">
       <div className="container stack stack--lg">
         <PageHeader
-          eyebrow="The Accord · Whirr Ambient"
+          eyebrow="The Accord · 04 / Record"
           title="A record of cooperation."
-          lede="What was requested, what was agreed, what the sensor observed, what remained uncertain, what the buyer accepted, and what PayPal actually did."
+          lede="What was requested, what was agreed, what the sensor observed, what remained uncertain, what the buyer accepted, and what PayPal actually did. The limits travel with the record."
           breadcrumbs={<><Link to="/ambient">Ambient</Link> <span aria-hidden="true">/</span> Accord</>}
           actions={
             session.proofId ? (
@@ -217,6 +219,15 @@ export function AmbientAccord() {
               )}
             </section>
 
+          </aside>
+        </div>
+
+        <section className="accord-boundary">
+          <div className="accord-boundary__intro">
+            <span className="eyebrow">The limits of the record</span>
+            <h2 className="h3">What remains outside the instrument.</h2>
+          </div>
+          <div className="accord-boundary__grid">
             <section className="card card--soft stack">
               <span className="eyebrow">Evidence boundary</span>
               <ul className="window-limits">
@@ -242,14 +253,15 @@ export function AmbientAccord() {
                 </div>
               ) : null}
             </section>
-          </aside>
-        </div>
+          </div>
+        </section>
 
         <div className="row row--between">
           <Link to="/ambient" className="link">← Ambient overview</Link>
           <Link to={`/ambient/window/${session.id}?replay=1`} className="link">Replay the window →</Link>
         </div>
       </div>
-    </div>
+      </div>
+    </AmbientFrame>
   );
 }

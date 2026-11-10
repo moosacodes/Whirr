@@ -38,7 +38,8 @@
     "test:e2e": "playwright test",
     "verify": "npm run typecheck && npm test",
     "smoke": "tsx scripts/smoke.ts",
-    "screenshots": "tsx scripts/capture-v4.ts"
+    "screenshots": "tsx scripts/capture-v4.ts",
+    "capture:v7": "tsx scripts/capture-v7.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

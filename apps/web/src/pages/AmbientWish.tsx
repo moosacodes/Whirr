@@ -18,6 +18,7 @@ import {
   usePageTitle,
 } from '../components/ui.tsx';
 import { Icon, ObjectGlyph } from '../components/visuals.tsx';
+import { AmbientFrame } from '../components/ambient-experience.tsx';
 import { duration, money } from '../lib/format.ts';
 
 const EXAMPLE =
@@ -111,12 +112,13 @@ export function AmbientWish() {
   };
 
   return (
-    <div className="page ambient-page">
+    <AmbientFrame current="wish" note="01 / INTENTION">
+      <div className="page ambient-page">
       <div className="container stack stack--lg">
         <PageHeader
-          eyebrow="The Wish · Whirr Ambient"
-          title="Say what the world should do."
-          lede="Start with the physical outcome you need. Whirr will narrow it to a condition a microphone and an enrolled model can actually observe — and will refuse claims it cannot measure."
+          eyebrow="The Wish · 01 / Intention"
+          title="Name a change in the world."
+          lede="A wish is not a prompt. It is a bounded request for a physical condition, narrowed until a microphone and an enrolled model can actually answer it."
           actions={
             <LinkButton to="/ambient" variant="ghost">
               Ambient overview
@@ -142,7 +144,7 @@ export function AmbientWish() {
                   <span className="eyebrow">01 · Intention</span>
                   <h2 className="h2">What do you need?</h2>
                 </div>
-                <span className="chip chip--warn">bounded grammar</span>
+                <span className="chip chip--warn">bounded condition</span>
               </div>
               <Field
                 label="Enrolled source"
@@ -362,7 +364,7 @@ export function AmbientWish() {
               )}
 
               <section className="card stack">
-                <span className="eyebrow">Why this is not a chatbot</span>
+                <span className="eyebrow">Not a conversation. A contract.</span>
                 <p className="small muted">
                   The result is not a conversation transcript. It is a typed, reviewed agreement with a hash. Changing
                   the duration, source, sensing rule or price creates a new revision that both parties must approve.
@@ -376,6 +378,7 @@ export function AmbientWish() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </AmbientFrame>
   );
 }
