@@ -52,7 +52,12 @@ export function recomputeQuoteMinor(input: QuoteRecomputeInput): QuoteRecomputeR
   };
 }
 
-export type SignedDocumentType = 'passport' | 'receipt-proof' | 'proof-bundle' | 'physical-proof';
+export type SignedDocumentType =
+  | 'passport'
+  | 'receipt-proof'
+  | 'proof-bundle'
+  | 'physical-proof'
+  | 'ambient-proof';
 
 /** One sibling on the path from an interval leaf to the Merkle root. */
 export interface MerkleProofStep {
@@ -187,6 +192,8 @@ export async function verifyMerkleProof(
   }
   return current === root;
 }
+
+export * from './ambient-proof.ts';
 
 export interface SignedEnvelope<T> {
   schema: typeof SIGNED_SCHEMA;
@@ -330,7 +337,8 @@ export async function verifyEnvelope<T>(value: unknown): Promise<EnvelopeVerific
     envelope.type !== 'passport' &&
     envelope.type !== 'receipt-proof' &&
     envelope.type !== 'proof-bundle' &&
-    envelope.type !== 'physical-proof'
+    envelope.type !== 'physical-proof' &&
+    envelope.type !== 'ambient-proof'
   ) {
     result.errors.push('Unsupported document type.');
   }
