@@ -316,6 +316,7 @@ export function Judge() {
         lede="These gates are computed from the database, the filesystem and the provider configuration right now. A missing credential, recording or webhook is shown as OPEN, never painted green."
         actions={
           <>
+            <LinkButton to="/invisible-checkout" variant="secondary">Whirr 5.0 experiment</LinkButton>
             <LinkButton to="/verify" variant="secondary">Open offline verifier</LinkButton>
             <LinkButton to={status.demoObjectId ? `/s/${status.demoObjectId}` : '/studio'} variant="primary">
               Run the full loop <Icon name="arrow" size={16} />
@@ -482,6 +483,7 @@ export function Judge() {
               <li><Icon name="alert" size={14} /> <span className="tiny">A live PayPal capture without Sandbox credentials.</span></li>
               <li><Icon name="alert" size={14} /> <span className="tiny">A public webhook delivery without a tunnel and webhook ID.</span></li>
               <li><Icon name="alert" size={14} /> <span className="tiny">Physical security: the meter can be fooled by playback.</span></li>
+              <li><Icon name="alert" size={14} /> <span className="tiny">5.0 discovery: no two-object physical enrollment, no held-out report, and no identity claim.</span></li>
             </ul>
           </section>
         </aside>
