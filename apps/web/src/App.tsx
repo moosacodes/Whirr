@@ -11,6 +11,8 @@ const Teach = lazy(() => import('./pages/Teach.tsx').then((module) => ({ default
 const ModelReview = lazy(() => import('./pages/ModelReview.tsx').then((module) => ({ default: module.ModelReview })));
 const GateA = lazy(() => import('./pages/GateA.tsx').then((module) => ({ default: module.GateA })));
 const CalibrationLab = lazy(() => import('./pages/CalibrationLab.tsx').then((module) => ({ default: module.CalibrationLab })));
+const DiscoveryStudio = lazy(() => import('./pages/DiscoveryStudio.tsx').then((module) => ({ default: module.DiscoveryStudio })));
+const InvisibleCheckout = lazy(() => import('./pages/InvisibleCheckout.tsx').then((module) => ({ default: module.InvisibleCheckout })));
 const FieldReportPage = lazy(() => import('./pages/FieldReport.tsx').then((module) => ({ default: module.FieldReportPage })));
 const Pricing = lazy(() => import('./pages/Pricing.tsx').then((module) => ({ default: module.Pricing })));
 const ServiceCardPage = lazy(() => import('./pages/ServiceCardPage.tsx').then((module) => ({ default: module.ServiceCardPage })));
@@ -47,6 +49,7 @@ export function App() {
               <Route path="/verify" element={<Verify />} />
               <Route path="/proof/:id" element={<Proof />} />
               <Route path="/shelf" element={<Shelf />} />
+              <Route path="/invisible-checkout" element={<InvisibleCheckout />} />
               <Route path="/demo/offline" element={<OfflineDemo />} />
               <Route path="/operator/login" element={<OperatorLogin />} />
               <Route path="/s/:objectId" element={<RenterService />} />
@@ -101,6 +104,14 @@ export function App() {
                 element={
                   <RequireOperator>
                     <CalibrationLab />
+                  </RequireOperator>
+                }
+              />
+              <Route
+                path="/studio/discovery"
+                element={
+                  <RequireOperator>
+                    <DiscoveryStudio />
                   </RequireOperator>
                 }
               />
