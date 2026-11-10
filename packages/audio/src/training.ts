@@ -564,7 +564,7 @@ export function trainModelFromTakes(takes: TrainingTake[], opts: TrainOptions): 
     .slice(0, 10);
 
   const statusReasons = [...reasons];
-  let status: ModelArtifact['status'] = 'READY';
+  let status: ModelArtifact['status'];
   if (!hardDataFailure) {
     if (metrics.precision >= 0.95 && metrics.falseBillableRatio <= 0.02 && metrics.recall >= 0.4) {
       status = 'READY';

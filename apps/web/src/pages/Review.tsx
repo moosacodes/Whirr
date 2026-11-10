@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorMessage } from '../lib/api.ts';
 import { useAuth } from '../lib/auth.tsx';
 import type { SessionView } from '../../../../packages/contracts/src/types.ts';
-import { decimalStringToMinor, formatMinor } from '../../../../packages/meter/src/currency.ts';
+import { decimalStringToMinor } from '../../../../packages/meter/src/currency.ts';
 import {
   Button,
   Check,
@@ -67,11 +67,6 @@ export function ReviewPage() {
     }
     void load();
   }, [load]);
-
-  const billableIntervals = useMemo(
-    () => view?.intervals.filter((interval) => interval.state === 'ACTIVE_CONFIDENT') ?? [],
-    [view],
-  );
 
   const acceptReview = async () => {
     if (!view) return;

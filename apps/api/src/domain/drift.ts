@@ -23,7 +23,7 @@ export function driftForObject(ctx: AppContext, objectId: string, modelCreatedAt
     ? Math.max(0, Math.floor((ctx.now().getTime() - Date.parse(modelCreatedAt)) / DAY_MS))
     : null;
   let status: DriftView['status'] = 'FRESH';
-  let reason = 'No diagnostic drift signal has been recorded yet.';
+  let reason: string;
   if (sessions === 0) {
     status = 'NO_DATA';
     reason = 'No settled session has produced a diagnostic acoustic summary yet.';

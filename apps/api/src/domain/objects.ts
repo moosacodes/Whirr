@@ -398,7 +398,7 @@ export function trainObject(ctx: AppContext, operator: UserRow, objectId: string
   model: ReturnType<typeof modelSummary>;
   activated: boolean;
 } {
-  const object = requireObject(ctx, objectId, operator.id);
+  requireObject(ctx, objectId, operator.id);
   const takes = ctx.store.all<TakeRow>(
     'SELECT * FROM calibration_takes WHERE object_id = ? ORDER BY created_at ASC',
     objectId,

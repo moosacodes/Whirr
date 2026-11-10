@@ -2,7 +2,6 @@ import { canonicalJson, sha256Hex } from '../../protocol/src/index.ts';
 import {
   AMBIENT_EVALUATION_SCHEMA,
   AMBIENT_EVALUATOR_VERSION,
-  type AmbientAgreementTerms,
   type AmbientCheck,
   type AmbientEvaluation,
   type AmbientEvaluationInput,

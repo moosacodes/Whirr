@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { FEATURE_COUNT, FEATURE_SPEC_VERSION, QUALITY_FLAGS } from '../../audio/src/spec.ts';
-import { SUPPORTED_CURRENCIES } from '../../meter/src/currency.ts';
 import { PROMISE_EVENTS, REPORTING_STATES } from '../../promise/src/types.ts';
 import { TAKE_LABELS } from './types.ts';
 

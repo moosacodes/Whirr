@@ -22,7 +22,6 @@ import {
   PayPalApiError,
   extractAuthorization,
   type PayPalCapture,
-  type PayPalOrder,
   type PayPalAuthorization,
   type PayPalRefund,
 } from '../../../../packages/paypal/src/client.ts';

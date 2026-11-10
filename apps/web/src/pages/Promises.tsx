@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from '../lib/api.ts';
 import type { PromiseCatalogView } from '../../../../packages/contracts/src/types.ts';
-import { EmptyState, LinkButton, Loading, Notice, PageHeader, usePageTitle } from '../components/ui.tsx';
+import { EmptyState, LinkButton, Loading, Notice, usePageTitle } from '../components/ui.tsx';
 import { Icon, ObjectGlyph } from '../components/visuals.tsx';
 import { money } from '../lib/format.ts';
 

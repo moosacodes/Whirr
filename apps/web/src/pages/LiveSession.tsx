@@ -252,8 +252,8 @@ export function LiveSession() {
     setError(null);
     const frames: Array<{ features: number[]; flags: string[] }> = [];
     let engine: MicrophoneEngine | null = null;
-    let deviceLabel: string | null = null;
-    let sampleRate: number | null = null;
+    let deviceLabel: string | null;
+    let sampleRate: number | null;
     try {
       engine = new MicrophoneEngine({
         onFrame: (frame) => frames.push({ features: frame.features, flags: frame.flags }),
@@ -518,7 +518,7 @@ export function LiveSession() {
     }
   };
 
-  const useDemo = async () => {
+  const enterDemoMode = async () => {
     setBusy('demo');
     setError(null);
     try {
@@ -969,7 +969,7 @@ export function LiveSession() {
                     Create Sandbox authorization <Icon name="external" size={15} />
                   </Button>
                 ) : (
-                  <Button onClick={() => void useDemo()} loading={busy === 'demo'} variant="primary" size="lg">
+                  <Button onClick={() => void enterDemoMode()} loading={busy === 'demo'} variant="primary" size="lg">
                     Enter demo metering
                   </Button>
                 )}

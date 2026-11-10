@@ -492,7 +492,7 @@ export function submitFieldTrial(
   if (model.status !== 'READY') {
     throw errors.conflict('MODEL_NOT_READY', 'Only a READY model can enter field validation.');
   }
-  const artifact = parseArtifact(model);
+  parseArtifact(model);
   const timelineProblems = validateFieldTimeline(input.kind as FieldTrialKind, input.timeline, input.durationMs);
   const frameProblems = validateFieldFrames(input.frames, input.frameFlags ?? [], input.durationMs);
   const problems = [...timelineProblems, ...frameProblems];

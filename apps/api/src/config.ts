@@ -141,7 +141,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
       throw new Error('PAYPAL_BASE_URL loopback is not allowed when NODE_ENV=production.');
     }
   } catch (error) {
-    throw new Error(`Invalid PAYPAL_BASE_URL: ${(error as Error).message}`);
+    throw new Error(`Invalid PAYPAL_BASE_URL: ${(error as Error).message}`, { cause: error });
   }
 
   const configured = Boolean(clientId && clientSecret);

@@ -255,11 +255,16 @@ docs/                      architecture, model card, safety, threat model, PayPa
 - Strict CSP, frame denial, MIME sniffing protection, permissions policy and body-size limits are set centrally.
 - Webhooks verify the raw body, certificate host and signature before trusting an event; invalid payloads are truncated and audited, and a valid retry can replace an unverified event-id reservation. Verified events only trigger authoritative reconciliation, never a direct charge.
 - PayPal approval and webhook-certificate URLs are restricted to HTTPS PayPal Sandbox hosts. The approved cap and final amount are checked server-side.
-- Secrets live in `.env` and `.whirr/` only. Both are ignored by Git. No secret is bundled into the web build or written to logs. `npm audit` reports zero known vulnerabilities on the locked dependency tree.
+- Secrets live in `.env` and `.whirr/` only. Both are ignored by Git. No secret is bundled into the web build or written to logs. CI fails on high or critical dependency advisories; the production tree is audited separately from the development lint toolchain.
 - A source and dependency audit was completed on 9 November 2026; it is a review, not a formal penetration test. See [Security audit](docs/security-audit.md).
 
 ## Documentation
 
+- [Engineering SDLC](docs/sdlc.md)
+- [7.0 product backlog](docs/backlog-7.0.md)
+- [Release checklist](docs/release-checklist.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 - [Whirr 7.0 product](docs/product-7.0.md)
 - [Ambient invention and research basis](docs/ambient-invention.md)
 - [Ambient agreement specification](docs/ambient-agreement-spec.md)

@@ -20,7 +20,6 @@ import {
   evaluateAmbientAgreement,
   hashAmbientTerms,
   validateAmbientTermsShape,
-  type AmbientAgreementStatus,
   type AmbientAgreementTerms,
   type AmbientCompilationIssue,
   type AmbientEvaluation,
@@ -57,7 +56,6 @@ import { verifyAmbientProofDocument } from '../../../../packages/verify/src/ambi
 
 const DEMO_AGREEMENT_ID = 'amb_reference_window';
 const DEMO_BUYER_ID = 'usr_ambient_viewer';
-const REFERENCE_OBJECT_ID = 'obj_reference_fan';
 const OFFER_TTL_MINUTES = 45;
 
 function requireAmbientObject(ctx: AppContext, objectId: string): ObjectRow {
@@ -491,7 +489,7 @@ export function respondToAmbientOffer(
     note?: string | null;
   },
 ): AmbientAgreementView {
-  let row = expireAgreementIfNeeded(ctx, agreementRow(ctx, agreementId));
+  const row = expireAgreementIfNeeded(ctx, agreementRow(ctx, agreementId));
   if (row.provider_id !== operator.id) throw errors.notFound('Agreement not found.');
   if (row.status !== 'OFFERED') throw errors.conflict('INVALID_STATE', 'There is no open buyer offer to answer.');
   if (row.terms_hash !== input.termsHash) throw errors.conflict('TERMS_CHANGED', 'The offer changed before it was answered.');

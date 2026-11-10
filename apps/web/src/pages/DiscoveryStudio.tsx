@@ -85,7 +85,10 @@ export function DiscoveryStudio() {
   }, []);
 
   const selected = lab?.objects.find((object) => object.id === selectedId) ?? lab?.objects[0] ?? null;
-  const enrolled = lab?.objects.filter((object) => object.enrollment?.status === 'READY') ?? [];
+  const enrolled = useMemo(
+    () => lab?.objects.filter((object) => object.enrollment?.status === 'READY') ?? [],
+    [lab],
+  );
   const selectedTakes = selected ? (takes[selected.id] ?? []) : [];
   const conditionCopy = CONDITIONS.find((entry) => entry.value === condition) ?? CONDITIONS[0]!;
   const compiled = useMemo(() => compilePricingRule(ruleText), [ruleText]);

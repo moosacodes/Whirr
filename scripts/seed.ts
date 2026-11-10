@@ -50,6 +50,7 @@ export function seedReference(): SeedResult {
     } catch (error) {
       throw new Error(
         `Reference model is missing or unreadable at ${REFERENCE_MODEL_PATH}. Run npm run train:reference first. (${(error as Error).message})`,
+        { cause: error },
       );
     }
     if (artifact.schema !== 'whirr.model.v1') throw new Error('Reference model has an unsupported schema.');

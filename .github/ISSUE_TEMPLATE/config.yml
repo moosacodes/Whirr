@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/moosacodes/Whirr/security/advisories/new
+    about: Do not open a public issue for a vulnerability, exposed secret, or privacy defect.
+  - name: Read the contribution and evidence rules
+    url: https://github.com/moosacodes/Whirr/blob/main/CONTRIBUTING.md
+    about: Review the issue, branch, test, review, and release workflow before contributing.

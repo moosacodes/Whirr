@@ -1,7 +1,7 @@
 import type { AppContext } from '../context.ts';
 import type { ObjectRow, TermsRow, UserRow } from './rows.ts';
 import { parseArtifact } from './rows.ts';
-import { activeModel, activeTerms, getTerms, modelSummary } from './objects.ts';
+import { activeModel, activeTerms, modelSummary } from './objects.ts';
 import { newId } from '../lib/ids.ts';
 import { canonicalJson, hashCanonical } from '../lib/hash.ts';
 import { reportForModel } from './validation.ts';

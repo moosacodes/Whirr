@@ -19,7 +19,7 @@ import {
   Stat,
   usePageTitle,
 } from '../components/ui.tsx';
-import { Icon, ObjectGlyph, Waveform } from '../components/visuals.tsx';
+import { Icon, Waveform } from '../components/visuals.tsx';
 import { duration, money, percent } from '../lib/format.ts';
 
 interface AmbientModelDetail extends AmbientModelSummaryView {
@@ -43,16 +43,6 @@ const EMPTY_LIVE: AmbientLiveSnapshot = {
   started: false,
   qualified: false,
 };
-
-const FINAL_STATES = new Set([
-  'CAPTURED',
-  'VOID_CONFIRMED',
-  'NOT_QUALIFIED',
-  'BUYER_REJECTED',
-  'EXPIRED',
-  'DEMO_COMPLETE',
-  'RECONCILIATION_REQUIRED',
-]);
 
 async function asBuyer<T>(call: () => Promise<T>): Promise<T> {
   try {
@@ -182,11 +172,12 @@ export function AmbientWindow() {
     void load();
   }, [load]);
 
+  const replaySessionId = session?.id;
   useEffect(() => {
-    if (!session) return;
+    if (!replaySessionId) return;
     setReplayElapsed(0);
     setPlaying(true);
-  }, [session?.id]);
+  }, [replaySessionId]);
 
   useEffect(
     () => () => {
@@ -200,7 +191,7 @@ export function AmbientWindow() {
   const isReplay = Boolean(
     session && (session.observationMode === 'REPLAY' || searchParams.get('replay') === '1'),
   );
-  const observations = session?.observations ?? [];
+  const observations = useMemo(() => session?.observations ?? [], [session]);
   const totalMs = observations.at(-1)?.endMs ?? 0;
   const finalVisible = Boolean(session?.evaluation && (!isReplay || replayElapsed >= totalMs));
 

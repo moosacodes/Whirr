@@ -3,16 +3,13 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../lib/api.ts';
 import type {
   EventModelDetailView,
-  PhysicalProofVerificationView,
   PromiseExecutionView,
   PromiseProofView,
 } from '../../../../packages/contracts/src/types.ts';
-import type { PromiseObservation } from '../../../../packages/promise/src/types.ts';
 import { MicrophoneEngine } from '../lib/audio.ts';
 import { PromiseObservationCollector, type PromiseLiveSnapshot } from '../lib/promise-audio.ts';
 import {
   Button,
-  Field,
   LinkButton,
   Loading,
   Notice,
@@ -55,7 +52,7 @@ export function PromiseRun() {
   const [level, setLevel] = useState(0);
   const [running, setRunning] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [proof, setProof] = useState<PromiseProofView | null>(null);
+  const [, setProof] = useState<PromiseProofView | null>(null);
   const collectorRef = useRef<PromiseObservationCollector | null>(null);
   const engineRef = useRef<MicrophoneEngine | null>(null);
   const runningRef = useRef(false);

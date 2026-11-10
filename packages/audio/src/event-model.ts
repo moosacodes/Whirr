@@ -207,14 +207,13 @@ export function classifyEventFrame(
 function trainCentroids(
   takes: EventDemonstration[],
   standardised: Map<string, number[][]>,
-  mean: number[],
-  std: number[],
 ): number[][] {
   return EVENT_CLASSES.map((event) => {
     const rows = takes
       .filter((take) => CLASS_OF_LABEL[take.label] === event)
-      .flatMap((take) => standardised.get(take.id) ?? []);  return centroidOf(rows);
-});
+      .flatMap((take) => standardised.get(take.id) ?? []);
+    return centroidOf(rows);
+  });
 }
 
 function trainPrototypes(
@@ -260,7 +259,7 @@ export function trainEventModel(input: {
   for (const entry of clean) {
     standardised.set(entry.take.id, entry.frames.map((row) => standardise(row, mean, std)));
   }
-  const centroids = trainCentroids(clean.map((entry) => entry.take), standardised, mean, std);
+  const centroids = trainCentroids(clean.map((entry) => entry.take), standardised);
   const prototypes = trainPrototypes(clean.map((entry) => entry.take), standardised);
 
   const confusion = EVENT_CLASSES.map(() => EVENT_CLASSES.map(() => 0));
