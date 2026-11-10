@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -443,4 +443,153 @@ CREATE TABLE IF NOT EXISTS outbox (
 );
 
 CREATE INDEX IF NOT EXISTS idx_outbox_pending ON outbox(processed_at, next_attempt_at);
+
+-- Whirr 6.0: teachable physical promises. These tables are additive; no
+-- historical 4.x or 5.0 table is altered by this migration.
+CREATE TABLE IF NOT EXISTS event_demonstrations (
+  id TEXT PRIMARY KEY,
+  object_id TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  label TEXT NOT NULL CHECK (label IN ('idle', 'active', 'negative', 'transition')),
+  frames_json TEXT NOT NULL,
+  frame_flags_json TEXT NOT NULL,
+  frame_count INTEGER NOT NULL CHECK (frame_count > 0),
+  duration_ms INTEGER NOT NULL CHECK (duration_ms > 0),
+  feature_spec_version TEXT NOT NULL,
+  source TEXT NOT NULL CHECK (source IN ('live', 'import', 'synthetic')),
+  provenance TEXT NOT NULL CHECK (provenance IN ('SYNTHETIC_REFERENCE', 'USER_CALIBRATION')),
+  session_group TEXT NOT NULL,
+  device_label TEXT,
+  notes TEXT,
+  dataset_hash TEXT NOT NULL,
+  captured_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_demos_object ON event_demonstrations(object_id, captured_at);
+
+CREATE TABLE IF NOT EXISTS event_models (
+  id TEXT PRIMARY KEY,
+  object_id TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  version TEXT NOT NULL,
+  artifact_json TEXT NOT NULL,
+  model_hash TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('READY', 'LIMITED', 'REJECTED')),
+  dataset_hash TEXT NOT NULL,
+  metrics_json TEXT NOT NULL,
+  provenance TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  superseded_at TEXT,
+  UNIQUE (object_id, version),
+  UNIQUE (object_id, model_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_models_object ON event_models(object_id, created_at);
+
+CREATE TABLE IF NOT EXISTS promise_agreements (
+  id TEXT PRIMARY KEY,
+  object_id TEXT NOT NULL REFERENCES objects(id),
+  owner_id TEXT NOT NULL REFERENCES users(id),
+  event_model_id TEXT NOT NULL REFERENCES event_models(id),
+  event_model_hash TEXT NOT NULL,
+  service_name TEXT NOT NULL,
+  proposal_text TEXT NOT NULL,
+  terms_json TEXT NOT NULL,
+  terms_hash TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('OWNER_APPROVED', 'PAUSED')),
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  UNIQUE (object_id, terms_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_promise_agreements_object ON promise_agreements(object_id, created_at);
+
+CREATE TABLE IF NOT EXISTS promise_executions (
+  id TEXT PRIMARY KEY,
+  agreement_id TEXT NOT NULL REFERENCES promise_agreements(id),
+  agreement_hash TEXT NOT NULL,
+  object_id TEXT NOT NULL REFERENCES objects(id),
+  owner_id TEXT NOT NULL REFERENCES users(id),
+  renter_id TEXT NOT NULL REFERENCES users(id),
+  state TEXT NOT NULL,
+  payment_state TEXT NOT NULL DEFAULT 'NONE',
+  demo INTEGER NOT NULL DEFAULT 1 CHECK (demo IN (0, 1)),
+  observation_mode TEXT NOT NULL DEFAULT 'LIVE' CHECK (observation_mode IN ('LIVE', 'REPLAY')),
+  terms_snapshot_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  consented_at TEXT,
+  authorized_at TEXT,
+  observation_started_at TEXT,
+  observation_stopped_at TEXT,
+  completed_at TEXT,
+  authorization_expires_at TEXT,
+  last_client_seq INTEGER NOT NULL DEFAULT 0,
+  last_observed_ms INTEGER NOT NULL DEFAULT 0,
+  observed_ms INTEGER NOT NULL DEFAULT 0,
+  run_ms INTEGER NOT NULL DEFAULT 0,
+  idle_ms INTEGER NOT NULL DEFAULT 0,
+  uncertain_ms INTEGER NOT NULL DEFAULT 0,
+  sensor_loss_ms INTEGER NOT NULL DEFAULT 0,
+  outcome TEXT,
+  eligible_for_capture INTEGER NOT NULL DEFAULT 0,
+  evaluation_json TEXT,
+  evaluation_hash TEXT,
+  evidence_root TEXT,
+  paypal_order_id TEXT,
+  paypal_approve_url TEXT,
+  paypal_authorization_id TEXT,
+  paypal_capture_id TEXT,
+  paypal_void_id TEXT,
+  provider_status TEXT,
+  provider_reconciled_at TEXT,
+  captured_minor INTEGER,
+  human_acceptance_json TEXT,
+  failure_reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_promise_executions_renter ON promise_executions(renter_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_promise_executions_state ON promise_executions(state);
+
+CREATE TABLE IF NOT EXISTS promise_observations (
+  id TEXT PRIMARY KEY,
+  execution_id TEXT NOT NULL REFERENCES promise_executions(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL,
+  start_ms INTEGER NOT NULL CHECK (start_ms >= 0),
+  end_ms INTEGER NOT NULL CHECK (end_ms > start_ms),
+  state TEXT NOT NULL CHECK (state IN ('ACTIVE_CONFIDENT', 'IDLE', 'UNCERTAIN', 'DISCONNECTED')),
+  confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+  event_match REAL,
+  quality_flags_json TEXT NOT NULL,
+  received_at TEXT NOT NULL,
+  UNIQUE (execution_id, seq)
+);
+
+CREATE INDEX IF NOT EXISTS idx_promise_observations_execution ON promise_observations(execution_id, start_ms);
+
+CREATE TABLE IF NOT EXISTS promise_payment_operations (
+  id TEXT PRIMARY KEY,
+  execution_id TEXT NOT NULL REFERENCES promise_executions(id) ON DELETE CASCADE,
+  operation_type TEXT NOT NULL CHECK (operation_type IN ('CREATE_ORDER', 'AUTHORIZE', 'CAPTURE', 'VOID')),
+  request_id TEXT NOT NULL,
+  state TEXT NOT NULL,
+  amount_minor INTEGER,
+  currency TEXT,
+  request_hash TEXT NOT NULL,
+  provider_ref TEXT,
+  response_json TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (execution_id, operation_type)
+);
+
+CREATE TABLE IF NOT EXISTS promise_proofs (
+  id TEXT PRIMARY KEY,
+  execution_id TEXT NOT NULL UNIQUE REFERENCES promise_executions(id) ON DELETE CASCADE,
+  payload_hash TEXT NOT NULL,
+  document_json TEXT NOT NULL,
+  public_document_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_promise_proofs_created ON promise_proofs(created_at);
 `;
