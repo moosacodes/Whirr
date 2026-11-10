@@ -6,6 +6,7 @@ import { OBJECT_CATEGORIES, OBJECT_GLYPHS, TAKE_LABELS, TAKE_ROLES } from './typ
 import { FIELD_TRIAL_KINDS } from '../../audio/src/field-eval.ts';
 import { DISCOVERY_CONDITIONS } from '../../audio/src/discovery.ts';
 export * from './promise-schemas.ts';
+export * from './ambient-schemas.ts';
 
 const finiteNumber = z.number().finite();
 const hash64 = z.string().regex(/^[a-f0-9]{64}$/, 'Expected a 64-character lowercase hex hash');
