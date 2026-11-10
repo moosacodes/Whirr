@@ -53,3 +53,17 @@
 - The app is a single-host, supervised-venue prototype. It is not claimed to be tamper-proof, unattended-secure, production-ready or multi-tenant SaaS.
 
 See [`threat-model.md`](threat-model.md), [`safety.md`](safety.md) and [`go-no-go.md`](go-no-go.md) for the standing limitations.
+
+## 4. Whirr 5.0 discovery-specific limits
+
+The 5.0 discovery experiment adds a public read-only matcher. Its threat model is intentionally narrower than identity or access control:
+
+- **No authentication or ownership claim.** A similarity match cannot prove which physical unit produced a sound, who owns it or whether a person is present. It must never unlock, authorize or bill by itself.
+- **Replay is not solved.** A phone or speaker can reproduce the spectrum. Replay trials are measured and reported; they are not used to claim liveness.
+- **Client-claimed provenance.** The server validates frame shape, quality and protocol metadata, not that the browser's microphone actually recorded a physical object. This is the same honesty boundary as the 4.x live-capture claims.
+- **Read-only match endpoint.** `POST /api/discovery/match` does not insert a session, terms, payment operation, PayPal resource or field report. Integration tests assert the session and payment-operation counts do not change.
+- **No new payment path.** A confirmed discovery uses the existing `/s/:objectId` consent/field-guard/PayPal Sandbox flow. Discovery never calls PayPal.
+- **Evidence invalidation.** Re-enrolling an object or adding/discarding a trial deletes generated reports so stale held-out results cannot be presented as current.
+- **No public deployment or physical evidence.** `docs/evidence/discovery.json` is `NOT_RUN`; the branch is not published or promoted.
+
+The full protocol and limitations are in [`discovery-5.0.md`](discovery-5.0.md).
