@@ -120,6 +120,8 @@ If a genuine step is missing, the demonstration should state that plainly. The p
 - Live microphone path: implemented; not exercised as a physical field trial in this release.
 - Genuine 7.0 Sandbox authorization/capture: OPEN.
 - Genuine webhook: OPEN.
-- Public video: NOT RECORDED.
+- Local browser footage: CAPTURED — seven raw clips, see [`demo-7.0-recording.md`](demo-7.0-recording.md).
+- PayPal 7.0 footage: NOT RECORDED — requires a human buyer to authorize a genuine Sandbox checkout.
+- Public video: NOT EDITED OR UPLOADED.
 - Devpost submission: NOT MADE.
 - Final local checks: 133/133 domain/integration tests and 57/57 browser tests pass; see `docs/go-no-go.md`.

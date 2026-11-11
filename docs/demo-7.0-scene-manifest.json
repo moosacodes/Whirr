@@ -1,0 +1,193 @@
+{
+  "generatedAt": "2026-11-11T00:16:54.367Z",
+  "browser": "Google Chrome — page-only CDP screencast",
+  "viewport": "1920x1080",
+  "displayScale": "100%",
+  "fps": 30,
+  "audio": "none",
+  "cursor": "Presentation-only pointer overlay driven by real Playwright mouse events; all controls were clicked in the browser.",
+  "agreement": {
+    "id": "amb_9743916bdaf142b7896bdba5e67e1c4e",
+    "request": "I need 30 seconds without the reference desk fan running while I record a voiceover. I will pay $2.00."
+  },
+  "scenes": [
+    {
+      "id": "01-product-introduction",
+      "title": "Product introduction — the negotiated world",
+      "status": "RECORDED",
+      "file": "clips/01-product-introduction.mp4",
+      "url": "http://localhost:5173/ambient",
+      "recordedAt": "2026-11-11T00:12:22.251Z",
+      "durationSeconds": 14.467,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "The current Whirr 7.0 Ambient overview and the redesigned witness field.",
+        "The four-movement model is Whirr’s product thesis, not a recorded physical trial."
+      ],
+      "provenance": "PRODUCT UI — live local application",
+      "notes": []
+    },
+    {
+      "id": "02-wish",
+      "title": "The Wish — a buyer states a bounded request",
+      "status": "RECORDED",
+      "file": "clips/02-wish.mp4",
+      "url": "http://localhost:5173/ambient/wish",
+      "recordedAt": "2026-11-11T00:12:47.128Z",
+      "durationSeconds": 34,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "A buyer’s request is entered into the actual Wish field character by character.",
+        "The deterministic compiler turns the request into a measurable source-specific condition.",
+        "The selected source is the synthetic reference model; no physical fan is observed."
+      ],
+      "provenance": "PRODUCT UI — live local application; synthetic reference source",
+      "notes": [
+        "The request text is typed into the real textarea, not pasted."
+      ]
+    },
+    {
+      "id": "03-exchange",
+      "title": "The Exchange — provider acceptance and exact buyer consent",
+      "status": "RECORDED",
+      "file": "clips/03-exchange.mp4",
+      "url": "http://localhost:5173/ambient/exchange/amb_9743916bdaf142b7896bdba5e67e1c4e",
+      "recordedAt": "2026-11-11T00:13:40.900Z",
+      "durationSeconds": 23.967,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "The real local operator account accepts the buyer’s exact offer revision.",
+        "The buyer separately approves the final terms hash before any session can begin.",
+        "No PayPal order or capture is created by this clip."
+      ],
+      "provenance": "PRODUCT UI — live local agreement created through the real API",
+      "notes": [
+        "The provider is the local operator account; this is not two independent people.",
+        "The agreement was created from the same request text used in clip 02.",
+        "After provider acceptance, the local operator cookie is cleared and the page reloads to the buyer-only view, matching a separate buyer browser. No agreement, provider decision or consent is fabricated."
+      ]
+    },
+    {
+      "id": "04-window-interrupted",
+      "title": "The Window — interrupted replay, no capture",
+      "status": "RECORDED",
+      "file": "clips/04-window-interrupted.mp4",
+      "url": "http://localhost:5173/ambient/window/ase_reference_interrupted?replay=1",
+      "recordedAt": "2026-11-11T00:14:19.317Z",
+      "durationSeconds": 23.4,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "The labelled synthetic interrupted replay: the source returns during the quiet window and resets it.",
+        "The evaluator returns INTERRUPTED and marks the session ineligible for capture.",
+        "No microphone is open and no PayPal payment exists for this replay."
+      ],
+      "provenance": "SYNTHETIC REPLAY — not physical evidence",
+      "notes": [
+        "The replay is explicitly labelled SYNTHETIC REPLAY on screen."
+      ]
+    },
+    {
+      "id": "05-window-qualified",
+      "title": "The Window — qualified replay, eligible result",
+      "status": "RECORDED",
+      "file": "clips/05-window-qualified.mp4",
+      "url": "http://localhost:5173/ambient/window/ase_reference_qualified?replay=1",
+      "recordedAt": "2026-11-11T00:14:57.780Z",
+      "durationSeconds": 24.167,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "The labelled synthetic qualified replay: the source remains undetected for the full approved interval.",
+        "The evaluator returns QUALIFIED and marks the result eligible for the contract.",
+        "This is replay, not a live microphone measurement or a financial capture."
+      ],
+      "provenance": "SYNTHETIC REPLAY — not physical evidence",
+      "notes": [
+        "The replay is explicitly labelled SYNTHETIC REPLAY on screen."
+      ]
+    },
+    {
+      "id": "06-paypal",
+      "title": "PayPal Sandbox approval and capture",
+      "status": "NOT_RECORDED",
+      "file": null,
+      "url": "http://localhost:5173/ambient/window/<live-session>",
+      "recordedAt": null,
+      "durationSeconds": null,
+      "width": null,
+      "height": null,
+      "fps": null,
+      "videoCodec": null,
+      "audioStreams": null,
+      "whatItDemonstrates": [],
+      "provenance": "MISSING — no human buyer authorization",
+      "notes": [
+        "No genuine 7.0 Sandbox order, buyer approval, authorization or capture was performed in this recording session.",
+        "Per the recording brief, no PayPal checkout was fabricated and no older transaction was reused.",
+        "A genuine clip can only be recorded after a human buyer completes the official Sandbox approval flow."
+      ]
+    },
+    {
+      "id": "07-accord",
+      "title": "The Accord — evidence, exact terms, payment status and verification",
+      "status": "RECORDED",
+      "file": "clips/07-accord.mp4",
+      "url": "http://localhost:5173/ambient/accord/ase_reference_qualified?replay=1",
+      "recordedAt": "2026-11-11T00:15:37.290Z",
+      "durationSeconds": 35.7,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "The qualified synthetic history is presented as a record, with DEMO_NO_PAYMENT on screen.",
+        "The exact terms hash, interval ledger, buyer acceptance and open evidence boundary are inspectable.",
+        "The signed proof independently recomputes integrity and contract checks; it does not prove physical silence."
+      ],
+      "provenance": "SYNTHETIC REPLAY + SIGNED PROOF — no PayPal transaction",
+      "notes": [
+        "The financial record explicitly says DEMO_NO_PAYMENT; no order, authorization or capture exists."
+      ]
+    },
+    {
+      "id": "08-closing",
+      "title": "Closing — the thesis and the quiet window",
+      "status": "RECORDED",
+      "file": "clips/08-closing.mp4",
+      "url": "http://localhost:5173/ambient",
+      "recordedAt": "2026-11-11T00:16:34.674Z",
+      "durationSeconds": 11.767,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioStreams": 0,
+      "whatItDemonstrates": [
+        "The closing statement returns to Whirr’s product thesis: cooperation as the product, not a dashboard.",
+        "The thirty-second window is the visual signature; it is a product surface, not evidence of a physical event."
+      ],
+      "provenance": "PRODUCT UI — live local application",
+      "notes": []
+    }
+  ]
+}
