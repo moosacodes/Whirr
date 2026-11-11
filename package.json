@@ -39,7 +39,8 @@
     "verify": "npm run typecheck && npm test",
     "smoke": "tsx scripts/smoke.ts",
     "screenshots": "tsx scripts/capture-v4.ts",
-    "capture:v7": "tsx scripts/capture-v7.ts"
+    "capture:v7": "tsx scripts/capture-v7.ts",
+    "record:demo": "tsx scripts/record-demo-7.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
